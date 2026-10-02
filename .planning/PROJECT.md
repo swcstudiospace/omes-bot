@@ -21,7 +21,7 @@ One Omes agent runs both agents' logic — loops, subagents, tools, skills, memo
 - [x] Tool registry and the coding toolset
 - [ ] Remaining Hermes agent tools (code execution, MCP, browser, approvals, plugins)
 - [x] Skills, memory, session search, and the curator
-- [ ] Delegation and cron re-entering the same agent
+- [x] Delegation and cron re-entering the same agent
 - [ ] Omp harness behavior merged into that same loop
 - [ ] Omp edit pipeline, LSP, and DAP
 - [ ] Sessions, tasks, modes, plan mode, extensions, autolearn, goals, advisor, exec, and agent-side security

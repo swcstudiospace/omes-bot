@@ -3,10 +3,10 @@ gsd_state_version: '1.0'
 status: executing
 progress:
   total_phases: 12
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 4
-  percent: 33
+  completed_plans: 5
+  percent: 42
 ---
 
 # Project State
@@ -16,16 +16,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** One Omes agent runs both Hermes and Omp agent logic.
-**Current focus:** Phase 5 — Delegation and cron
+**Current focus:** Phase 6 — Remaining Hermes tools
 
 ## Current Position
 
-Phase: 5 of 12 (Delegation and cron)
-Plan: 1 of 1 in current phase
-Status: Executing
-Last activity: 2026-10-02 — Phase 5 plan written; discuss skipped by config
+Phase: 6 of 12 (Remaining Hermes tools)
+Plan: 0 of 1 in current phase
+Status: Ready to plan
+Last activity: 2026-10-02 — Phase 5 tests passed (41)
 
-Progress: [███░░░░░░░] 33%
+Progress: [████░░░░░░] 42%
 
 ## Performance Metrics
 

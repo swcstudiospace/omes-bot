@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: Hermes loop** - Conversation loop, turn phases, and the prompt, steer, compression, and interrupt invariants.
 - [x] **Phase 3: Coding toolset** - Registry, discovery, and the file, search, terminal, todo, clarify, web, and vision tools.
 - [x] **Phase 4: Skills and memory** - Skill manager, memory provider, session search, and the curator.
-- [ ] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
+- [x] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
 - [ ] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
 - [ ] **Phase 7: Omp harness** - Events, steering, pause, budget, and compaction merged into the phase 2 loop.
 - [ ] **Phase 8: Edit pipeline** - Apply, reject a bad hunk, and repair.
@@ -94,7 +94,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 05-01: Child lifecycle and the cron scheduler
+- [x] 05-01: Child lifecycle and the cron scheduler
 
 ### Phase 6: Remaining Hermes tools
 **Goal**: Code execution, MCP, the browser, approvals, and a plugin-registered tool all dispatch through the same registry against a temporary home.
@@ -200,7 +200,7 @@ Phases execute in numeric order.
 | 2. Hermes loop | 1/1 | Complete | 2026-10-02 |
 | 3. Coding toolset | 1/1 | Complete | 2026-10-02 |
 | 4. Skills and memory | 1/1 | Complete | 2026-10-02 |
-| 5. Delegation and cron | 0/1 | Not started | - |
+| 5. Delegation and cron | 1/1 | Complete | 2026-10-02 |
 | 6. Remaining Hermes tools | 0/1 | Not started | - |
 | 7. Omp harness | 0/1 | Not started | - |
 | 8. Edit pipeline | 0/1 | Not started | - |

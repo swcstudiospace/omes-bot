@@ -39,9 +39,9 @@ Requirements for the first milestone. Each maps to one roadmap phase.
 
 ### Delegation and cron
 
-- [ ] **DELEG-01**: A child is isolated, restores the parent toolset, and respects depth, concurrency, background completion, and leaf versus orchestrator.
-- [ ] **DELEG-02**: The parent sees the child summary, not the child's tool traffic.
-- [ ] **CRON-01**: A due job runs through the same conversation loop.
+- [x] **DELEG-01**: A child is isolated, restores the parent toolset, and respects depth, concurrency, background completion, and leaf versus orchestrator.
+- [x] **DELEG-02**: The parent sees the child summary, not the child's tool traffic.
+- [x] **CRON-01**: A due job runs through the same conversation loop.
 
 ### Remaining Hermes tools
 
@@ -140,9 +140,9 @@ Deferred. Not in this roadmap.
 | GROW-03 | Phase 4 | Done |
 | GROW-04 | Phase 4 | Done |
 | GROW-05 | Phase 4 | Done |
-| DELEG-01 | Phase 5 | Pending |
-| DELEG-02 | Phase 5 | Pending |
-| CRON-01 | Phase 5 | Pending |
+| DELEG-01 | Phase 5 | Done |
+| DELEG-02 | Phase 5 | Done |
+| CRON-01 | Phase 5 | Done |
 | TOOL-05 | Phase 6 | Pending |
 | TOOL-06 | Phase 6 | Pending |
 | TOOL-07 | Phase 6 | Pending |
