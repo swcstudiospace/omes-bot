@@ -21,9 +21,9 @@ See: .planning/PROJECT.md (updated 2026-10-02)
 ## Current Position
 
 Phase: 6 of 12 (Remaining Hermes tools)
-Plan: 0 of 1 in current phase
-Status: Ready to plan
-Last activity: 2026-10-02 — Phase 5 tests passed (41)
+Plan: 1 of 1 in current phase
+Status: Executing
+Last activity: 2026-10-02 — Phase 6 plan written; discuss skipped by config
 
 Progress: [████░░░░░░] 42%
 
