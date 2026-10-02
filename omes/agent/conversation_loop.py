@@ -26,9 +26,10 @@ from omes.agent.turn_tool_round import run_tool_round
 class Agent:
     """What the loop reads. Not ``AIAgent``: no credential, gateway, or callback parameters.
 
-    ``tools`` is a name → callable map. ``budget`` counts model calls. ``interrupt``
-    is polled at the start of each iteration. ``pending_steer`` is delivered as its
-    own user row after a tool result. ``lease`` is held for the turn.
+    ``tools`` is a name → callable map. ``interrupt`` is polled at the start of each
+    iteration. ``pending_steer`` is delivered as its own user row after a tool result.
+    ``lease`` is held for the turn. A budget the caller omits is per-turn and refilled
+    from ``max_iterations``. A budget the caller passes is a session cap and is not reset.
     """
 
     model: Model
@@ -42,8 +43,13 @@ class Agent:
     def __post_init__(self) -> None:
         if self.tools is None:
             self.tools = {}
+        # Only the budget this agent created is per-turn. A caller-supplied budget
+        # stays a session cap so spending it still stops later turns.
         if self.budget is None:
             self.budget = IterationBudget(self.max_iterations)
+            self._turn_budget = self.budget
+        else:
+            self._turn_budget = None
         if self.interrupt is None:
             self.interrupt = InterruptFlag()
         if self.lease is None:
@@ -100,6 +106,9 @@ def _run_conversation_turn(
     if budget is None:
         budget = IterationBudget(agent.max_iterations)
         agent.budget = budget
+        agent._turn_budget = budget
+    elif budget is getattr(agent, "_turn_budget", None):
+        budget.refill(agent.max_iterations)
 
     while api_call_count < agent.max_iterations and budget.remaining > 0:
         if agent.interrupt is not None and agent.interrupt.is_set():

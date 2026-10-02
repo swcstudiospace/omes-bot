@@ -1,8 +1,10 @@
-"""Per-turn iteration budget.
+"""Iteration counter.
 
-Adapted from Hermes ``agent/iteration_budget.py``. One counter for this agent.
-When ``remaining`` hits 0 the loop stops, even if the model asked for another tool.
-No grace call: a summary request would be another model call after the budget is spent.
+Adapted from Hermes ``agent/iteration_budget.py``. The counter only consumes or
+refunds. The conversation loop refills the default budget it built from
+``max_iterations`` at the start of each turn. A budget the caller supplied is a
+session cap and is not refilled: when ``remaining`` hits 0 the loop stops, even
+if the model asked for another tool. No grace call.
 """
 
 from __future__ import annotations
@@ -33,6 +35,15 @@ class IterationBudget:
         with self._lock:
             if self._used > 0:
                 self._used -= 1
+
+    def refill(self, max_total: int | None = None) -> None:
+        """Restore a full cap. The loop calls this only for its default per-turn budget."""
+        with self._lock:
+            if max_total is not None:
+                if max_total < 0:
+                    raise ValueError(f"max_total must be >= 0, got {max_total}")
+                self.max_total = max_total
+            self._used = 0
 
     @property
     def used(self) -> int:

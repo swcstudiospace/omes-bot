@@ -266,6 +266,35 @@ def test_budget_stops_when_remaining_hits_zero():
     assert model.remaining == 1
     assert agent.budget.remaining == 0
     assert result["api_calls"] == 1
+    # A caller-supplied budget is a session cap: the next turn must not refill it.
+    again = run_conversation(agent, "again", system_message="sys")
+    assert model.call_count == 1
+    assert model.remaining == 1
+    assert again["api_calls"] == 0
+    assert agent.budget.remaining == 0
+
+
+def test_default_budget_refills_so_each_turn_gets_max_iterations():
+    model = ScriptedModel(
+        [
+            {"role": "assistant", "content": "first"},
+            {"role": "assistant", "content": "second"},
+        ]
+    )
+    agent = Agent(model=model, tools={}, max_iterations=1)
+    history: list = []
+    first = run_conversation(agent, "one", system_message="sys", conversation_history=history)
+    assert model.call_count == 1
+    assert first["final_response"] == "first"
+    assert agent.budget is not None
+    assert agent.budget.remaining == 0
+
+    second = run_conversation(agent, "two", conversation_history=history)
+    assert model.call_count == 2
+    assert model.remaining == 0
+    assert second["api_calls"] == 1
+    assert second["final_response"] == "second"
+    assert agent.budget.remaining == 0
 
 
 def test_lease_released_after_turn_and_on_failure():
