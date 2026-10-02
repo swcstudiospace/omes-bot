@@ -3,7 +3,8 @@
 Adapted from Hermes ``tools/registry.py``. A tool is a name, a description, a JSON
 schema for its parameters, and a handler. ``dispatch`` always returns a JSON string.
 An unknown name becomes a JSON error and does not raise. Handlers return
-JSON-serializable objects; this module encodes them.
+JSON-serializable objects, which this module encodes, or a JSON string, which is
+returned unchanged.
 """
 
 from __future__ import annotations
@@ -56,6 +57,15 @@ class ToolRegistry:
             payload = _call(tool.handler, _arguments(arguments))
         except Exception as exc:
             return _dump({"error": f"{type(exc).__name__}: {exc}"})
+        # Growth handlers return a JSON string. Dispatch must return that string,
+        # not a second encoding. Any other string is encoded below.
+        if isinstance(payload, str):
+            try:
+                json.loads(payload)
+            except json.JSONDecodeError:
+                pass
+            else:
+                return payload
         try:
             return _dump(payload)
         except (TypeError, ValueError):

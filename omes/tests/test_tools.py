@@ -9,6 +9,7 @@ from pathlib import Path
 
 from omes.tools.clarify import ClarifyLog, clarify
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
+from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
 from omes.tools.registry import ToolRegistry
 
@@ -349,4 +350,4 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
     schema_names = [item["function"]["name"] for item in registry.schemas()]
     assert registered == list(CODING_TOOL_NAMES)
     assert schema_names == list(CODING_TOOL_NAMES)
-    assert _roster_names(ROSTER.read_text(encoding="utf-8")) == list(CODING_TOOL_NAMES)
+    assert _roster_names(ROSTER.read_text(encoding="utf-8")) == list(CODING_TOOL_NAMES + GROWTH_TOOL_NAMES)
