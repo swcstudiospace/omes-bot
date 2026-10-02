@@ -1,0 +1,27 @@
+# Upstream checkouts. Read while porting. Not part of this repository.
+/hermes-agent/
+/oh-my-pi/
+
+# Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials.json
+secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# Subagent-driven-development scratch
+.superpowers/
+
+.DS_Store

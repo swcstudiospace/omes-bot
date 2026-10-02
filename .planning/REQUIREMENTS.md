@@ -1,0 +1,183 @@
+# Requirements: Omes Bot
+
+**Defined:** 2026-10-02
+**Core Value:** One Omes agent runs both Hermes and Omp agent logic.
+
+## v1 Requirements
+
+Requirements for the first milestone. Each maps to one roadmap phase.
+
+### Shell
+
+- [ ] **SHELL-01**: One seat prompt points at the skills folder, the tool roster, and the prompt folder.
+- [ ] **SHELL-02**: Assembling that prompt is deterministic.
+- [ ] **SHELL-03**: The Grok Bot template lists only skills and routines that exist on disk.
+- [ ] **SHELL-04**: Core directives require a receipt for a completion claim, forbid committing secrets, and require recorded approval before a destructive operation.
+
+### Loop
+
+- [ ] **LOOP-01**: The conversation loop runs the Hermes turn phases, including session lease, budget, interrupt, prompt builder, and compression.
+- [ ] **LOOP-02**: The system prompt stays byte-stable across a tool round.
+- [ ] **LOOP-03**: A steer is its own user row after a tool result.
+- [ ] **LOOP-04**: Compression is the only rewrite of prior context.
+- [ ] **LOOP-05**: An interrupt stops the loop.
+
+### Coding tools
+
+- [ ] **TOOL-01**: Tools register and are discovered through one registry.
+- [ ] **TOOL-02**: File, patch, search, local terminal, todo, clarify, web search and extract, and vision dispatch through that registry.
+- [ ] **TOOL-03**: A call by name runs the registered tool.
+- [ ] **TOOL-04**: A tool absent from the roster is not offered to the model.
+
+### Growth
+
+- [ ] **GROW-01**: Skill create and update write under the skills directory, with the Hermes guards.
+- [ ] **GROW-02**: A turn can write a skill that the next turn loads by path.
+- [ ] **GROW-03**: A memory write is recalled on a later turn.
+- [ ] **GROW-04**: Session search returns from the session store.
+- [ ] **GROW-05**: The curator does not invent a skill the turn did not earn.
+
+### Delegation and cron
+
+- [ ] **DELEG-01**: A child is isolated, restores the parent toolset, and respects depth, concurrency, background completion, and leaf versus orchestrator.
+- [ ] **DELEG-02**: The parent sees the child summary, not the child's tool traffic.
+- [ ] **CRON-01**: A due job runs through the same conversation loop.
+
+### Remaining Hermes tools
+
+- [ ] **TOOL-05**: Code execution dispatches through the registry.
+- [ ] **TOOL-06**: The MCP client dispatches through the registry.
+- [ ] **TOOL-07**: The browser toolset dispatches through the registry.
+- [ ] **TOOL-08**: Approvals gate a tool that declares it needs approval.
+- [ ] **TOOL-09**: A plugin can register a tool on the same registry.
+- [ ] **TOOL-10**: Each of those toolsets runs against a temporary home.
+
+### Harness
+
+- [ ] **HARNESS-01**: The loop emits the Omp agent events and runs before-model, pause, and live-steering hooks.
+- [ ] **HARNESS-02**: Output budget and useless-versus-error tool results match the Omp behavior.
+- [ ] **HARNESS-03**: Speculative execution and the extra compaction rules from Omp run inside the same loop.
+- [ ] **HARNESS-04**: The phase 2 invariants still hold. There is one agent class.
+
+### Edit pipeline
+
+- [ ] **EDIT-01**: An edit applies to a fixture file.
+- [ ] **EDIT-02**: A bad hunk is rejected and the file is unchanged.
+- [ ] **EDIT-03**: A repair pass fixes a hunk the first apply could not place.
+
+### Language and debug servers
+
+- [ ] **IDE-01**: An LSP session returns a diagnostic on a fixture project.
+- [ ] **IDE-02**: A DAP session hits a breakpoint in a fixture program.
+
+### Modes and learning
+
+- [ ] **MODE-01**: Sessions and tasks persist and resume.
+- [ ] **MODE-02**: Plan mode cannot call a write tool.
+- [ ] **MODE-03**: An extension hook runs before the model call.
+- [ ] **MODE-04**: Autolearn records through the phase 4 skill manager.
+- [ ] **MODE-05**: Goals, advisor, exec job control, and agent-side security checks run in the agent.
+
+### Memory unification
+
+- [ ] **MEM-01**: Omp memories, the hindsight client, and mnemopi use the phase 4 memory provider.
+- [ ] **MEM-02**: One store serves both the Hermes and the Omp call shapes.
+
+### Providers and install surface
+
+- [ ] **PROV-01**: A provider contract accepts a fake transport and returns a model response.
+- [ ] **PROV-02**: The Grok adapter speaks that contract. Tests use a fake transport.
+- [ ] **PROV-03**: The remaining `packages/ai` adapters are ported as tasks in this phase.
+- [ ] **PROV-04**: The template, the roster, and the assembled prompt name only tools, skills, and routines that exist.
+- [ ] **PROV-05**: A completion claim with no command fails the receipt check.
+- [ ] **PROV-06**: The roster contains no tool name the registry does not export.
+
+## v2 Requirements
+
+Deferred. Not in this roadmap.
+
+### Durability
+
+- **DUR-01**: A Temporal worker can resume cron and delegation after a process restart.
+
+### Chrome
+
+- **CHROME-01**: A terminal UI on the same agent.
+- **CHROME-02**: A messaging gateway on the same agent.
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| Temporal as the merge mechanism | One Python process is the merge. Temporal is a later adapter. |
+| Sidecar that shells out to the two checkouts | Both agents are ported into Omes. |
+| Hermes TUI, desktop, website, locales, nix and docker packaging | Product chrome around the agent. |
+| Messaging gateways, Feishu, Yuanbao, Home Assistant, Spotify, kanban UI | Product chrome. Pulled in only if a phase's tests cannot pass without that code. |
+| Omp TUI, collab web, stats site, CLI gallery, Rust crates, bazel and nix | Product chrome and the non-Python core. The agent loop is the port. |
+| Push or a new GitHub repository | Not authorized for this milestone. |
+| Provisioning a Grok Bot account | The template file is the install surface. |
+| Seven-seat desk channel rules | This bot is one seat. |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| SHELL-01 | Phase 1 | Pending |
+| SHELL-02 | Phase 1 | Pending |
+| SHELL-03 | Phase 1 | Pending |
+| SHELL-04 | Phase 1 | Pending |
+| LOOP-01 | Phase 2 | Pending |
+| LOOP-02 | Phase 2 | Pending |
+| LOOP-03 | Phase 2 | Pending |
+| LOOP-04 | Phase 2 | Pending |
+| LOOP-05 | Phase 2 | Pending |
+| TOOL-01 | Phase 3 | Pending |
+| TOOL-02 | Phase 3 | Pending |
+| TOOL-03 | Phase 3 | Pending |
+| TOOL-04 | Phase 3 | Pending |
+| GROW-01 | Phase 4 | Pending |
+| GROW-02 | Phase 4 | Pending |
+| GROW-03 | Phase 4 | Pending |
+| GROW-04 | Phase 4 | Pending |
+| GROW-05 | Phase 4 | Pending |
+| DELEG-01 | Phase 5 | Pending |
+| DELEG-02 | Phase 5 | Pending |
+| CRON-01 | Phase 5 | Pending |
+| TOOL-05 | Phase 6 | Pending |
+| TOOL-06 | Phase 6 | Pending |
+| TOOL-07 | Phase 6 | Pending |
+| TOOL-08 | Phase 6 | Pending |
+| TOOL-09 | Phase 6 | Pending |
+| TOOL-10 | Phase 6 | Pending |
+| HARNESS-01 | Phase 7 | Pending |
+| HARNESS-02 | Phase 7 | Pending |
+| HARNESS-03 | Phase 7 | Pending |
+| HARNESS-04 | Phase 7 | Pending |
+| EDIT-01 | Phase 8 | Pending |
+| EDIT-02 | Phase 8 | Pending |
+| EDIT-03 | Phase 8 | Pending |
+| IDE-01 | Phase 9 | Pending |
+| IDE-02 | Phase 9 | Pending |
+| MODE-01 | Phase 10 | Pending |
+| MODE-02 | Phase 10 | Pending |
+| MODE-03 | Phase 10 | Pending |
+| MODE-04 | Phase 10 | Pending |
+| MODE-05 | Phase 10 | Pending |
+| MEM-01 | Phase 11 | Pending |
+| MEM-02 | Phase 11 | Pending |
+| PROV-01 | Phase 12 | Pending |
+| PROV-02 | Phase 12 | Pending |
+| PROV-03 | Phase 12 | Pending |
+| PROV-04 | Phase 12 | Pending |
+| PROV-05 | Phase 12 | Pending |
+| PROV-06 | Phase 12 | Pending |
+
+**Coverage:**
+
+- v1 requirements: 49 total
+- Mapped to phases: 49
+- Unmapped: 0
+
+---
+*Requirements defined: 2026-10-02*
+*Last updated: 2026-10-02 after Phase 0 repo boundary*
