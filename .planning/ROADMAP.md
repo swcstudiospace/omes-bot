@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Single-seat shell** - One bot prompt, roster, template, and a deterministic assembler.
 - [x] **Phase 2: Hermes loop** - Conversation loop, turn phases, and the prompt, steer, compression, and interrupt invariants.
-- [ ] **Phase 3: Coding toolset** - Registry, discovery, and the file, search, terminal, todo, clarify, web, and vision tools.
+- [x] **Phase 3: Coding toolset** - Registry, discovery, and the file, search, terminal, todo, clarify, web, and vision tools.
 - [ ] **Phase 4: Skills and memory** - Skill manager, memory provider, session search, and the curator.
 - [ ] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
 - [ ] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
@@ -67,7 +67,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01: Registry, discovery, and the coding toolset
+- [x] 03-01: Registry, discovery, and the coding toolset
 
 ### Phase 4: Skills and memory
 **Goal**: The agent can write a skill it later loads, recall a memory it wrote, and search a past session. The curator only keeps a skill the turn earned.
@@ -198,7 +198,7 @@ Phases execute in numeric order.
 |-------|----------------|--------|-----------|
 | 1. Single-seat shell | 1/1 | Complete | 2026-10-02 |
 | 2. Hermes loop | 1/1 | Complete | 2026-10-02 |
-| 3. Coding toolset | 0/1 | Not started | - |
+| 3. Coding toolset | 1/1 | Complete | 2026-10-02 |
 | 4. Skills and memory | 0/1 | Not started | - |
 | 5. Delegation and cron | 0/1 | Not started | - |
 | 6. Remaining Hermes tools | 0/1 | Not started | - |

@@ -24,10 +24,10 @@ Requirements for the first milestone. Each maps to one roadmap phase.
 
 ### Coding tools
 
-- [ ] **TOOL-01**: Tools register and are discovered through one registry.
-- [ ] **TOOL-02**: File, patch, search, local terminal, todo, clarify, web search and extract, and vision dispatch through that registry.
-- [ ] **TOOL-03**: A call by name runs the registered tool.
-- [ ] **TOOL-04**: A tool absent from the roster is not offered to the model.
+- [x] **TOOL-01**: Tools register and are discovered through one registry.
+- [x] **TOOL-02**: File, patch, search, local terminal, todo, clarify, web search and extract, and vision dispatch through that registry.
+- [x] **TOOL-03**: A call by name runs the registered tool.
+- [x] **TOOL-04**: A tool absent from the roster is not offered to the model.
 
 ### Growth
 
@@ -131,10 +131,10 @@ Deferred. Not in this roadmap.
 | LOOP-03 | Phase 2 | Done |
 | LOOP-04 | Phase 2 | Done |
 | LOOP-05 | Phase 2 | Done |
-| TOOL-01 | Phase 3 | Pending |
-| TOOL-02 | Phase 3 | Pending |
-| TOOL-03 | Phase 3 | Pending |
-| TOOL-04 | Phase 3 | Pending |
+| TOOL-01 | Phase 3 | Done |
+| TOOL-02 | Phase 3 | Done |
+| TOOL-03 | Phase 3 | Done |
+| TOOL-04 | Phase 3 | Done |
 | GROW-01 | Phase 4 | Pending |
 | GROW-02 | Phase 4 | Pending |
 | GROW-03 | Phase 4 | Pending |
