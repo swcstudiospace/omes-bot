@@ -16,11 +16,11 @@ Requirements for the first milestone. Each maps to one roadmap phase.
 
 ### Loop
 
-- [ ] **LOOP-01**: The conversation loop runs the Hermes turn phases, including session lease, budget, interrupt, prompt builder, and compression.
-- [ ] **LOOP-02**: The system prompt stays byte-stable across a tool round.
-- [ ] **LOOP-03**: A steer is its own user row after a tool result.
-- [ ] **LOOP-04**: Compression is the only rewrite of prior context.
-- [ ] **LOOP-05**: An interrupt stops the loop.
+- [x] **LOOP-01**: The conversation loop runs the Hermes turn phases, including session lease, budget, interrupt, prompt builder, and compression.
+- [x] **LOOP-02**: The system prompt stays byte-stable across a tool round.
+- [x] **LOOP-03**: A steer is its own user row after a tool result.
+- [x] **LOOP-04**: Compression is the only rewrite of prior context.
+- [x] **LOOP-05**: An interrupt stops the loop.
 
 ### Coding tools
 
@@ -126,11 +126,11 @@ Deferred. Not in this roadmap.
 | SHELL-02 | Phase 1 | Done |
 | SHELL-03 | Phase 1 | Done |
 | SHELL-04 | Phase 1 | Done |
-| LOOP-01 | Phase 2 | Pending |
-| LOOP-02 | Phase 2 | Pending |
-| LOOP-03 | Phase 2 | Pending |
-| LOOP-04 | Phase 2 | Pending |
-| LOOP-05 | Phase 2 | Pending |
+| LOOP-01 | Phase 2 | Done |
+| LOOP-02 | Phase 2 | Done |
+| LOOP-03 | Phase 2 | Done |
+| LOOP-04 | Phase 2 | Done |
+| LOOP-05 | Phase 2 | Done |
 | TOOL-01 | Phase 3 | Pending |
 | TOOL-02 | Phase 3 | Pending |
 | TOOL-03 | Phase 3 | Pending |

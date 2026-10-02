@@ -14,7 +14,7 @@ Omes Bot starts as an empty git root beside two ignored upstream checkouts, then
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Single-seat shell** - One bot prompt, roster, template, and a deterministic assembler.
-- [ ] **Phase 2: Hermes loop** - Conversation loop, turn phases, and the prompt, steer, compression, and interrupt invariants.
+- [x] **Phase 2: Hermes loop** - Conversation loop, turn phases, and the prompt, steer, compression, and interrupt invariants.
 - [ ] **Phase 3: Coding toolset** - Registry, discovery, and the file, search, terminal, todo, clarify, web, and vision tools.
 - [ ] **Phase 4: Skills and memory** - Skill manager, memory provider, session search, and the curator.
 - [ ] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
@@ -54,7 +54,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: Move and adapt the Hermes conversation loop and turn phases
+- [x] 02-01: Move and adapt the Hermes conversation loop and turn phases
 
 ### Phase 3: Coding toolset
 **Goal**: The agent can call the coding tools by name, and it is not offered a tool the roster does not list.
@@ -197,7 +197,7 @@ Phases execute in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Single-seat shell | 1/1 | Complete | 2026-10-02 |
-| 2. Hermes loop | 0/1 | Not started | - |
+| 2. Hermes loop | 1/1 | Complete | 2026-10-02 |
 | 3. Coding toolset | 0/1 | Not started | - |
 | 4. Skills and memory | 0/1 | Not started | - |
 | 5. Delegation and cron | 0/1 | Not started | - |
