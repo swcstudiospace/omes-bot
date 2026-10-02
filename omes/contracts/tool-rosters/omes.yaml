@@ -1,5 +1,6 @@
 # Tools the Omes agent may be offered.
-# Coding names from register_coding_tools, then growth names from register_growth_tools.
+# Coding names from register_coding_tools, then growth names from register_growth_tools,
+# then delegate_task from register_delegate_tools.
 # This list is exactly those names, in that order.
 version: 1
 seat: bot-00-omes
@@ -20,3 +21,4 @@ tools:
   - skill_view
   - memory
   - session_search
+  - delegate_task
