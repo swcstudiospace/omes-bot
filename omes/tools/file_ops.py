@@ -142,7 +142,8 @@ def apply_unified_diff(original: str, diff: str) -> str:
     """
     if not isinstance(diff, str) or diff.strip() == "":
         raise PatchError("diff must be a non-empty unified diff")
-    if sum(1 for line in diff.splitlines() if line.startswith("--- ")) > 1:
+    minus_headers, plus_headers = _headers_outside_hunks(diff)
+    if minus_headers > 1 or plus_headers > 1:
         raise PatchError("patch_file applies a unified diff to one file")
     file_lines = _split_keep(original)
     shift = 0
@@ -174,6 +175,55 @@ class _Hunk:
     old_start: int
     old_count: int
     lines: list[tuple[str, str, bool]]
+
+
+def _headers_outside_hunks(diff: str) -> tuple[int, int]:
+    """Count ``---`` and ``+++`` file headers, skipping hunk bodies.
+
+    A removed line ``-- comment`` is encoded ``--- comment``, and an added line
+    ``++ note`` is encoded ``+++ note``. The ``@@`` counts say how many body
+    lines follow, so those are not a second file.
+    """
+    lines = diff.splitlines()
+    index = 0
+    minus = 0
+    plus = 0
+    while index < len(lines):
+        header = _HUNK_HEADER.match(lines[index])
+        if header is not None:
+            index = _skip_hunk_body(lines, index + 1, header)
+            continue
+        if lines[index].startswith("--- "):
+            minus += 1
+        elif lines[index].startswith("+++ "):
+            plus += 1
+        index += 1
+    return minus, plus
+
+
+def _skip_hunk_body(lines: list[str], index: int, header: re.Match[str]) -> int:
+    """Advance past the body whose size is declared by ``header``."""
+    old_count = int(header.group(2)) if header.group(2) is not None else 1
+    new_count = int(header.group(4)) if header.group(4) is not None else 1
+    old_seen = 0
+    new_seen = 0
+    while index < len(lines) and (old_seen < old_count or new_seen < new_count):
+        line = lines[index]
+        if line.startswith("@@"):
+            break
+        index += 1
+        if line.startswith("\\"):
+            continue
+        if line == "" or line.startswith(" "):
+            old_seen += 1
+            new_seen += 1
+        elif line.startswith("-"):
+            old_seen += 1
+        elif line.startswith("+"):
+            new_seen += 1
+        else:
+            break
+    return index
 
 
 def _parse_hunks(diff: str) -> list[_Hunk]:

@@ -146,6 +146,35 @@ def test_patch_file_matches_and_leaves_a_mismatch_unchanged(tmp_path: Path):
     assert target.read_bytes() == before
 
 
+def test_patch_file_applies_a_deleted_line_that_looks_like_a_file_header(tmp_path: Path):
+    root = tmp_path / "ws"
+    root.mkdir()
+    registry = _registry(root)
+    original = "keep\n-- comment\nkeep\n"
+    desired = "keep\n-- note\nkeep\n"
+    target = root / "code.txt"
+    target.write_bytes(original.encode("utf-8"))
+    diff = "".join(
+        difflib.unified_diff(
+            original.splitlines(True),
+            desired.splitlines(True),
+            fromfile="code.txt",
+            tofile="code.txt",
+        )
+    )
+    assert "\n--- comment\n" in diff
+    applied = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": diff}))
+    assert applied.get("applied") is True
+    assert "error" not in applied
+    assert target.read_bytes() == desired.encode("utf-8")
+
+    before = target.read_bytes()
+    mismatched = diff.replace(" keep", " nope", 1)
+    refused = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": mismatched}))
+    assert refused["error"] == "hunk context does not match"
+    assert target.read_bytes() == before
+
+
 def test_search_text_finds_a_fixture_and_not_a_path_outside_the_root(tmp_path: Path):
     root = tmp_path / "ws"
     outside = tmp_path / "outside"
