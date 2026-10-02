@@ -7,6 +7,7 @@ Omes Bot does not vendor, subtree, or import either upstream checkout at runtime
 - Remote: https://github.com/NousResearch/hermes-agent.git
 - Commit: `1a4508e2aff2db5f50409893a2115be777bd5643`
 - Modules adapted: `agent/conversation_loop.py`, `agent/turn_iteration_prep.py`, `agent/turn_tool_round.py`, `agent/turn_final_response.py`, `agent/turn_finalizer.py`, `agent/prompt_builder.py`, `agent/iteration_budget.py`, `agent/interrupt_control.py`, `agent/turn_facade_lease.py`, `agent/agent_runtime_helpers.py` (`apply_pending_steer_to_tool_results`), `agent/turn_preflight.py`, and `agent/conversation_compression.py` from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
+- Tool modules adapted: `tools/registry.py`, `tools/file_operations.py`, `tools/patch_parser.py`, `tools/file_operations_search.py`, `tools/terminal_tool.py` (local argv backend only), `tools/todo_tool.py`, `tools/clarify_tool.py`, `tools/web_tools.py`, and `tools/vision_tools.py` from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
 - License: MIT
 - Copyright: Copyright (c) 2025 Nous Research
 - What is adapted: the agent runtime. Conversation loop and turn phases, session, budget, interrupt, prompt builder, compression, tool registry and toolsets, skills and curator, memory and session search, delegation, cron, and plugin registration for tools, memory, and model providers.
