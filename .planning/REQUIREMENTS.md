@@ -31,11 +31,11 @@ Requirements for the first milestone. Each maps to one roadmap phase.
 
 ### Growth
 
-- [ ] **GROW-01**: Skill create and update write under the skills directory, with the Hermes guards.
-- [ ] **GROW-02**: A turn can write a skill that the next turn loads by path.
-- [ ] **GROW-03**: A memory write is recalled on a later turn.
-- [ ] **GROW-04**: Session search returns from the session store.
-- [ ] **GROW-05**: The curator does not invent a skill the turn did not earn.
+- [x] **GROW-01**: Skill create and update write under the skills directory, with the Hermes guards.
+- [x] **GROW-02**: A turn can write a skill that the next turn loads by path.
+- [x] **GROW-03**: A memory write is recalled on a later turn.
+- [x] **GROW-04**: Session search returns from the session store.
+- [x] **GROW-05**: The curator does not invent a skill the turn did not earn.
 
 ### Delegation and cron
 
@@ -135,11 +135,11 @@ Deferred. Not in this roadmap.
 | TOOL-02 | Phase 3 | Done |
 | TOOL-03 | Phase 3 | Done |
 | TOOL-04 | Phase 3 | Done |
-| GROW-01 | Phase 4 | Pending |
-| GROW-02 | Phase 4 | Pending |
-| GROW-03 | Phase 4 | Pending |
-| GROW-04 | Phase 4 | Pending |
-| GROW-05 | Phase 4 | Pending |
+| GROW-01 | Phase 4 | Done |
+| GROW-02 | Phase 4 | Done |
+| GROW-03 | Phase 4 | Done |
+| GROW-04 | Phase 4 | Done |
+| GROW-05 | Phase 4 | Done |
 | DELEG-01 | Phase 5 | Pending |
 | DELEG-02 | Phase 5 | Pending |
 | CRON-01 | Phase 5 | Pending |
