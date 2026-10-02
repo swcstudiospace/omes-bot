@@ -1,0 +1,14 @@
+# Path ownership. Last matching pattern wins.
+# One bot owns the tree today so a later seat can take a path by adding a more specific pattern.
+version: 1
+
+bots:
+  bot-00-omes:
+    name: Omes
+    description: >
+      The only bot. Programming agent. Owns the agent, tools, skills, prompts,
+      and routines until a later milestone splits a path out.
+
+paths:
+  - pattern: "**"
+    owner: bot-00-omes

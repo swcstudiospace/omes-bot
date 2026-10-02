@@ -16,7 +16,7 @@ One Omes agent runs both agents' logic — loops, subagents, tools, skills, memo
 
 ### Active
 
-- [ ] Single-seat Grok shell: directives, prompt, roster, template, deterministic assemble
+- [x] Single-seat Grok shell: directives, prompt, roster, template, deterministic assemble
 - [ ] Hermes conversation loop and turn phases, with the prompt, steer, compression, and interrupt invariants
 - [ ] Tool registry and the coding toolset, then the remaining Hermes agent tools
 - [ ] Skills, memory, session search, and the curator

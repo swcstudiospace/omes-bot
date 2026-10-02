@@ -1,0 +1,7 @@
+# Tools the Omes agent may be offered.
+# A name is added here only after the registry exports it.
+# An empty list is the phase 1 roster: nothing is offered yet.
+version: 1
+seat: bot-00-omes
+short: omes
+tools: []

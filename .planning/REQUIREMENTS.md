@@ -9,10 +9,10 @@ Requirements for the first milestone. Each maps to one roadmap phase.
 
 ### Shell
 
-- [ ] **SHELL-01**: One seat prompt points at the skills folder, the tool roster, and the prompt folder.
-- [ ] **SHELL-02**: Assembling that prompt is deterministic.
-- [ ] **SHELL-03**: The Grok Bot template lists only skills and routines that exist on disk.
-- [ ] **SHELL-04**: Core directives require a receipt for a completion claim, forbid committing secrets, and require recorded approval before a destructive operation.
+- [x] **SHELL-01**: One seat prompt points at the skills folder, the tool roster, and the prompt folder.
+- [x] **SHELL-02**: Assembling that prompt is deterministic.
+- [x] **SHELL-03**: The Grok Bot template lists only skills and routines that exist on disk.
+- [x] **SHELL-04**: Core directives require a receipt for a completion claim, forbid committing secrets, and require recorded approval before a destructive operation.
 
 ### Loop
 
@@ -122,10 +122,10 @@ Deferred. Not in this roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHELL-01 | Phase 1 | Pending |
-| SHELL-02 | Phase 1 | Pending |
-| SHELL-03 | Phase 1 | Pending |
-| SHELL-04 | Phase 1 | Pending |
+| SHELL-01 | Phase 1 | Done |
+| SHELL-02 | Phase 1 | Done |
+| SHELL-03 | Phase 1 | Done |
+| SHELL-04 | Phase 1 | Done |
 | LOOP-01 | Phase 2 | Pending |
 | LOOP-02 | Phase 2 | Pending |
 | LOOP-03 | Phase 2 | Pending |
