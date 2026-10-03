@@ -1,5 +1,21 @@
 # Milestones
 
+## v2 — Enterprise hardening (2026-10-03)
+
+**Status:** Complete. 4/4 phases, 4/4 plans, 12/12 requirements Done.
+
+**Core value delivered:** the v1 agent, hardened OpenShell/AgentOS-style — a declarative seat policy enforced at dispatch with advisor diffs and a persisted audit log, a credential broker that keeps keys out of transcripts with secret redaction, durable runs (SQLite turn journal, cron history, checkpointed workflows), and a real stdlib HTTP transport with structured trace export. Still one in-process Python agent with one seat.
+
+**Verification:** `python3 -m pytest omes/tests -q` → exit 0, 113 passed. `assemble-prompts.sh --check` → exit 0. v2 stack E2E probe (policy + broker + HTTP + audit + trace + journal in one turn) passes.
+
+**Archive:** `milestones/v2-ROADMAP.md`, `milestones/v2-REQUIREMENTS.md`.
+
+**Decisions:** JSON policy file (stdlib-exact, no YAML parser); tool arguments never logged; shipped network allowlist stays empty (deny by default); socketpair HTTP fixtures (loopback TCP is sandbox-blocked here).
+
+**Deferred:** container/namespace execution drivers; fleet gateway and multi-seat registry; formal policy prover; MCP inspection server.
+
+**Tech debt / known limits:** secret redaction is pattern-based; journal is single-process SQLite; no live-endpoint verification (fake transports + scripted peers only); no streaming, usage accounting, or secret managers beyond the environment.
+
 ## v1 — One Omes agent (2026-10-03)
 
 **Status:** Complete. 12/12 phases, 12/12 plans, 49/49 requirements Done.

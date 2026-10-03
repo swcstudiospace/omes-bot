@@ -1,6 +1,6 @@
 ---
 gsd_state_version: '1.0'
-status: executing
+status: milestone_complete
 progress:
   total_phases: 4
   completed_phases: 4
@@ -16,14 +16,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-03)
 
 **Core value:** One hardened Omes agent: policy-governed, credential-safe, durable, and observable.
-**Current focus:** v2 milestone audit and completion
+**Current focus:** v2 milestone complete (no active phase)
 
 ## Current Position
 
 Phase: 16 of 16 (Transports and traces, v2 milestone)
-Plan: 1 of 1 in current phase
-Status: Complete
-Last activity: 2026-10-03 — Phase 16 implemented, verified (113 passed), recorded as done
+Plan: 4 of 4 complete
+Status: Milestone complete — see .planning/MILESTONES.md
+Last activity: 2026-10-03 — v2 audit passed (12/12 requirements Done, 113 passed, E2E probe OK), v2 archived
 
 Progress: [██████████] 100%
 

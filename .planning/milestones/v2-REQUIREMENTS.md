@@ -1,3 +1,5 @@
+# Milestone v2 archive — REQUIREMENTS (all Done, 2026-10-03)
+
 # Requirements: v2 Enterprise hardening
 
 Milestone-scoped. v1 requirements are archived in `milestones/v1-REQUIREMENTS.md`.
