@@ -10,6 +10,7 @@ tools:
   - read_file
   - write_file
   - patch_file
+  - edit_file
   - search_text
   - run_terminal
   - todo_write

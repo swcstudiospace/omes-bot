@@ -96,6 +96,35 @@ class FileWorkspace:
             target.write_bytes(new_bytes)
         return {"path": relative, "applied": True}
 
+    def edit_file(self, path: str, diff: str) -> dict[str, Any]:
+        """Apply ``diff`` exactly, else by repair. Failure leaves bytes untouched."""
+        if not isinstance(diff, str):
+            return {"error": "diff must be a string"}
+        try:
+            target = resolve_inside(self.root, path)
+        except PathError as exc:
+            return {"error": str(exc)}
+        relative = _relative(self.root, target)
+        if not target.is_file():
+            return {"error": f"file not found: {relative}"}
+        original = target.read_bytes()
+        try:
+            text = original.decode("utf-8")
+        except UnicodeDecodeError:
+            return {"error": f"file is not utf-8 text: {relative}"}
+        from omes.tools.edit_pipeline import apply_edit
+
+        try:
+            updated, method = apply_edit(text, diff)
+        except PatchMismatch:
+            return {"error": "hunk context does not match", "path": relative}
+        except PatchError as exc:
+            return {"error": str(exc), "path": relative}
+        new_bytes = updated.encode("utf-8")
+        if new_bytes != original:
+            target.write_bytes(new_bytes)
+        return {"path": relative, "applied": True, "method": method}
+
 
 def require_directory(root: str | Path) -> Path:
     """Resolve ``root`` and require it to be a directory."""

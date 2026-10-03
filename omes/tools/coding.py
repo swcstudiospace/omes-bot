@@ -23,6 +23,7 @@ CODING_TOOL_NAMES = (
     "read_file",
     "write_file",
     "patch_file",
+    "edit_file",
     "search_text",
     "run_terminal",
     "todo_write",
@@ -54,6 +55,9 @@ def register_coding_tools(
 
     def patch_file(path: str, diff: str) -> dict:
         return workspace.patch_file(path, diff)
+
+    def edit_file(path: str, diff: str) -> dict:
+        return workspace.edit_file(path, diff)
 
     def search_text_tool(query: str, path: str = ".") -> dict:
         return search_text(root_path, query, path)
@@ -91,6 +95,7 @@ def register_coding_tools(
         "read_file": read_file,
         "write_file": write_file,
         "patch_file": patch_file,
+        "edit_file": edit_file,
         "search_text": search_text_tool,
         "run_terminal": run_terminal_tool,
         "todo_write": todo_write_tool,
@@ -139,6 +144,19 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
     "patch_file": (
         "Apply one unified diff to one file inside the workspace root. "
         "If a hunk's context does not match, the file is left byte-for-byte unchanged.",
+        _object(
+            {
+                "path": _string("File the diff applies to."),
+                "diff": _string("Unified diff (---/+++ headers and @@ hunks) for that one file."),
+            },
+            ["path", "diff"],
+        ),
+    ),
+    "edit_file": (
+        "Apply one unified diff to one file inside the workspace root, repairing "
+        "hunks the exact apply cannot place by re-anchoring unique context or "
+        "matching whitespace-insensitively. "
+        "If no repair places every hunk, the file is left byte-for-byte unchanged.",
         _object(
             {
                 "path": _string("File the diff applies to."),
