@@ -17,8 +17,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## MCP tool host
 
-- [ ] **MCP-01**: Omes tool registry served over MCP (stdio), roster-gated, with fake-backed tests.
-- [ ] **MCP-02**: OpenShell host profile + AgentOS host notes for running the tool host.
+- [x] **MCP-01**: Omes tool registry served over MCP (stdio), roster-gated, with fake-backed tests.
+- [x] **MCP-02**: OpenShell host profile + AgentOS host notes for running the tool host.
 
 ## Template + setup
 
@@ -39,8 +39,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 | KEY-02 | Phase 34 | Done |
 | ULT-01 | Phase 35 | Done |
 | ULT-02 | Phase 35 | Done |
-| MCP-01 | Phase 36 | Todo |
-| MCP-02 | Phase 36 | Todo |
+| MCP-01 | Phase 36 | Done |
+| MCP-02 | Phase 36 | Done |
 | TPL-01 | Phase 37 | Todo |
 | TPL-02 | Phase 37 | Todo |
 | DOC-01 | Phase 38 | Todo |

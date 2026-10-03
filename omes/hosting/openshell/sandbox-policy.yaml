@@ -1,0 +1,36 @@
+# Omes tool host policy for NVIDIA OpenShell.
+#
+# Schema: OpenShell sandbox policy (see nvidia/openshell
+# examples/sandbox-policy-quickstart/policy.yaml). Network is
+# default-deny; this profile keeps it that way, mirroring the Omes
+# seat policy (shipped network allowlist stays empty).
+#
+# Run the host inside a sandbox:
+#   openshell sandbox create --name omes --policy omes/hosting/openshell/sandbox-policy.yaml --no-auto-providers
+#   python -m omes.mcp_server --root /work/omes-bot
+#
+# To let the host reach an upstream (model API, GitHub), add a
+# network_policies entry in the shape below (commented out).
+
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only: [/bin, /usr, /lib, /proc, /dev/urandom, /app, /etc, /var/log]
+  read_write: [/sandbox, /tmp, /dev/null]
+landlock:
+  compatibility: best_effort
+
+network_policies: {}
+# Example (opens api.x.ai to python only):
+# network_policies:
+#   xai_api:
+#     name: xai-api
+#     endpoints:
+#       - host: api.x.ai
+#         port: 443
+#         protocol: rest
+#         enforcement: enforce
+#         access: read-write
+#     binaries:
+#       - { path: /usr/bin/python3 }

@@ -2,19 +2,19 @@
 gsd_state_version: "1.0"
 milestone: v6
 milestone_name: Grok ship
-current_phase: 36
-current_phase_name: MCP tool host
+current_phase: 37
+current_phase_name: Template + setup
 status: planning
-last_updated: "2026-10-03T12:33:34.166Z"
+last_updated: "2026-10-03T12:39:18.340Z"
 last_activity: 2026-10-03
-last_activity_desc: Phase 35 complete, transitioned to Phase 36
-state_head: aa5e8db85b97dd531569c675f49f23de4f567db7
+last_activity_desc: Phase 36 complete, transitioned to Phase 37
+state_head: 1471ce661c10a85cde1dcb5635b75030bb1df9f4
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
-  percent: 40
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
+  percent: 60
 ---
 
 # Project State
@@ -28,18 +28,18 @@ See: .planning/PROJECT.md (updated 2026-10-03)
 
 ## Current Position
 
-Phase: 36 of 38 (MCP tool host)
+Phase: 37 of 38 (Template + setup)
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-10-03 — Phase 35 complete, transitioned to Phase 36
+Last activity: 2026-10-03 — Phase 36 complete, transitioned to Phase 37
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -50,6 +50,7 @@ Progress: [████░░░░░░] 40%
 | — | — | — | — |
 | 34 | 1 | - | - |
 | 35 | 1 | - | - |
+| 36 | 1 | - | - |
 
 **Recent Trend:**
 
