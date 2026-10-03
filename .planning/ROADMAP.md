@@ -13,7 +13,7 @@ v2 hardened the agent (see `milestones/v2-ROADMAP.md`). v3 turns it into a Grok 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 17: X connector** - Mentions, posts, threads, and media upload behind the broker.
+- [x] **Phase 17: X connector** - Mentions, posts, threads, and media upload behind the broker.
 - [ ] **Phase 18: Engagement sweep** - Mentions in, queued reply drafts out, checkpointed.
 - [ ] **Phase 19: Nightly learning** - Transcripts reviewed, earned skills created.
 - [ ] **Phase 20: Eval harness** - Golden persona evals, red-team policy evals, CI.
@@ -31,7 +31,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 17-01: X client, registry tools, and approval-gated publishing
+- [x] 17-01: X client, registry tools, and approval-gated publishing
 
 ### Phase 18: Engagement sweep
 **Goal**: A scheduled sweep converts fresh mentions into queued reply drafts without publishing.
@@ -78,7 +78,7 @@ Phases execute in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 17. X connector | 0/1 | Not started | - |
+| 17. X connector | 1/1 | Complete | 2026-10-03 |
 | 18. Engagement sweep | 0/1 | Not started | - |
 | 19. Nightly learning | 0/1 | Not started | - |
 | 20. Eval harness | 0/1 | Not started | - |
