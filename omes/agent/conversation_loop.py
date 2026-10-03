@@ -26,6 +26,7 @@ from omes.agent.harness import (
 )
 from omes.agent.interrupt import InterruptFlag
 from omes.agent.model import Model
+from omes.agent.modes import apply_plan_mode
 from omes.agent.prompt_builder import build_system_prompt, steer_user_row
 from omes.agent.session_lease import SessionLease
 from omes.agent.turn_final_response import finish_text_response
@@ -46,6 +47,10 @@ class Agent:
     may mutate the outgoing request or stop the turn before it is billed; ``pause_gate``
     parks the loop at both action boundaries; ``output_budget`` caps model-visible
     output chars; ``speculative_tools`` names discard-safe tools to pre-execute.
+
+    Omp mode options: ``plan_mode`` refuses write tools without calling them;
+    ``extensions`` is an :class:`ExtensionHooks` whose ``before_model`` hooks run
+    before the legacy ``before_model`` hook each iteration.
     """
 
     model: Model
@@ -59,6 +64,8 @@ class Agent:
     pause_gate: Any | None = None
     output_budget: Any | None = None
     speculative_tools: Any | None = None
+    plan_mode: bool = False
+    extensions: Any | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -134,6 +141,8 @@ def _run_conversation_turn(
         budget.refill(agent.max_iterations)
 
     original_tools = wrap_tools(agent)
+    if agent.plan_mode:
+        agent.tools = apply_plan_mode(agent.tools)
     try:
         while api_call_count < agent.max_iterations and budget.remaining > 0:
             if agent.pause_gate is not None and not agent.pause_gate.wait_until_resumed(
@@ -146,7 +155,9 @@ def _run_conversation_turn(
                 interrupted = True
                 turn_exit_reason = "interrupted_by_user"
                 break
-            stop = run_before_model(agent, messages, agent.tools)
+            stop = _run_extension_hooks(agent, messages)
+            if stop is None:
+                stop = run_before_model(agent, messages, agent.tools)
             if stop is not None:
                 turn_exit_reason = str(stop.get("reason", "stopped_before_model"))
                 break
@@ -163,7 +174,7 @@ def _run_conversation_turn(
             if _tool_calls(assistant_message):
                 _fold_queued_steer(agent)
                 since = len(messages)
-                if agent.speculative_tools:
+                if agent.speculative_tools and not agent.plan_mode:
                     prepare_speculative(
                         agent, original_tools, _tool_calls(assistant_message)
                     )
@@ -241,6 +252,14 @@ def _install_system_prompt(agent: Agent, messages: list, system_message: str | N
         messages.append(row)
     else:
         messages.insert(0, row)
+
+
+def _run_extension_hooks(agent: Agent, messages: list) -> dict | None:
+    """Run registered extension hooks; None when none stop the turn."""
+    extensions = getattr(agent, "extensions", None)
+    if extensions is None:
+        return None
+    return extensions.run_before_model(messages, agent.tools)
 
 
 def _tool_calls(message: dict) -> list:
