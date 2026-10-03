@@ -19,6 +19,7 @@ from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
 from omes.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
 from omes.tools.offer import offered_schemas
+from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.registry import ToolRegistry
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -450,6 +451,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     )
     assert registered == list(GROWTH_TOOL_NAMES)
     register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
+    register_platform_tools(registry, home=tmp_path)
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -457,7 +459,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         lambda: {"ok": True},
     )
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
-    assert roster == list(CODING_TOOL_NAMES + GROWTH_TOOL_NAMES + DELEG_TOOL_NAMES)
+    assert roster == list(
+        CODING_TOOL_NAMES + GROWTH_TOOL_NAMES + DELEG_TOOL_NAMES + PLATFORM_TOOL_NAMES
+    )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]
     assert names == roster

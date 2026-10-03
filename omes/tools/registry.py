@@ -4,7 +4,8 @@ Adapted from Hermes ``tools/registry.py``. A tool is a name, a description, a JS
 schema for its parameters, and a handler. ``dispatch`` always returns a JSON string.
 An unknown name becomes a JSON error and does not raise. Handlers return
 JSON-serializable objects, which this module encodes, or a JSON string, which is
-returned unchanged.
+returned unchanged. A tool marked ``requires_approval`` does not run until the
+registry's approval log has approved that name.
 """
 
 from __future__ import annotations
@@ -17,11 +18,16 @@ from typing import Any
 
 
 class ToolRegistry:
-    """In-process tool map. ``dispatch`` calls the handler and encodes its result."""
+    """In-process tool map. ``dispatch`` calls the handler and encodes its result.
 
-    def __init__(self) -> None:
+    ``approval_log`` gates tools registered with ``requires_approval``. ``None``
+    leaves every flagged tool unapproved. Unflagged tools are unchanged.
+    """
+
+    def __init__(self, approval_log: Any = None) -> None:
         self._tools: dict[str, _Tool] = {}
         self._order: list[str] = []
+        self._approval_log = approval_log
 
     def register(
         self,
@@ -29,6 +35,7 @@ class ToolRegistry:
         description: str,
         parameters: dict,
         handler: Callable[..., Any],
+        requires_approval: bool = False,
     ) -> None:
         """Store ``handler`` under ``name``. Registering the same name replaces it."""
         if not isinstance(name, str) or not name:
@@ -39,7 +46,13 @@ class ToolRegistry:
             raise ValueError("parameters must be a JSON schema object")
         if not callable(handler):
             raise ValueError("handler must be callable")
-        self._tools[name] = _Tool(name, description, copy.deepcopy(parameters), handler)
+        self._tools[name] = _Tool(
+            name,
+            description,
+            copy.deepcopy(parameters),
+            handler,
+            bool(requires_approval),
+        )
         if name not in self._order:
             self._order.append(name)
 
@@ -54,6 +67,8 @@ class ToolRegistry:
             label = name if isinstance(name, str) else type(name).__name__
             return _dump({"error": f"Unknown tool: {label}"})
         try:
+            if tool.requires_approval and not _has_approval(self._approval_log, name):
+                return _dump({"error": "approval required", "tool": name})
             payload = _call(tool.handler, _arguments(arguments))
         except Exception as exc:
             return _dump({"error": f"{type(exc).__name__}: {exc}"})
@@ -79,11 +94,13 @@ class _Tool:
         description: str,
         parameters: dict,
         handler: Callable[..., Any],
+        requires_approval: bool = False,
     ) -> None:
         self.name = name
         self.description = description
         self.parameters = parameters
         self.handler = handler
+        self.requires_approval = requires_approval
 
 
 def _schema(tool: _Tool) -> dict:
@@ -99,6 +116,16 @@ def _schema(tool: _Tool) -> dict:
 
 def _dump(payload: Any) -> str:
     return json.dumps(payload, ensure_ascii=False)
+
+
+def _has_approval(log: Any, name: str) -> bool:
+    """True only when ``log`` exists and reports this tool approved."""
+    if log is None:
+        return False
+    is_approved = getattr(log, "is_approved", None)
+    if not callable(is_approved):
+        return False
+    return bool(is_approved(name))
 
 
 def _arguments(arguments: Any) -> dict:

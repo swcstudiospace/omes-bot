@@ -10,6 +10,7 @@ Omes Bot does not vendor, subtree, or import either upstream checkout at runtime
 - Tool modules adapted: `tools/registry.py`, `tools/file_operations.py`, `tools/patch_parser.py`, `tools/file_operations_search.py`, `tools/terminal_tool.py` (local argv backend only), `tools/todo_tool.py`, `tools/clarify_tool.py`, `tools/web_tools.py`, and `tools/vision_tools.py` from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
 - Growth modules adapted: `tools/skill_manager_tool.py`, `tools/skills_tool.py`, `agent/skill_utils.py`, `tools/memory_tool.py`, `tools/memory_tool_store.py`, `agent/memory_provider.py`, `agent/memory_manager.py`, `tools/session_search_tool.py`, and `agent/curator.py` from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
 - Delegation and cron tick adapted: `tools/delegate_tool.py` and `cron/scheduler_tick.py` from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
+- Platform modules adapted: `tools/code_execution_tool.py`, `tools/mcp_tool.py`, `tools/browser_tool.py`, `tools/approval.py`, and plugin `register` (`hermes_cli/plugins.py` `register_tool`) from commit `1a4508e2aff2db5f50409893a2115be777bd5643`.
 - License: MIT
 - Copyright: Copyright (c) 2025 Nous Research
 - What is adapted: the agent runtime. Conversation loop and turn phases, session, budget, interrupt, prompt builder, compression, tool registry and toolsets, skills and curator, memory and session search, delegation, cron, and plugin registration for tools, memory, and model providers.

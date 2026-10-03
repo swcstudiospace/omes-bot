@@ -12,6 +12,7 @@ from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
+from omes.tools.platform import PLATFORM_TOOL_NAMES
 from omes.tools.registry import ToolRegistry
 
 OMES = Path(__file__).resolve().parents[1]
@@ -352,5 +353,5 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
     assert registered == list(CODING_TOOL_NAMES)
     assert schema_names == list(CODING_TOOL_NAMES)
     assert _roster_names(ROSTER.read_text(encoding="utf-8")) == list(
-        CODING_TOOL_NAMES + GROWTH_TOOL_NAMES + DELEG_TOOL_NAMES
+        CODING_TOOL_NAMES + GROWTH_TOOL_NAMES + DELEG_TOOL_NAMES + PLATFORM_TOOL_NAMES
     )
