@@ -20,6 +20,8 @@ v6 milestone: Omes as a Grok Bot Add-Bot product — Omp magic keywords in the l
 
 v7 milestone: Omes as a substrate surface — the Grok Bot briefs on open, emits its turn/tool trail with graph provenance, shares memory through substrate-mcp, recalls episodes from the shared `ultrathink` Hindsight bank, and answers docs from RAGflow, while GreptimeDB/TimescaleDB/DragonflyDB stay behind the store lock. User decisions (2026-10-03): substrate-mediated direction, shared bank, fakes + opt-in live probes. Ground truth: `~/src/repos/agent-substrate` governance + grokbot loop docs, Hindsight OpenAPI v0.9.1.
 
+v8 milestone: public launch — branded README, standard public-repo files, richer GitBook docs with a CI-kept tool catalog, Greptile connected with repo review standards, and a KB sync pipeline publishing Greptile's knowledge base into the docs. User decisions (2026-10-03): connect Greptile now, push branch + open PR, GitBook stays the host. Ground truth: Greptile docs corpus (config + KB MCP tools).
+
 ## Requirements
 
 ### Validated
@@ -83,6 +85,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v7 integrates substrate-mediated, not direct clients | Store lock + governance: only substrate-mcp touches Greptime/Timescale/Dragonfly; Omes is a surface (user chose 2026-10-03) | ✓ Good |
 | v7 shares the `ultrathink` Hindsight bank | One set of episodic beliefs across the ultrathink system; no silos (user chose 2026-10-03) | ✓ Good |
 | v7 verifies with fakes + opt-in live probes | Committed tests stay hermetic; read-only Railway probes run manually, never in CI (user chose 2026-10-03) | ✓ Good |
+| v8 launches public with Greptile connected | User chose connect-now, push + PR, GitBook + verify CI (2026-10-03); init blocked on org app install (user step), KB enrollment stays a Greptile-contact ask | ✓ Good |
 
 ---
-*Last updated: 2026-10-03 after v7 milestone close (5/5 phases, 5/5 plans, 10/10 requirements; v7 archived)*
+*Last updated: 2026-10-03 after v8 milestone close (2/2 phases, 2/2 plans, 7/7 requirements; v8 archived)*

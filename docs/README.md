@@ -1,5 +1,7 @@
 # Omes Bot
 
+![Omes Bot banner](../assets/banner.svg)
+
 One Grok programming bot: a single agent that writes and changes
 code using checked-in skills, tools, and prompts. Install it from
 the Add-Bot template, talk to it in Grok, and optionally attach

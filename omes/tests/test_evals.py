@@ -76,3 +76,4 @@ def test_ci_workflow_runs_suite_evals_and_assemble():
     assert "python3 -m omes.evals.runner omes/evals/cases" in text
     assert "bash omes/scripts/assemble-prompts.sh --check" in text
     assert "pull_request" in text
+    assert "python3 -m omes.tooling.catalog --check" in text

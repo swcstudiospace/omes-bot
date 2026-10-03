@@ -73,6 +73,11 @@ class ToolRegistry:
         """OpenAI-style function schemas, in registration order."""
         return [_schema(self._tools[name]) for name in self._order if name in self._tools]
 
+    def approval_required(self, name: str) -> bool:
+        """Whether ``name`` is registered and flagged as requiring approval."""
+        tool = self._tools.get(name) if isinstance(name, str) else None
+        return bool(tool is not None and tool.requires_approval)
+
     def dispatch(self, name: str, arguments: Any = None) -> str:
         """Run ``name`` and return a JSON string. Unknown names do not raise."""
         tool = self._tools.get(name) if isinstance(name, str) else None

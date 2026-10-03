@@ -1,5 +1,25 @@
 # Milestones
 
+## v8 — Public launch (2026-10-03)
+
+**Status:** Complete. 2/2 phases, 2/2 plans, 7/7 requirements Done.
+
+**Core value delivered:** The repo launched in public — branded README with
+icon/banner art, full community files, richer GitBook docs with a generated
+tool catalog kept fresh by CI, Greptile review standards in-repo, and a KB
+sync pipeline (script + scheduled workflow) publishing Greptile's knowledge
+base into `kb/`.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 310 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0. Workflows parse; catalog `--check` green.
+
+**Archive:** `milestones/v8-ROADMAP.md`, `milestones/v8-REQUIREMENTS.md`, `milestones/v8-MILESTONE-AUDIT.md`, `milestones/v8-phases/`.
+
+**Decisions:** connect Greptile now (blocked on org app install — user step); push branch + open PR; GitBook stays the host with verify-only CI.
+
+**Deferred:** Pages deploy, per-module API reference, live KB content, PR merge (user).
+
+**Tech debt / known limits:** prose counts refresh by hand; CODEOWNERS/FUNDING.yml skipped (no confirmed handle/sponsor); KB enrollment needs Greptile contact + org key.
+
 ## v7 — Substrate surface (2026-10-03)
 
 **Status:** Complete. 5/5 phases, 5/5 plans, 10/10 requirements Done.

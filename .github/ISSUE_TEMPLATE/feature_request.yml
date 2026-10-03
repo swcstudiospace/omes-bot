@@ -1,0 +1,24 @@
+name: Feature request
+description: A capability Omes should grow
+labels: [enhancement]
+body:
+  - type: textarea
+    id: user
+    attributes:
+      label: Who needs this, and what can they do with it?
+      description: One user-centric capability per request.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: What is in and out of scope?
+    validations:
+      required: true
+  - type: textarea
+    id: verify
+    attributes:
+      label: How would we verify it?
+      description: Tests, evals, or checks that prove it works.
+    validations:
+      required: false

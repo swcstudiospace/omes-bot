@@ -1,0 +1,45 @@
+name: kb-refresh
+
+on:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  refresh:
+    if: ${{ secrets.GREPTILE_API_KEY != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install
+        run: pip install -e .
+      - name: sync knowledge base
+        env:
+          GREPTILE_API_KEY: ${{ secrets.GREPTILE_API_KEY }}
+        run: python3 -m omes.greptile.kb_sync --repo swcstudiospace/omes-bot --out kb
+      - name: open update PR
+        if: ${{ success() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git status --porcelain kb/ | grep -q .; then
+            branch="kb-refresh-$(date +%Y%m%d)"
+            git config user.name "omes-kb-sync"
+            git config user.email "omes-kb-sync@users.noreply.github.com"
+            git checkout -b "$branch"
+            git add kb/
+            git commit -m "KB refresh: mirror Greptile knowledge base."
+            git push -u origin "$branch"
+            gh pr create --title "KB refresh $(date +%Y-%m-%d)" \
+              --body "Automated Greptile knowledge-base mirror update. Review synthesized content before merging." \
+              --base "${{ github.event.repository.default_branch }}"
+          else
+            echo "kb-refresh: no changes"
+          fi

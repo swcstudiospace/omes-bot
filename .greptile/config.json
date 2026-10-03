@@ -1,0 +1,39 @@
+{
+  "strictness": 2,
+  "commentTypes": ["logic", "syntax", "style"],
+  "triggerOnUpdates": true,
+  "statusCheck": true,
+  "ignorePatterns": ".planning/**\n.venv/**\n__pycache__/**\n*.pyc\nomes_bot.egg-info/**\nkb/**",
+  "instructions": "One Grok programming bot: a single Python agent (omes/) merging the Hermes loop with the oh-my-pi harness. Tools register in families and must match contracts/tool-rosters/omes.yaml exactly; tests are hermetic (fakes/scripted peers, no network); secrets resolve via the credential broker and never appear in code, tests, or docs.",
+  "rules": [
+    {
+      "id": "roster-exactness",
+      "rule": "New or renamed tools must be registered in their family module, appended to omes/contracts/tool-rosters/omes.yaml in tuple order, and allowed in omes/contracts/policies/omes.json. Flag any of the three drifting.",
+      "scope": ["omes/tools/**", "omes/contracts/**"],
+      "severity": "high"
+    },
+    {
+      "id": "hermetic-tests",
+      "rule": "Tests must not touch the network: fakes and scripted peers only. Flag live HTTP, sockets, or remote URLs in tests.",
+      "scope": ["omes/tests/**"],
+      "severity": "high"
+    },
+    {
+      "id": "no-secrets",
+      "rule": "Flag hardcoded secrets, tokens, keys, passwords, or credential-shaped literals in code, tests, docs, or workflows.",
+      "severity": "high"
+    },
+    {
+      "id": "receipts",
+      "rule": "Completion claims in docs, summaries, and PR text must cite the command and its exit code. Flag unproven claims.",
+      "scope": ["docs/**", "*.md"],
+      "severity": "medium"
+    },
+    {
+      "id": "docs-linked",
+      "rule": "Every docs/*.md page must be listed exactly once in docs/SUMMARY.md and start with a top-level heading. Generated pages (tool catalog) must not be hand-edited.",
+      "scope": ["docs/**"],
+      "severity": "medium"
+    }
+  ]
+}

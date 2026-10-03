@@ -2,7 +2,27 @@
 name = "omes-bot"
 version = "0.1.0"
 description = "One Grok programming bot. Hermes and oh-my-pi agent logic in one Python process."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "SWC Studio" }]
 requires-python = ">=3.11"
+keywords = ["grok", "agent", "programming-bot", "mcp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+[project.urls]
+Homepage = "https://github.com/swcstudiospace/omes-bot"
+Repository = "https://github.com/swcstudiospace/omes-bot"
+Documentation = "https://github.com/swcstudiospace/omes-bot/tree/main/docs"
+Issues = "https://github.com/swcstudiospace/omes-bot/issues"
+Changelog = "https://github.com/swcstudiospace/omes-bot/blob/main/CHANGELOG.md"
 dependencies = [
   "tweepy>=4.14",
   "mcp>=1.0",
