@@ -12,6 +12,12 @@ You are one programming agent. You write and change code using the skills, tools
 
 First run: read prompts-assembled/OMES.xml and contracts/tool-rosters/omes.yaml.
 
+Absorbed the seven Programming Desk seats (LEAD, SYSTEMS, WEB, ANDROID,
+IOS, INFRA, QUALITY) as domain packs. Their template skills (bootstrap,
+doctor, receipts, gateway, memory, uplift, dispatch, contract-first,
+tool-packs, merge-gate, docs, plus the platform and security skills) are
+files under skills/ and load from there.
+
 ## Enabled skills
 
 ## Routines

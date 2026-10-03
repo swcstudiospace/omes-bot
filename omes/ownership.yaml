@@ -1,5 +1,8 @@
 # Path ownership. Last matching pattern wins.
 # One bot owns the tree today so a later seat can take a path by adding a more specific pattern.
+# Phase 32: desk ownership.yaml patterns absorbed verbatim below (owner bot-00-omes).
+# Desk seat -> Omes pack: bot-00 lead, bot-01 systems, bot-02 web,
+# bot-03/bot-04 mobile, bot-05 infra, bot-06 quality.
 version: 1
 
 bots:
@@ -11,4 +14,94 @@ bots:
 
 paths:
   - pattern: "**"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-01 systems) ---
+  - pattern: "services/**"
+    owner: bot-00-omes
+  - pattern: "crates/**"
+    owner: bot-00-omes
+  - pattern: "**/*.rs"
+    owner: bot-00-omes
+  - pattern: "Cargo.toml"
+    owner: bot-00-omes
+  - pattern: "Cargo.lock"
+    owner: bot-00-omes
+  - pattern: "**/*.py"
+    owner: bot-00-omes
+  - pattern: "pyproject.toml"
+    owner: bot-00-omes
+  - pattern: "uv.lock"
+    owner: bot-00-omes
+  - pattern: "migrations/**"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-02 web) ---
+  - pattern: "web/**"
+    owner: bot-00-omes
+  - pattern: "apps/web/**"
+    owner: bot-00-omes
+  - pattern: "edge/**"
+    owner: bot-00-omes
+  - pattern: "**/*.ts"
+    owner: bot-00-omes
+  - pattern: "**/*.tsx"
+    owner: bot-00-omes
+  - pattern: "package.json"
+    owner: bot-00-omes
+  - pattern: "deno.json"
+    owner: bot-00-omes
+  - pattern: "deno.lock"
+    owner: bot-00-omes
+  - pattern: "vercel.json"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-03 android) ---
+  - pattern: "android/**"
+    owner: bot-00-omes
+  - pattern: "**/*.kt"
+    owner: bot-00-omes
+  - pattern: "**/*.kts"
+    owner: bot-00-omes
+  - pattern: "**/build.gradle"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-04 ios) ---
+  - pattern: "ios/**"
+    owner: bot-00-omes
+  - pattern: "**/*.swift"
+    owner: bot-00-omes
+  - pattern: "**/*.xcodeproj/**"
+    owner: bot-00-omes
+  - pattern: "**/Package.swift"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-05 infra) ---
+  - pattern: "infra/**"
+    owner: bot-00-omes
+  - pattern: "**/*.tf"
+    owner: bot-00-omes
+  - pattern: "**/*.tfvars"
+    owner: bot-00-omes
+  - pattern: "k8s/**"
+    owner: bot-00-omes
+  - pattern: "deploy/**"
+    owner: bot-00-omes
+  - pattern: "Dockerfile*"
+    owner: bot-00-omes
+  - pattern: "docker-compose*.yml"
+    owner: bot-00-omes
+  - pattern: ".github/workflows/**"
+    owner: bot-00-omes
+  - pattern: "scripts/dev/**"
+    owner: bot-00-omes
+  # --- Absorbed desk patterns (desk bot-06 quality) ---
+  - pattern: "ci/gates/**"
+    owner: bot-00-omes
+  - pattern: "ci/hooks/**"
+    owner: bot-00-omes
+  - pattern: ".pre-commit-config.yaml"
+    owner: bot-00-omes
+  - pattern: "SECURITY.md"
+    owner: bot-00-omes
+  - pattern: "ownership.yaml"
+    owner: bot-00-omes
+  - pattern: "contracts/**"
+    owner: bot-00-omes
+  - pattern: "openapi.yaml"
     owner: bot-00-omes

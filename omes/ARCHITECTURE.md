@@ -17,3 +17,20 @@ The Grok shell stays beside the agent:
 | `ownership.yaml` | One owner per path. Last match wins. One bot today. |
 
 Temporal is not how the two agents are merged. It can sit under cron and delegation later, after those exist.
+
+## Domain packs (v5)
+
+The seven Programming Desk seats were absorbed as registry families in
+`tools/`: `lead.py`, `systems.py`, `webpack.py`, `mobile.py`,
+`infra.py`, `quality.py`, `packs.py`. Each family ports its desk
+module behind injected seams (clients, runners, stores); tests use
+fakes only. Write-kind tools need approval; the roster, policy, and
+composition tests gain names only.
+
+| Path | Role |
+| --- | --- |
+| `contracts/tool-packs/*.yaml` | App pack surfaces (clippyos, desklanes, kanbanos). |
+| `evals/cases/golden.json` | Approved-behaviour cases per pack, plus loop cases. |
+| `evals/cases/redteam.json` | Refusal cases per pack (approval, policy). |
+| `tests/test_receipts_e2e.py` | Receipts loop over real hermetic commands. |
+| `receipts.py` | Claim/command/exit-code checks; no self-approval. |

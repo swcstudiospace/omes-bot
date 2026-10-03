@@ -15,4 +15,18 @@ From the repository root:
 python3 -m pytest omes/tests
 ```
 
-`agent/`, `tools/`, and `cron/` are where later phases land the Hermes loop, the tool registry, and the scheduler. They are empty until those phases.
+The Programming Desk is absorbed as seven domain packs in `tools/` (v5):
+lead (16), systems (6), web (6), mobile (13), infra (7), quality (8),
+app packs (9). `skills/` holds all 24 desk skills plus the native
+lead-pack skill. `contracts/tool-packs/`
+carries the app pack contracts; `contracts/tool-rosters/omes.yaml` and
+`contracts/policies/omes.json` list exactly what the registry offers.
+
+```bash
+.venv/bin/python -m pytest omes/tests -q
+.venv/bin/python -m omes.evals.runner omes/evals/cases
+```
+
+A completion claim cites a command and its exit code (`receipts.py`); the
+receipts E2E in `tests/test_receipts_e2e.py` proves the loop, and the
+quality pack refuses self-approval.

@@ -14,6 +14,13 @@ from omes.tools.ide import IDE_TOOL_NAMES
 from omes.tools.x import X_TOOL_NAMES
 from omes.tools.telegram import TELEGRAM_TOOL_NAMES
 from omes.tools.discord import DISCORD_TOOL_NAMES
+from omes.tools.lead import LEAD_TOOL_NAMES
+from omes.tools.systems import SYS_TOOL_NAMES
+from omes.tools.webpack import WEB_TOOL_NAMES
+from omes.tools.mobile import MOBILE_TOOL_NAMES
+from omes.tools.infra import INFRA_TOOL_NAMES
+from omes.tools.packs import PACKS_TOOL_NAMES
+from omes.tools.quality import QUALITY_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES
@@ -365,4 +372,11 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + X_TOOL_NAMES
         + TELEGRAM_TOOL_NAMES
         + DISCORD_TOOL_NAMES
+        + LEAD_TOOL_NAMES
+        + SYS_TOOL_NAMES
+        + WEB_TOOL_NAMES
+        + MOBILE_TOOL_NAMES
+        + INFRA_TOOL_NAMES
+        + QUALITY_TOOL_NAMES
+        + PACKS_TOOL_NAMES
     )

@@ -1,5 +1,21 @@
 # Milestones
 
+## v5 — Desk packs (2026-10-03)
+
+**Status:** Complete. 8/8 phases, 9/9 plans, 21/21 requirements Done.
+
+**Core value delivered:** the entire Programming Desk absorbed into Omes as Lead with domain packs — intake/dispatch/consolidate routines plus core/lead tools, systems/web/mobile/infra/quality tool families with platform skills, a real Playwright browser transport and Appium/adb/simctl device seams behind vision review, the 9 app-pack tools with pack load/unload and the 20-tool ceiling, all 24 desk skills, and the seat prompts/templates/roster/ownership/contract versions merged into Omes contracts, guarded by per-pack evals and a receipts E2E.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 219 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0.
+
+**Archive:** `milestones/v5-ROADMAP.md`, `milestones/v5-REQUIREMENTS.md`.
+
+**Decisions:** one Omes Lead with packs over a 7-seat port, entire-desk scope, interactive device review (user chose all three); sync clients with injected seams and fakes only in tests; Omes `{"error": "code: reason"}` shape; approval on desk write kinds; template Enabled-skills/Routines sections stay empty per contract; pack evals assert approval/policy machinery while pack logic stays in unit tests; receipts E2E runs hermetic local commands only.
+
+**Deferred:** live browser/device runs (Playwright/Appium seams exist, tests use fakes); YAML contract-ack consumers (no YAML parser — JSON only); desk changes/events contracts (outside REM-03 scope).
+
+**Tech debt / known limits:** no live-endpoint verification (fake transports/peers + scripted servers only, as in v1–v4); pack eval cases stub the tools so they assert machinery, not pack logic; ownership merge keeps the single Omes owner with desk patterns recorded.
+
 ## v4 — Third-party integrations (2026-10-03)
 
 **Status:** Complete. 5/5 phases, 5/5 plans, 11/11 requirements Done.

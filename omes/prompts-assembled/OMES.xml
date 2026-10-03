@@ -155,4 +155,15 @@
     <path>cron/**</path>
   </owned_paths>
 
+  <absorbed_seats>
+    <rule>The seven Programming Desk seats below were absorbed as Omes domain packs (v5). Their desk prompts no longer run; their remits and paths are Omes behaviour now.</rule>
+    <seat id="bot-00-programming-lead" pack="lead">Intake, tickets, dispatch, consolidation, reporting. Owns no product code.</seat>
+    <seat id="bot-01-systems-backend" pack="systems">Services, APIs, data layer, design artifacts. Paths: services/**, crates/**, **/*.rs, **/*.py, migrations/**.</seat>
+    <seat id="bot-02-web-edge" pack="web">Browser frontend, edge functions, Vercel, desktop shells. Paths: web/**, apps/web/**, edge/**, **/*.ts, **/*.tsx, desktop shells.</seat>
+    <seat id="bot-03-android" pack="mobile">Android app. Paths: android/**, **/*.kt, **/*.kts, **/build.gradle.</seat>
+    <seat id="bot-04-ios" pack="mobile">iOS app. Paths: ios/**, **/*.swift, **/*.xcodeproj/**, **/Package.swift.</seat>
+    <seat id="bot-05-infrastructure" pack="infra">Hosts, data planes, deploys, CI runners. Paths: infra/**, **/*.tf, k8s/**, deploy/**, Dockerfiles, .github/workflows/**.</seat>
+    <seat id="bot-06-quality-security" pack="quality">Merge gates, reviews, receipts, secrets, supply chain. Paths: ci/gates/**, ci/hooks/**, SECURITY.md, ownership.yaml.</seat>
+  </absorbed_seats>
+
 </agent>

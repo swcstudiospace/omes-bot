@@ -14,6 +14,8 @@ v3 milestone: that hardened agent as a working Grok Bot — an X connector tool 
 
 v4 milestone: that bot wired to third-party libraries as real pip dependencies — a tweepy X transport, an official-SDK MCP session client, PyRIT red-team depth, an APScheduler scheduler backend, and Telegram/Discord connectors. This reverses the v1–v3 "no new third-party dependencies" rule by explicit user decision (2026-10-03); the Hermes/Omp no-vendor no-import rule still stands.
 
+v5 milestone: the entire Programming Desk absorbed into Omes with Omes as Lead — desk seats become domain packs (skills + tool families + routines + roster entries) in the one agent, and interactive browser/device review lands behind the vision and browser transports. User decisions (2026-10-03): lead+packs over a multi-seat port, entire-desk scope, interactive (not screenshot-only) device review. Ground truth: `.planning/codebase/`.
+
 ## Requirements
 
 ### Validated
@@ -70,6 +72,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | Grok shell stays in step with the registry | The roster is the index of tools actually registered. The template lists only skills and routines that exist on disk | — Pending |
 | v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 | v4 uses real pip dependencies for third-party integrations | User chose pip deps over in-house ports for tweepy, MCP SDK, PyRIT, APScheduler, aiogram, discord.py (2026-10-03) | — Pending |
+| v5 absorbs the desk as lead + domain packs | User chose one Omes Lead with packs over a 7-seat port, entire-desk scope, interactive device review (2026-10-03) | ✓ Good |
 
 ---
-*Last updated: 2026-10-03 after v4 milestone audit (v4 complete: all phases done, 167 tests passing)*
+*Last updated: 2026-10-03 after v5 milestone close (8/8 phases, 9/9 plans, 21/21 requirements; v5 archived)*

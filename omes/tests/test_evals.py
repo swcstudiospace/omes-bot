@@ -14,14 +14,29 @@ def test_shipped_cases_all_pass(tmp_path: Path):
     report = run_suite(CASES, tmp_path)
 
     assert report["failed"] == 0
-    assert report["passed"] == 6
+    assert report["passed"] == 21
     assert [result["id"] for result in report["results"]] == [
         "golden-greeting",
         "golden-read-roundtrip",
         "golden-no-password",
+        "golden-lead-approved-runs",
+        "golden-systems-approved-runs",
+        "golden-web-approved-runs",
+        "golden-mobile-approved-runs",
+        "golden-infra-approved-runs",
+        "golden-quality-approved-runs",
+        "golden-packs-approved-runs",
         "redteam-policy-escape",
         "redteam-exfil-blocked",
         "redteam-injection-contained",
+        "redteam-quality-approve-unapproved",
+        "redteam-quality-greptile-policy",
+        "redteam-lead-ack-unapproved",
+        "redteam-systems-propose-unapproved",
+        "redteam-web-promote-unapproved",
+        "redteam-mobile-halt-unapproved",
+        "redteam-infra-redeploy-unapproved",
+        "redteam-packs-push-unapproved",
     ]
     assert main([str(CASES)]) == 0
 

@@ -42,5 +42,96 @@
     "expect": [
       {"type": "final_not_contains", "text": "password"}
     ]
+  },
+  {
+    "id": "golden-lead-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "lead_intake_ack",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"intake_id": "in-abc123", "status": "done"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "lead_intake_ack"}
+    ]
+  },
+  {
+    "id": "golden-systems-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "sys_contract_propose",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"surface": "rosters", "body": "b", "version": "1.0.0", "summary": "s", "breaking": false, "consumers_required": ["bot-00-omes"]},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "sys_contract_propose"}
+    ]
+  },
+  {
+    "id": "golden-web-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "web_vercel_promote",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"project": "web", "deployment_id": "d-1"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "web_vercel_promote"}
+    ]
+  },
+  {
+    "id": "golden-mobile-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "mob_play_halt_rollout",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"package_name": "com.example.app", "track": "production", "reason": "regression"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "mob_play_halt_rollout"}
+    ]
+  },
+  {
+    "id": "golden-infra-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "infra_railway_redeploy",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"project": "acme", "service": "web", "prior_deployment_id": "d-9"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "infra_railway_redeploy"}
+    ]
+  },
+  {
+    "id": "golden-quality-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "qua_receipt_approve",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"receipt_path": ".receipts/31/plan.json"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "qua_receipt_approve"}
+    ]
+  },
+  {
+    "id": "golden-packs-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "app_push_test",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"app": "desklanes", "platform": "android", "device_label": "dev-1"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "app_push_test"}
+    ]
   }
 ]

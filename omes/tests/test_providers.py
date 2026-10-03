@@ -28,6 +28,13 @@ from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.registry import ToolRegistry
 from omes.tools.telegram import TELEGRAM_TOOL_NAMES, TelegramClient, register_telegram_tools
+from omes.tools.lead import LEAD_TOOL_NAMES, LeadClient, LeadContext, register_lead_tools
+from omes.tools.systems import SYS_TOOL_NAMES, SystemsClient, SystemsContext, register_systems_tools
+from omes.tools.webpack import WEB_TOOL_NAMES, WebClient, WebContext, register_web_tools
+from omes.tools.mobile import MOBILE_TOOL_NAMES, MobileClient, MobileContext, register_mobile_tools
+from omes.tools.infra import INFRA_TOOL_NAMES, InfraClient, InfraContext, register_infra_tools
+from omes.tools.packs import PACKS_TOOL_NAMES, PacksClient, PacksContext, register_packs_tools
+from omes.tools.quality import QUALITY_TOOL_NAMES, QualityClient, QualityContext, register_quality_tools
 from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 OMES = Path(__file__).resolve().parents[1]
@@ -243,6 +250,13 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         registry, TelegramClient(make_bot=lambda token: None, token="fake")
     )
     register_discord_tools(registry, DiscordClient(make_client=lambda: None, token="fake"))
+    register_lead_tools(registry, LeadClient(LeadContext(root=tmp_path)))
+    register_systems_tools(registry, SystemsClient(SystemsContext(root=tmp_path)))
+    register_web_tools(registry, WebClient(WebContext(root=tmp_path)))
+    register_mobile_tools(registry, MobileClient(MobileContext(root=tmp_path)))
+    register_infra_tools(registry, InfraClient(InfraContext()))
+    register_quality_tools(registry, QualityClient(QualityContext(root=tmp_path)))
+    register_packs_tools(registry, PacksClient(PacksContext()))
 
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
@@ -254,6 +268,13 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         + X_TOOL_NAMES
         + TELEGRAM_TOOL_NAMES
         + DISCORD_TOOL_NAMES
+        + LEAD_TOOL_NAMES
+        + SYS_TOOL_NAMES
+        + WEB_TOOL_NAMES
+        + MOBILE_TOOL_NAMES
+        + INFRA_TOOL_NAMES
+        + QUALITY_TOOL_NAMES
+        + PACKS_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     assert [item["function"]["name"] for item in offered] == roster

@@ -1,0 +1,234 @@
+"""Phase 29: mobile tool family behind fakes; devices stubbed."""
+
+from __future__ import annotations
+
+import json
+
+from omes.tools.approvals import ApprovalLog
+from omes.tools.devices import AdbDevice, DeviceError, SimctlDevice
+from omes.tools.mobile import MobileClient, MobileContext, register_mobile_tools
+from omes.tools.registry import ToolRegistry
+
+
+class FakePlay:
+    def __init__(self, releases=None):
+        self.releases = releases if releases is not None else [
+            {"name": "r1", "status": "inProgress", "versionCodes": ["7"]}]
+        self.calls: list[tuple] = []
+
+    def edit(self, package):
+        self.calls.append(("edit", package))
+        return {"body": {"id": "e-1"}}
+
+    def track(self, package, edit_id, track):
+        self.calls.append(("track", package, edit_id, track))
+        return {"body": {"track": track, "releases": [dict(r) for r in self.releases]}}
+
+    def update_track(self, package, edit_id, track, body):
+        self.calls.append(("update", package, edit_id, track, body))
+        self.releases = body["releases"]
+        return {"body": {"ok": True}}
+
+    def commit(self, package, edit_id):
+        self.calls.append(("commit", package, edit_id))
+        return {"body": {"id": "e-1"}}
+
+
+class FakeAsc:
+    def __init__(self):
+        self.calls: list[tuple] = []
+
+    def request(self, method, path, params=None, json=None):
+        self.calls.append((method, path, params, json))
+        if path == "/apps":
+            return {"body": {"data": [{"id": "app-1"}]}}
+        if path == "/builds":
+            return {"body": {"data": [{"id": "b-1", "attributes": {"version": "42", "processingState": "VALID",
+                                                                   "uploadedDate": "today", "expired": False}}]}}
+        if path == "/appStoreVersions":
+            body = {"data": [{"id": "v-1"}]}
+            if params and params.get("include"):
+                body["included"] = [{"type": "appStoreVersionPhasedReleases", "id": "pr-1"}]
+            return {"body": body}
+        return {"body": {"data": {"id": "pr-1", "type": "appStoreVersionPhasedReleases"}}}
+
+
+class FakeVcs:
+    def __init__(self, files=None, names=None, diff=""):
+        self.files = files or {}
+        self.names = names if names is not None else []
+        self.diff_text = diff
+
+    def show(self, ref, path):
+        return self.files.get((ref, path))
+
+    def diff_names(self, base, head):
+        return list(self.names)
+
+    def diff(self, base, head, paths):
+        return self.diff_text
+
+
+class FakeDevice:
+    name = "fake"
+
+    def __init__(self, rows=None, shot=b"\x89PNG-fake"):
+        self.rows = rows if rows is not None else [{"id": "d-1", "platform": "android",
+                                                    "name": "emu", "state": "device"}]
+        self.shot = shot
+        self.calls: list[tuple] = []
+
+    def list_devices(self):
+        self.calls.append(("list",))
+        return list(self.rows)
+
+    def screenshot(self, device_id, path):
+        from pathlib import Path as P
+        self.calls.append(("shot", device_id, path))
+        P(path).parent.mkdir(parents=True, exist_ok=True)
+        P(path).write_bytes(self.shot)
+        return {"path": path, "bytes": len(self.shot)}
+
+    def act(self, device_id, action, capabilities):
+        self.calls.append(("act", device_id, action))
+        return {"ok": True, "kind": action["kind"]}
+
+
+class FakeVision:
+    def analyze(self, image_url, question, region=None):
+        return {"answer": f"saw {question}"}
+
+
+def _ctx(tmp_path, **overrides):
+    vcs = FakeVcs()
+    base = dict(root=tmp_path, play=FakePlay(), asc=FakeAsc(),
+                vcs={"show": vcs.show, "diff_names": vcs.diff_names, "diff": vcs.diff},
+                devices=[FakeDevice()], vision=FakeVision(), artifacts_dir=tmp_path / "shots")
+    base.update(overrides)
+    return MobileContext(**base)
+
+
+def test_play_track_status_and_rollout(tmp_path):
+    client = MobileClient(_ctx(tmp_path))
+    status = client.play_track_status("com.acme.app", "production")
+    assert status["track"]["releases"][0]["status"] == "inProgress"
+    assert status["edit_id"] == "e-1"
+    staged = client.play_staged_rollout("com.acme.app", "production", 8, 0.5, "crash>1%")
+    assert staged["ok"] is True and staged["release"]["userFraction"] == 0.5
+    assert "forbidden" in client.play_staged_rollout("com.acme.app", "production", 8, 1.0, "x")["error"]
+    full = client.play_staged_rollout("com.acme.app", "production", 8, 1.0, "x", confirm_full=True)
+    assert full["release"]["status"] == "completed"
+    bare = MobileClient(MobileContext(root=tmp_path))
+    assert "not_configured" in bare.play_track_status("com.acme.app", "t")["error"]
+    try:
+        client.play_track_status("not-a-package", "t")
+        raise SystemExit("should have raised")
+    except ValueError:
+        pass
+
+
+def test_play_halt_edges(tmp_path):
+    client = MobileClient(_ctx(tmp_path))
+    halted = client.play_halt_rollout("com.acme.app", "production", "regression")
+    assert halted == {"ok": True, "reason": "regression", "halted": ["r1"]}
+    again = client.play_halt_rollout("com.acme.app", "production", "again")
+    assert "nothing_to_halt" in again["error"]
+
+
+def test_artifact_size_and_lint(tmp_path):
+    (tmp_path / "a.apk").write_bytes(b"0" * 1000)
+    (tmp_path / "b.ipa").write_bytes(b"0" * 1200)
+    vcs = FakeVcs(files={("base", "lint.xml"): '<issue id="A"/><issue id="B"/>',
+                         ("head", "lint.xml"): '<issue id="A"/><issue id="B"/><issue id="C"/>'})
+    client = MobileClient(_ctx(tmp_path, vcs={"show": vcs.show, "diff_names": vcs.diff_names, "diff": vcs.diff}))
+    delta = client.artifact_size_delta("a.apk", "b.ipa")
+    assert delta == {"before_bytes": 1000, "after_bytes": 1200, "delta_bytes": 200, "delta_pct": 20.0}
+    assert "APK/AAB/IPA" in client.artifact_size_delta("a.apk", "nope.apk")["error"]
+    lint = client.lint_baseline_diff("lint.xml", "base", "head")
+    assert lint["issues_before"] == 2 and lint["issues_after"] == 3
+    assert lint["grew"] is True and lint["new_ids"] == ["C"]
+    assert "grows hides" in lint["verdict"]
+
+
+def test_testflight_and_phased_flows(tmp_path):
+    client = MobileClient(_ctx(tmp_path))
+    status = client.testflight_status("com.acme.app")
+    assert status["app_id"] == "app-1" and status["builds"][0]["version"] == "42"
+    active = client.appstore_phased_release("1.2", "halt on crash")
+    assert active["ok"] is True and active["phased_release"]["id"] == "pr-1"
+    paused = client.appstore_pause_release("1.2", "regression")
+    assert paused == {"ok": True, "reason": "regression", "phased_release_id": "pr-1"}
+    bare = MobileClient(MobileContext(root=tmp_path))
+    assert "not_configured" in bare.testflight_status("com.acme.app")["error"]
+
+
+def test_entitlements_and_risk_goldens(tmp_path):
+    diff = ('+<key>com.apple.developer.in-app-payments</key>\n'
+            '+<string>NSCameraUsageDescription</string>\n'
+            '+run = StoreKit.Transaction.updates\n'
+            '+dlopen(handle)\n'
+            '+deleteAccount tapped\n')
+    vcs = FakeVcs(names=["ios/App.entitlements", "ios/Feat.swift"],
+                  diff=diff)
+    client = MobileClient(_ctx(tmp_path, vcs={"show": vcs.show, "diff_names": vcs.diff_names, "diff": vcs.diff}))
+    ent = client.entitlements_diff("base", "head")
+    assert ent["files"] == ["ios/App.entitlements"]
+    assert ent["usage_descriptions_added"] == ["NSCameraUsageDescription"]
+    assert ent["entitlements_added"] == ["com.apple.developer.in-app-payments"]
+    assert "list them" in ent["paragraph"]
+    risk = client.review_risk_check("base", "head")
+    assert risk["files_checked"] == ["ios/App.entitlements", "ios/Feat.swift"]
+    assert [r["risk"] for r in risk["risks"]] == ["permission", "private_api", "purchases", "account_deletion"]
+    assert risk["verdict"] == "flag before submission"
+    clean = MobileClient(_ctx(tmp_path)).review_risk_check("b", "h")
+    assert clean == {"files_checked": [], "risks": [], "verdict": "none"}
+
+
+def test_devices_list_review_act_and_backend_errors(tmp_path):
+    failing = FakeDevice(rows=[])
+
+    def _down():
+        raise DeviceError("adb down")
+
+    failing.list_devices = _down
+    client = MobileClient(_ctx(tmp_path, devices=[FakeDevice(), failing]))
+    listed = client.device_list()
+    assert listed["devices"][0]["backend"] == "fake"
+    assert listed["errors"] == ["adb down"]
+    report = client.device_review("d-1", "fake", "is login visible?", name="login")
+    assert report["screenshot"]["path"].endswith("login.png")
+    assert "login visible" in report["vision"]["answer"]
+    assert "no appium device backend" in client.device_review("d", "appium", "q")["error"]
+    acted = client.device_act("d-1", "fake", "tap", x=10, y=20)
+    assert acted["kind"] == "tap"
+    adb_only = MobileClient(_ctx(tmp_path, devices=[AdbDevice(run=lambda *a, **k: None)]))
+    assert "screenshots only" in adb_only.device_act("em-1", "adb", "back")["error"]
+
+
+def test_adb_simctl_parsers_and_approvals(tmp_path):
+    class Run:
+        def __init__(self, code=0, out=b""):
+            self.returncode = code
+            self.stdout = out
+
+    adb = AdbDevice(run=lambda argv, timeout=15: Run(0, b"List of devices\nem-1\tdevice model:Pixel\nxx\toffline\n"))
+    assert adb.list_devices() == [{"id": "em-1", "platform": "android", "name": "Pixel", "state": "device"}]
+    adb2 = AdbDevice(run=lambda argv, timeout=30: Run(0, b"\x89PNG-data"))
+    shot = adb2.screenshot("em-1", tmp_path / "a.png")
+    assert shot["bytes"] == 9
+    sim = SimctlDevice(run=lambda argv, timeout=30: Run(
+        0, b"-- iOS 18 --\n    iPhone 15 (AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE) (Booted)\n"))
+    assert sim.list_devices()[0]["name"] == "iPhone 15"
+
+    log = ApprovalLog()
+    registry = ToolRegistry(approval_log=log)
+    register_mobile_tools(registry, MobileClient(_ctx(tmp_path)))
+    assert json.loads(registry.dispatch("mob_device_list", {}))["devices"] != []
+    for tool, args in (("mob_play_staged_rollout", {"package_name": "com.acme.app", "track": "t",
+                                                    "version_code": 1, "user_fraction": 0.5,
+                                                    "halt_threshold": "x"}),
+                       ("mob_device_act", {"device_id": "d", "backend": "fake", "kind": "back"})):
+        assert json.loads(registry.dispatch(tool, args)) == {"error": "approval required", "tool": tool}
+    assert log.approve("mob_device_act", "ada").get("approved") is True
+    assert json.loads(registry.dispatch("mob_device_act", {"device_id": "d", "backend": "fake",
+                                                           "kind": "back"}))["kind"] == "back"

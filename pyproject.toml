@@ -10,6 +10,8 @@ dependencies = [
   "apscheduler>=3.10",
   "aiogram>=3.0",
   "discord.py>=2.0",
+  "playwright>=1.40",
+  "Appium-Python-Client>=4.0",
 ]
 
 [tool.pytest.ini_options]
