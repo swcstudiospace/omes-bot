@@ -12,6 +12,9 @@ import pytest
 
 from omes.tools.approvals import ApprovalLog
 from omes.tools.browser import BrowserSession
+from omes.tools.coding import CODING_TOOL_NAMES
+from omes.tools.delegate import DELEG_TOOL_NAMES
+from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.plugins import load_plugins
@@ -313,7 +316,8 @@ def test_offered_schemas_include_platform_names_and_omit_an_extra_tool(tmp_path:
     assert registered == list(PLATFORM_TOOL_NAMES)
     registry.register("not_on_roster", "Registered but not offered.", _SCHEMA, lambda: {"ok": True})
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
-    assert roster[-len(PLATFORM_TOOL_NAMES) :] == list(PLATFORM_TOOL_NAMES)
+    start = len(CODING_TOOL_NAMES) + len(GROWTH_TOOL_NAMES) + len(DELEG_TOOL_NAMES)
+    assert roster[start : start + len(PLATFORM_TOOL_NAMES)] == list(PLATFORM_TOOL_NAMES)
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]
     assert names == list(PLATFORM_TOOL_NAMES)
