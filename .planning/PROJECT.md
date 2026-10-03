@@ -69,4 +69,4 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 
 ---
-*Last updated: 2026-10-03 after v3 milestone kickoff (scope approved: X connector, sweep, learning, evals)*
+*Last updated: 2026-10-03 after v3 milestone audit (v3 complete: all phases done, 126 tests passing)*

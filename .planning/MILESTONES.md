@@ -1,5 +1,21 @@
 # Milestones
 
+## v3 — Grok Bot (2026-10-03)
+
+**Status:** Complete. 4/4 phases, 4/4 plans, 10/10 requirements Done.
+
+**Core value delivered:** the hardened agent as a working Grok Bot — an X connector family (mentions, posts, threads, media) with approval-gated publishing and brokered credentials, an engagement sweep producing queued drafts with per-mention checkpoints, nightly learning through the curator, and a deterministic eval harness (golden + red-team) with CI.
+
+**Verification:** `python3 -m pytest omes/tests -q` → exit 0, 126 passed. `python3 -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
+
+**Archive:** `milestones/v3-ROADMAP.md`, `milestones/v3-REQUIREMENTS.md`.
+
+**Decisions:** publishing requires approval, staging does not; sweeps draft but never publish; tool arguments still never logged; CI runs suite + evals + assemble check.
+
+**Deferred:** X search, streaming, likes/follows, chunked upload, OAuth flows; model-judged evals; cron scheduling of sweep/nightly pass.
+
+**Tech debt / known limits:** no live X verification (fake transports only); composer and transcripts are caller-supplied; eval coverage is six cases.
+
 ## v2 — Enterprise hardening (2026-10-03)
 
 **Status:** Complete. 4/4 phases, 4/4 plans, 12/12 requirements Done.

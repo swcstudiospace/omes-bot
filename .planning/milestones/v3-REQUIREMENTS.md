@@ -1,3 +1,5 @@
+# Milestone v3 archive — REQUIREMENTS (all Done, 2026-10-03)
+
 # Requirements: v3 Grok Bot
 
 Milestone-scoped. v2 requirements are archived in `milestones/v2-REQUIREMENTS.md`.
