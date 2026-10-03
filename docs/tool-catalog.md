@@ -798,10 +798,10 @@ Finish tracker rows for one session. Requires approval.
 ## ult_session_mark
 
 - Family: Ultrathink
-- Approval: required
+- Approval: not required
 - Required params: state, mark
 
-Mark one session kicked-off or synced. Requires approval.
+Mark one session kicked-off or synced. Read-only.
 
 ## ult_ship_assess
 
