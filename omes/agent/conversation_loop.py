@@ -13,9 +13,20 @@ from dataclasses import dataclass
 from typing import Any
 
 from omes.agent.budget import IterationBudget
+from omes.agent.harness import (
+    account_output,
+    apply_tool_marks,
+    drain_steer,
+    emit,
+    prepare_speculative,
+    restore_tools,
+    run_before_model,
+    take_leftover_steer,
+    wrap_tools,
+)
 from omes.agent.interrupt import InterruptFlag
 from omes.agent.model import Model
-from omes.agent.prompt_builder import build_system_prompt
+from omes.agent.prompt_builder import build_system_prompt, steer_user_row
 from omes.agent.session_lease import SessionLease
 from omes.agent.turn_final_response import finish_text_response
 from omes.agent.turn_finalizer import finalize_turn
@@ -30,6 +41,11 @@ class Agent:
     iteration. ``pending_steer`` is delivered as its own user row after a tool result.
     ``lease`` is held for the turn. A budget the caller omits is per-turn and refilled
     from ``max_iterations``. A budget the caller passes is a session cap and is not reset.
+
+    Omp harness options (all ``None`` by default, keeping the Hermes turn): ``before_model``
+    may mutate the outgoing request or stop the turn before it is billed; ``pause_gate``
+    parks the loop at both action boundaries; ``output_budget`` caps model-visible
+    output chars; ``speculative_tools`` names discard-safe tools to pre-execute.
     """
 
     model: Model
@@ -39,6 +55,10 @@ class Agent:
     interrupt: InterruptFlag | None = None
     pending_steer: str | None = None
     lease: SessionLease | None = None
+    before_model: Any | None = None
+    pause_gate: Any | None = None
+    output_budget: Any | None = None
+    speculative_tools: Any | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -94,8 +114,11 @@ def _run_conversation_turn(
     task_id: str | None,
 ) -> dict:
     messages: list = conversation_history if conversation_history is not None else []
+    emit(agent, "turn_start")
+    since = len(messages)
     _install_system_prompt(agent, messages, system_message)
     messages.append({"role": "user", "content": user_message})
+    _emit_new_rows(agent, messages, since)
 
     api_call_count = 0
     final_response: str | None = None
@@ -110,59 +133,99 @@ def _run_conversation_turn(
     elif budget is getattr(agent, "_turn_budget", None):
         budget.refill(agent.max_iterations)
 
-    while api_call_count < agent.max_iterations and budget.remaining > 0:
-        if agent.interrupt is not None and agent.interrupt.is_set():
-            interrupted = True
-            turn_exit_reason = "interrupted_by_user"
-            break
-        if not budget.consume():
-            turn_exit_reason = "budget_exhausted"
-            break
-        api_call_count += 1
-        assistant_message = agent.model.complete(messages, agent.tools)
-        if not isinstance(assistant_message, dict):
-            raise TypeError("model.complete must return an assistant message dict")
-        if _tool_calls(assistant_message):
-            verdict = run_tool_round(
+    original_tools = wrap_tools(agent)
+    try:
+        while api_call_count < agent.max_iterations and budget.remaining > 0:
+            if agent.pause_gate is not None and not agent.pause_gate.wait_until_resumed(
+                agent.interrupt
+            ):
+                interrupted = True
+                turn_exit_reason = "interrupted_by_user"
+                break
+            if agent.interrupt is not None and agent.interrupt.is_set():
+                interrupted = True
+                turn_exit_reason = "interrupted_by_user"
+                break
+            stop = run_before_model(agent, messages, agent.tools)
+            if stop is not None:
+                turn_exit_reason = str(stop.get("reason", "stopped_before_model"))
+                break
+            if not budget.consume():
+                turn_exit_reason = "budget_exhausted"
+                break
+            api_call_count += 1
+            assistant_message = agent.model.complete(messages, original_tools)
+            if not isinstance(assistant_message, dict):
+                raise TypeError("model.complete must return an assistant message dict")
+            if not account_output(agent, assistant_message.get("content")):
+                turn_exit_reason = "output_budget_exceeded"
+                break
+            if _tool_calls(assistant_message):
+                _fold_queued_steer(agent)
+                since = len(messages)
+                if agent.speculative_tools:
+                    prepare_speculative(
+                        agent, original_tools, _tool_calls(assistant_message)
+                    )
+                verdict = run_tool_round(
+                    agent,
+                    assistant_message=assistant_message,
+                    messages=messages,
+                    task_id=task_id,
+                )
+                late_steer = drain_steer(agent)
+                if late_steer:
+                    messages.append(steer_user_row(late_steer))
+                apply_tool_marks(agent, messages, since)
+                _emit_new_rows(agent, messages, since)
+                if not account_output(
+                    agent, *[_tool_content(row) for row in messages[since:]]
+                ):
+                    turn_exit_reason = "output_budget_exceeded"
+                    break
+                if verdict.action == "break":
+                    final_response = verdict.final_response
+                    turn_exit_reason = verdict.turn_exit_reason
+                    break
+                continue
+            finish_reason = assistant_message.get("finish_reason") or "stop"
+            since = len(messages)
+            verdict = finish_text_response(
                 agent,
                 assistant_message=assistant_message,
                 messages=messages,
-                task_id=task_id,
+                finish_reason=str(finish_reason),
             )
-            if verdict.action == "break":
-                final_response = verdict.final_response
-                turn_exit_reason = verdict.turn_exit_reason
-                break
-            continue
-        finish_reason = assistant_message.get("finish_reason") or "stop"
-        verdict = finish_text_response(
+            _emit_new_rows(agent, messages, since)
+            final_response = verdict.final_response
+            turn_exit_reason = verdict.turn_exit_reason
+            break
+
+        if turn_exit_reason is None:
+            if api_call_count >= agent.max_iterations:
+                turn_exit_reason = f"max_iterations_reached({api_call_count}/{agent.max_iterations})"
+            elif budget.remaining <= 0:
+                turn_exit_reason = "budget_exhausted"
+            else:
+                turn_exit_reason = "stopped"
+
+        _report_leftover_steer(agent)
+        since = len(messages)
+        result = finalize_turn(
             agent,
-            assistant_message=assistant_message,
+            final_response=final_response,
             messages=messages,
-            finish_reason=str(finish_reason),
+            api_call_count=api_call_count,
+            interrupted=interrupted,
+            failed=failed,
+            turn_exit_reason=turn_exit_reason,
+            task_id=task_id,
         )
-        final_response = verdict.final_response
-        turn_exit_reason = verdict.turn_exit_reason
-        break
-
-    if turn_exit_reason is None:
-        if api_call_count >= agent.max_iterations:
-            turn_exit_reason = f"max_iterations_reached({api_call_count}/{agent.max_iterations})"
-        elif budget.remaining <= 0:
-            turn_exit_reason = "budget_exhausted"
-        else:
-            turn_exit_reason = "stopped"
-
-    return finalize_turn(
-        agent,
-        final_response=final_response,
-        messages=messages,
-        api_call_count=api_call_count,
-        interrupted=interrupted,
-        failed=failed,
-        turn_exit_reason=turn_exit_reason,
-        task_id=task_id,
-    )
+        _emit_new_rows(agent, messages, since)
+        emit(agent, "turn_end", turn_exit_reason=result["turn_exit_reason"])
+        return result
+    finally:
+        restore_tools(agent, original_tools)
 
 
 def _install_system_prompt(agent: Agent, messages: list, system_message: str | None) -> None:
@@ -183,6 +246,37 @@ def _install_system_prompt(agent: Agent, messages: list, system_message: str | N
 def _tool_calls(message: dict) -> list:
     calls = message.get("tool_calls")
     return calls if isinstance(calls, list) and calls else []
+
+
+def _emit_new_rows(agent: Agent, messages: list, since: int) -> None:
+    """Emit one ``message`` event per row appended at ``messages[since:]``."""
+    for row in messages[since:]:
+        role = row.get("role") if isinstance(row, dict) else None
+        emit(agent, "message", role=role)
+
+
+def _tool_content(row: Any) -> str:
+    if isinstance(row, dict) and row.get("role") == "tool":
+        content = row.get("content", "")
+        return content if isinstance(content, str) else str(content)
+    return ""
+
+
+def _fold_queued_steer(agent: Agent) -> None:
+    """Fold harness-queued steer into the legacy slot for the tool round."""
+    if getattr(agent, "_steer_queue", None):
+        agent.pending_steer = drain_steer(agent)
+
+
+def _report_leftover_steer(agent: Agent) -> None:
+    """Move undelivered queued steer onto the legacy slot for the finalizer."""
+    leftover = take_leftover_steer(agent)
+    if leftover:
+        queued = "\n".join(part for part in leftover if part.strip())
+        legacy = agent.pending_steer
+        if legacy:
+            queued = f"{queued}\n{legacy}" if queued else str(legacy)
+        agent.pending_steer = queued or None
 
 
 __all__ = ["Agent", "run_conversation"]

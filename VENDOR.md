@@ -20,6 +20,7 @@ Omes Bot does not vendor, subtree, or import either upstream checkout at runtime
 
 - Remote: https://github.com/can1357/oh-my-pi.git
 - Commit: `0e2411c0df59fce8c56dc03a5f1c9afffcb0d746`
+- Harness modules adapted: `packages/agent/src/agent-loop.ts` (turn events, `beforeModelCall`), `packages/agent/src/live-steering.ts`, `packages/agent/src/pause.ts`, `packages/agent/src/output-budget.ts` (`fitOutputTokensToContextWindow`), `packages/agent/src/compaction/pruning.ts`, and `packages/agent/src/speculative-execution.ts` from commit `0e2411c0df59fce8c56dc03a5f1c9afffcb0d746`.
 - License: MIT
 - Copyright: Copyright Mario Zechner 2025, Can Bölük 2025-2026, Stencil Labs 2026
 - What is adapted: `packages/agent` behavior, the coding-agent tool and edit pipeline, LSP, DAP, sessions, tasks, MCP, capabilities, extensions, modes and plan mode, memories, hindsight, mnemopi, autolearn, goals, advisor, exec job control, agent-side security, and the `packages/ai` provider surface. The port is Python inside the same Omes agent. TypeScript tests are the spec.

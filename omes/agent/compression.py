@@ -4,6 +4,11 @@ Adapted from the Hermes compression entry the turn calls (``compress_after_tool_
 and the conversation compressor). Older turns may be replaced with one summary.
 The original system message, and the bytes of its content, stay as they are.
 No auxiliary model call.
+
+Omp extra rules (``compaction/pruning.ts``) run here too: tool results their
+tool flagged contextually useless (zero matches, elapsed waits) are blanked
+with a notice before summarization, bypassing any recency protection. Results
+flagged as errors are never elided, and an error is never marked useless.
 """
 
 from __future__ import annotations
@@ -13,13 +18,42 @@ from typing import Any
 SUMMARY_KIND = "summary"
 _SUMMARY_HEADING = "[CONTEXT SUMMARY]"
 
+# Exact placeholder written over an elided useless tool result (Omp pruning).
+USELESS_NOTICE = "[ELIDED USELESS TOOL RESULT]"
+
+
+def prune_useless_results(messages: list) -> int:
+    """Blank useless non-error tool results with a notice. Return how many.
+
+    Omp ``pruning.ts`` rule: results flagged contextually useless bypass the
+    recency window — even the kept tail is blanked — because the model already
+    consumed them. Error rows are never elided. Idempotent: an already
+    blanked row is left alone. Callers inside the loop reach this through
+    :func:`compress_messages` so append-only transcripts stay valid.
+    """
+    pruned = 0
+    for message in messages:
+        if not isinstance(message, dict):
+            continue
+        if message.get("role") != "tool":
+            continue
+        if message.get("useless") is not True or message.get("is_error") is True:
+            continue
+        if message.get("content") == USELESS_NOTICE:
+            continue
+        message["content"] = USELESS_NOTICE
+        pruned += 1
+    return pruned
+
 
 def compress_messages(messages: list) -> list:
     """Replace older turns with a summary. Leave the system prompt bytes unchanged.
 
     Short transcripts (nothing older than the kept tail) are returned as-is.
     The rewrite is in place so the caller's list object stays the transcript.
+    Useless non-error tool results are blanked first, wherever they sit.
     """
+    prune_useless_results(messages)
     if not isinstance(messages, list) or len(messages) < 4:
         return messages
     system = None
@@ -68,4 +102,4 @@ def _summary_text(older: list) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["SUMMARY_KIND", "compress_messages"]
+__all__ = ["SUMMARY_KIND", "USELESS_NOTICE", "compress_messages", "prune_useless_results"]

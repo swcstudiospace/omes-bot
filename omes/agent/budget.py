@@ -1,10 +1,15 @@
-"""Iteration counter.
+"""Iteration and output budgets.
 
 Adapted from Hermes ``agent/iteration_budget.py``. The counter only consumes or
 refunds. The conversation loop refills the default budget it built from
 ``max_iterations`` at the start of each turn. A budget the caller supplied is a
 session cap and is not refilled: when ``remaining`` hits 0 the loop stops, even
 if the model asked for another tool. No grace call.
+
+``OutputBudget`` ports Omp ``output-budget.ts`` (``fitOutputTokensToContextWindow``)
+to this loop's scale: instead of fitting a token cap to a context window, it
+caps the chars of model-visible output a turn may produce. A runaway turn that
+keeps emitting tool calls trips the cap and stops before another model call.
 """
 
 from __future__ import annotations
@@ -56,4 +61,42 @@ class IterationBudget:
             return max(0, self.max_total - self._used)
 
 
-__all__ = ["IterationBudget"]
+class OutputBudget:
+    """Cap on model-visible output chars for one turn.
+
+    The loop charges every assistant content string and every tool result
+    content. ``add`` returns False once the turn is over budget; the loop
+    then stops before another model call with ``output_budget_exceeded``.
+    Thread-safe; one turn owns one instance.
+    """
+
+    def __init__(self, max_chars: int):
+        if max_chars < 0:
+            raise ValueError(f"max_chars must be >= 0, got {max_chars}")
+        self.max_chars = max_chars
+        self._used = 0
+        self._lock = threading.Lock()
+
+    def add(self, text: str) -> bool:
+        """Charge ``len(text)``. True while the turn stays within budget."""
+        with self._lock:
+            self._used += len(text)
+            return self._used <= self.max_chars
+
+    @property
+    def used(self) -> int:
+        with self._lock:
+            return self._used
+
+    @property
+    def remaining(self) -> int:
+        with self._lock:
+            return max(0, self.max_chars - self._used)
+
+    @property
+    def exceeded(self) -> bool:
+        with self._lock:
+            return self._used > self.max_chars
+
+
+__all__ = ["IterationBudget", "OutputBudget"]
