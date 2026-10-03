@@ -1,5 +1,11 @@
 # Milestones
 
+## v6 — Grok ship (in progress)
+
+**Status:** In progress. 0/5 phases, 11 requirements Todo.
+
+**Scope:** Omes as an Add-Bot product — magic keywords, native ultrathink, MCP tool host, template + setup flow, GitBook docs. Ground truth: `.planning/research/v6-runtime-spike.md`.
+
 ## v5 — Desk packs (2026-10-03)
 
 **Status:** Complete. 8/8 phases, 9/9 plans, 21/21 requirements Done.

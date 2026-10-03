@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Omes Bot is one Grok programming bot. It ports the Hermes Agent runtime and the oh-my-pi agent harness into a single Python agent, then exposes that agent the way programming-desk exposes a seat: a prompt that points at a skills folder, a tool roster, and a prompt folder. The two upstream checkouts in this directory are read-only sources. The bot lives under `omes/`.
+Omes Bot is one Grok programming bot (`swcstudiospace/omes-bot`). It ports the Hermes Agent runtime and the oh-my-pi agent harness into a single Python agent, then exposes that agent the way programming-desk exposes a seat: a prompt that points at a skills folder, a tool roster, and a prompt folder. The upstream checkouts in this directory (hermes-agent, oh-my-pi) and `~/src/repos/programming-desk` and `~/src/repos/claude-ultrathink` are read-only sources. The bot lives under `omes/`.
 
 ## Core Value
 
@@ -15,6 +15,8 @@ v3 milestone: that hardened agent as a working Grok Bot — an X connector tool 
 v4 milestone: that bot wired to third-party libraries as real pip dependencies — a tweepy X transport, an official-SDK MCP session client, PyRIT red-team depth, an APScheduler scheduler backend, and Telegram/Discord connectors. This reverses the v1–v3 "no new third-party dependencies" rule by explicit user decision (2026-10-03); the Hermes/Omp no-vendor no-import rule still stands.
 
 v5 milestone: the entire Programming Desk absorbed into Omes with Omes as Lead — desk seats become domain packs (skills + tool families + routines + roster entries) in the one agent, and interactive browser/device review lands behind the vision and browser transports. User decisions (2026-10-03): lead+packs over a multi-seat port, entire-desk scope, interactive (not screenshot-only) device review. Ground truth: `.planning/codebase/`.
+
+v6 milestone: Omes as a Grok Bot Add-Bot product — Omp magic keywords in the loop, ultrathink natively integrated (prompt routines + CLI bridge, no AGPL vendoring), an MCP tool host installs can attach, a clean template + setup flow, and docs structured for GitBook Git Sync. User decisions (2026-10-03): hybrid architecture (template + optional tool host), MIT license, full milestone scope. Ground truth: `.planning/research/v6-runtime-spike.md`.
 
 ## Requirements
 
@@ -73,6 +75,9 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 | v4 uses real pip dependencies for third-party integrations | User chose pip deps over in-house ports for tweepy, MCP SDK, PyRIT, APScheduler, aiogram, discord.py (2026-10-03) | — Pending |
 | v5 absorbs the desk as lead + domain packs | User chose one Omes Lead with packs over a 7-seat port, entire-desk scope, interactive device review (2026-10-03) | ✓ Good |
+| v6 ships the Add-Bot product on the hybrid runtime | Spike proved Grok Bot runs on xAI's computer and templates don't carry secrets/MCP; user approved template + optional MCP host (2026-10-03) | — Pending |
+| v6 integrates ultrathink without vendoring; Omes-Bot is MIT | claude-ultrathink is AGPL-3.0; user chose MIT + prompt/bridge integration (2026-10-03) | — Pending |
+| swcstudiospace/omes-bot is the real repo | User created it 2026-10-03; history pushed there, old PR #2 closed as superseded | ✓ Good |
 
 ---
-*Last updated: 2026-10-03 after v5 milestone close (8/8 phases, 9/9 plans, 21/21 requirements; v5 archived)*
+*Last updated: 2026-10-03 after v6 milestone creation (5 phases, 11 requirements)*
