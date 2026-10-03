@@ -24,7 +24,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
 - [x] **Phase 10: Modes and learning** - Sessions, tasks, plan mode, extensions, autolearn, goals, advisor, exec, and security checks.
 - [x] **Phase 11: Memory unification** - Omp memories, hindsight, and mnemopi on the phase 4 store.
-- [ ] **Phase 12: Providers and install surface** - Provider contract, Grok adapter, remaining adapters, and a template that matches the registry.
+- [x] **Phase 12: Providers and install surface** - Provider contract, Grok adapter, remaining adapters, and a template that matches the registry.
 
 ## Phase Details
 
@@ -186,7 +186,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 12-01: Providers, Grok adapter, and the install-surface check
+- [x] 12-01: Providers, Grok adapter, and the install-surface check
 
 ## Progress
 
@@ -207,4 +207,4 @@ Phases execute in numeric order.
 | 9. LSP and DAP | 1/1 | Complete | 2026-10-03 |
 | 10. Modes and learning | 1/1 | Complete | 2026-10-03 |
 | 11. Memory unification | 1/1 | Complete | 2026-10-03 |
-| 12. Providers and install surface | 0/1 | Not started | - |
+| 12. Providers and install surface | 1/1 | Complete | 2026-10-03 |
