@@ -13,7 +13,7 @@ v1 built one agent that runs both Hermes and Omp logic (see `milestones/v1-ROADM
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 13: Policy engine** - Seat policy, dispatch enforcement, advisor diffs, and a persisted audit log.
+- [x] **Phase 13: Policy engine** - Seat policy, dispatch enforcement, advisor diffs, and a persisted audit log.
 - [ ] **Phase 14: Credential broker** - Env-backed keys injected per approved endpoint, with secret redaction.
 - [ ] **Phase 15: Durable runs** - Turn journal with resume, cron execution history, checkpointed workflows.
 - [ ] **Phase 16: Transports and traces** - Stdlib HTTP with retries, and structured trace export.
@@ -32,7 +32,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 1 plan
 
 Plans:
-- [ ] 13-01: Seat policy, enforcement, advisor, and audit log
+- [x] 13-01: Seat policy, enforcement, advisor, and audit log
 
 ### Phase 14: Credential broker
 **Goal**: Secrets live in the broker and reach only approved endpoints; transcripts and logs never carry them.
@@ -80,7 +80,7 @@ Phases execute in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Policy engine | 0/1 | Not started | - |
+| 13. Policy engine | 1/1 | Complete | 2026-10-03 |
 | 14. Credential broker | 0/1 | Not started | - |
 | 15. Durable runs | 0/1 | Not started | - |
 | 16. Transports and traces | 0/1 | Not started | - |
