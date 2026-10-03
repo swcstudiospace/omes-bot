@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
 - [x] **Phase 7: Omp harness** - Events, steering, pause, budget, and compaction merged into the phase 2 loop.
 - [x] **Phase 8: Edit pipeline** - Apply, reject a bad hunk, and repair.
-- [ ] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
+- [x] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
 - [ ] **Phase 10: Modes and learning** - Sessions, tasks, plan mode, extensions, autolearn, goals, advisor, exec, and security checks.
 - [ ] **Phase 11: Memory unification** - Omp memories, hindsight, and mnemopi on the phase 4 store.
 - [ ] **Phase 12: Providers and install surface** - Provider contract, Grok adapter, remaining adapters, and a template that matches the registry.
@@ -146,7 +146,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 09-01: LSP diagnostics and a DAP breakpoint session
+- [x] 09-01: LSP diagnostics and a DAP breakpoint session
 
 ### Phase 10: Modes and learning
 **Goal**: The agent can resume a session, refuse writes while planning, run an extension hook before the model, and record a learned skill through the skill manager.
@@ -204,7 +204,7 @@ Phases execute in numeric order.
 | 6. Remaining Hermes tools | 1/1 | Complete | 2026-10-03 |
 | 7. Omp harness | 1/1 | Complete | 2026-10-03 |
 | 8. Edit pipeline | 1/1 | Complete | 2026-10-03 |
-| 9. LSP and DAP | 0/1 | Not started | - |
+| 9. LSP and DAP | 1/1 | Complete | 2026-10-03 |
 | 10. Modes and learning | 0/1 | Not started | - |
 | 11. Memory unification | 0/1 | Not started | - |
 | 12. Providers and install surface | 0/1 | Not started | - |
