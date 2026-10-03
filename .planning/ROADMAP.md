@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 17: X connector** - Mentions, posts, threads, and media upload behind the broker.
 - [x] **Phase 18: Engagement sweep** - Mentions in, queued reply drafts out, checkpointed.
 - [x] **Phase 19: Nightly learning** - Transcripts reviewed, earned skills created.
-- [ ] **Phase 20: Eval harness** - Golden persona evals, red-team policy evals, CI.
+- [x] **Phase 20: Eval harness** - Golden persona evals, red-team policy evals, CI.
 
 ## Phase Details
 
@@ -68,7 +68,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 20-01: Eval cases, runner, and CI workflow
+- [x] 20-01: Eval cases, runner, and CI workflow
 
 ## Progress
 
@@ -81,4 +81,4 @@ Phases execute in numeric order.
 | 17. X connector | 1/1 | Complete | 2026-10-03 |
 | 18. Engagement sweep | 1/1 | Complete | 2026-10-03 |
 | 19. Nightly learning | 1/1 | Complete | 2026-10-03 |
-| 20. Eval harness | 0/1 | Not started | - |
+| 20. Eval harness | 1/1 | Complete | 2026-10-03 |
