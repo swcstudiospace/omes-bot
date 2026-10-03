@@ -35,6 +35,8 @@ from omes.tools.mobile import MOBILE_TOOL_NAMES, MobileClient, MobileContext, re
 from omes.tools.infra import INFRA_TOOL_NAMES, InfraClient, InfraContext, register_infra_tools
 from omes.tools.packs import PACKS_TOOL_NAMES, PacksClient, PacksContext, register_packs_tools
 from omes.tools.quality import QUALITY_TOOL_NAMES, QualityClient, QualityContext, register_quality_tools
+from omes.substrate.client import SubstrateClient
+from omes.tools.substrate_tools import SUBSTRATE_TOOL_NAMES, register_substrate_tools
 from omes.tools.ultrathink import ULT_TOOL_NAMES, UltrathinkClient, UltrathinkContext, register_ultrathink_tools
 from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
@@ -259,6 +261,7 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
     register_quality_tools(registry, QualityClient(QualityContext(root=tmp_path)))
     register_packs_tools(registry, PacksClient(PacksContext()))
     register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext()))
+    register_substrate_tools(registry, SubstrateClient())
 
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
@@ -278,6 +281,7 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         + QUALITY_TOOL_NAMES
         + PACKS_TOOL_NAMES
         + ULT_TOOL_NAMES
+        + SUBSTRATE_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     assert [item["function"]["name"] for item in offered] == roster

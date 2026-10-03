@@ -1,9 +1,9 @@
 """Setup smoke check: verify an Omes install end to end, locally.
 
 `python -m omes.setup_check --root <repo>`: runs the roster, template,
-assembly, registry, and ultrathink checks and exits 0 only when every
-required check passes. Skips (ultrathink unconfigured) are reported,
-never failures.
+assembly, registry, ultrathink, and substrate checks and exits 0 only when
+every required check passes. Skips (ultrathink/substrate unconfigured) are
+reported, never failures.
 """
 
 from __future__ import annotations
@@ -90,12 +90,47 @@ def check_ultrathink(root: Path) -> tuple[bool | None, str]:
     return True, f"ultrathink checkout ok ({configured})"
 
 
+_SUBSTRATE_URL_VARS = ("SUBSTRATE_URL", "HINDSIGHT_URL")
+_SUBSTRATE_TOKEN_VARS = (
+    "SUBSTRATE_TOKEN",
+    "SUBSTRATE_TOKEN_GROK_BOT",
+    "HINDSIGHT_API_KEY",
+    "HINDSIGHT_API_TOKEN",
+)
+
+
+def check_substrate(root: Path) -> tuple[bool | None, str]:
+    """Substrate surface env present and URL-shaped, or clearly skipped.
+
+    Names which variables are set; values are never read into the detail.
+    """
+    del root
+    from urllib.parse import urlsplit
+
+    for name in _SUBSTRATE_URL_VARS:
+        value = os.environ.get(name, "")
+        if not value:
+            continue
+        try:
+            parts = urlsplit(value)
+        except ValueError:
+            return False, f"{name} is not a URL"
+        if parts.scheme not in ("http", "https") or not parts.hostname:
+            return False, f"{name} is not an http(s) URL"
+    present = [name for name in _SUBSTRATE_URL_VARS + _SUBSTRATE_TOKEN_VARS
+               if os.environ.get(name, "")]
+    if not present:
+        return None, "substrate env not set — brief/emit stay local"
+    return True, f"substrate env set: {', '.join(present)} (values never shown)"
+
+
 CHECKS = (
     ("roster", check_roster),
     ("template", check_template),
     ("assembly", check_assembly),
     ("registry", check_registry),
     ("ultrathink", check_ultrathink),
+    ("substrate", check_substrate),
 )
 
 

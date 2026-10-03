@@ -1,5 +1,21 @@
 # Milestones
 
+## v7 — Substrate surface (2026-10-03)
+
+**Status:** Complete. 5/5 phases, 5/5 plans, 10/10 requirements Done.
+
+**Core value delivered:** Omes Bot as a first-class substrate surface — a fail-open substrate-mcp client (brief/events/shared memory/docs/graph), episodic retain/recall/reflect on the shared `ultrathink` Hindsight bank with local fallback, brief-on-open + turn/tool/file trail with graph provenance in the loop, five rostered substrate tools with approval-gated graph mutations, and a test-enforced ban on direct GreptimeDB/TimescaleDB/DragonflyDB clients.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 294 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0. Live probes + audit E2E prove fail-open against the real (degraded) local substrate.
+
+**Archive:** `milestones/v7-ROADMAP.md`, `milestones/v7-REQUIREMENTS.md`, `milestones/v7-MILESTONE-AUDIT.md`, `milestones/v7-phases/`.
+
+**Decisions:** substrate-mediated direction (store lock enforced by test); shared `ultrathink` bank; fakes + opt-in read-only live probes, never in CI.
+
+**Deferred:** signed handoff packets, lease steal/drift, A2A teachables, OTLP (upstream phases); live Hindsight round trip (needs API key).
+
+**Tech debt / known limits:** docs_search returns the raw retrieval payload (no chunk extraction yet); local substrate degraded here so live emit/search degrade; Add-Bot template runs unwired by design (localhost unreachable from xAI).
+
 ## v6 — Grok ship (2026-10-03)
 
 **Status:** Complete. 5/5 phases, 5/5 plans, 11/11 requirements Done.

@@ -19,7 +19,17 @@ def _mirror(root: Path) -> Path:
     return root
 
 
-def test_checks_pass_on_repo_root():
+def test_checks_pass_on_repo_root(monkeypatch):
+    for name in (
+        "SUBSTRATE_URL",
+        "SUBSTRATE_TOKEN",
+        "SUBSTRATE_TOKEN_GROK_BOT",
+        "HINDSIGHT_URL",
+        "HINDSIGHT_API_KEY",
+        "HINDSIGHT_API_TOKEN",
+        "ULTRATHINK_ROOT",
+    ):
+        monkeypatch.delenv(name, raising=False)
     report = run_checks(ROOT)
     assert report["passed"] is True
     assert report["roster"]["ok"] is True
@@ -27,6 +37,7 @@ def test_checks_pass_on_repo_root():
     assert report["assembly"]["ok"] is True
     assert report["registry"]["ok"] is True
     assert report["ultrathink"]["ok"] is None
+    assert report["substrate"]["ok"] is None
     assert main(["--root", str(ROOT)]) == 0
 
 
@@ -65,3 +76,12 @@ def test_each_failure_trips_its_check(tmp_path: Path, monkeypatch):
 
     monkeypatch.setenv("ULTRATHINK_ROOT", str(tmp_path / "nowhere"))
     assert run_checks(fixture)["ultrathink"]["ok"] is False
+
+    monkeypatch.setenv("SUBSTRATE_URL", "gopher://x")
+    assert run_checks(fixture)["substrate"]["ok"] is False
+    monkeypatch.delenv("SUBSTRATE_URL")
+    monkeypatch.setenv("SUBSTRATE_TOKEN", "fake-value")
+    substrate = run_checks(fixture)["substrate"]
+    assert substrate["ok"] is True
+    assert "fake-value" not in substrate["detail"]
+    assert "SUBSTRATE_TOKEN" in substrate["detail"]

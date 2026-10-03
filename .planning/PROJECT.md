@@ -18,6 +18,8 @@ v5 milestone: the entire Programming Desk absorbed into Omes with Omes as Lead �
 
 v6 milestone: Omes as a Grok Bot Add-Bot product — Omp magic keywords in the loop, ultrathink natively integrated (prompt routines + CLI bridge, no AGPL vendoring), an MCP tool host installs can attach, a clean template + setup flow, and docs structured for GitBook Git Sync. User decisions (2026-10-03): hybrid architecture (template + optional tool host), MIT license, full milestone scope. Ground truth: `.planning/research/v6-runtime-spike.md`.
 
+v7 milestone: Omes as a substrate surface — the Grok Bot briefs on open, emits its turn/tool trail with graph provenance, shares memory through substrate-mcp, recalls episodes from the shared `ultrathink` Hindsight bank, and answers docs from RAGflow, while GreptimeDB/TimescaleDB/DragonflyDB stay behind the store lock. User decisions (2026-10-03): substrate-mediated direction, shared bank, fakes + opt-in live probes. Ground truth: `~/src/repos/agent-substrate` governance + grokbot loop docs, Hindsight OpenAPI v0.9.1.
+
 ## Requirements
 
 ### Validated
@@ -78,6 +80,9 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v6 ships the Add-Bot product on the hybrid runtime | Spike proved Grok Bot runs on xAI's computer and templates don't carry secrets/MCP; user approved template + optional MCP host (2026-10-03) | ✓ Good |
 | v6 integrates ultrathink without vendoring; Omes-Bot is MIT | claude-ultrathink is AGPL-3.0; user chose MIT + prompt/bridge integration (2026-10-03) | ✓ Good |
 | swcstudiospace/omes-bot is the real repo | User created it 2026-10-03; history pushed there, old PR #2 closed as superseded | ✓ Good |
+| v7 integrates substrate-mediated, not direct clients | Store lock + governance: only substrate-mcp touches Greptime/Timescale/Dragonfly; Omes is a surface (user chose 2026-10-03) | ✓ Good |
+| v7 shares the `ultrathink` Hindsight bank | One set of episodic beliefs across the ultrathink system; no silos (user chose 2026-10-03) | ✓ Good |
+| v7 verifies with fakes + opt-in live probes | Committed tests stay hermetic; read-only Railway probes run manually, never in CI (user chose 2026-10-03) | ✓ Good |
 
 ---
-*Last updated: 2026-10-03 after v6 milestone close (5/5 phases, 5/5 plans, 11/11 requirements; v6 archived)*
+*Last updated: 2026-10-03 after v7 milestone close (5/5 phases, 5/5 plans, 10/10 requirements; v7 archived)*

@@ -22,10 +22,15 @@ connector asks for it (Grok Bot settings or your host's env):
 | Secret | Needed for | Where it goes |
 | --- | --- | --- |
 | `XAI_API_KEY` | Grok model calls outside Grok Bot | host env, resolved via the credential broker |
-| X API Bearer [REDACTED] | X connector tools | provided when wiring the connector |
-| Telegram bot token (BotFather) | Telegram connector tools | provided when wiring the connector |
-| Discord bot token | Discord connector tools | provided when wiring the connector |
+| `X_API_TOKEN` | X connector tools | host env, read by the tool host |
+| `TELEGRAM_BOT_TOKEN` | Telegram connector tools | host env, read by the tool host |
+| `DISCORD_BOT_TOKEN` | Discord connector tools | host env, read by the tool host |
 | GitHub token | Greptile reviews, ship PRs | host via `gh auth` |
+| `SUBSTRATE_TOKEN` | Substrate brief/events/memory (surface grok-bot) | host env, resolved via the credential broker |
+| `HINDSIGHT_API_KEY` | Shared Hindsight episodic memory | host env, resolved via the credential broker |
+
+`SUBSTRATE_URL` (default `http://127.0.0.1:7410`) and `HINDSIGHT_URL`
+(default the Railway hindsight-api) override where those two clients point.
 
 Skip what you don't use: every unconfigured client reports
 `not_configured` instead of failing.

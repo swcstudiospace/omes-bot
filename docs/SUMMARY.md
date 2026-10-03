@@ -10,6 +10,7 @@
 
 - [User guide](user-guide.md)
 - [Tool host](tool-host.md)
+- [Substrate surface](substrate.md)
 
 ## Build
 

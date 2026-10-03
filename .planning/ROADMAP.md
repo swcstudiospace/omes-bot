@@ -8,10 +8,11 @@
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)
 - ✅ **v5 Desk packs** — Phases 26-33 (shipped 2026-10-03)
 - ✅ **v6 Grok ship** — Phases 34-38 (shipped 2026-10-03)
+- ✅ **v7 Substrate surface** — Phases 39-43 (shipped 2026-10-03)
 
-Archives: `milestones/v1-ROADMAP.md` through `milestones/v6-ROADMAP.md`
+Archives: `milestones/v1-ROADMAP.md` through `milestones/v7-ROADMAP.md`
 with phase directories under `milestones/v1-phases/` through
-`milestones/v6-phases/`.
+`milestones/v7-phases/`.
 
 ## Phases
 

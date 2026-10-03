@@ -14,7 +14,7 @@ def test_shipped_cases_all_pass(tmp_path: Path):
     report = run_suite(CASES, tmp_path)
 
     assert report["failed"] == 0
-    assert report["passed"] == 21
+    assert report["passed"] == 23
     assert [result["id"] for result in report["results"]] == [
         "golden-greeting",
         "golden-read-roundtrip",
@@ -26,6 +26,7 @@ def test_shipped_cases_all_pass(tmp_path: Path):
         "golden-infra-approved-runs",
         "golden-quality-approved-runs",
         "golden-packs-approved-runs",
+        "golden-substrate-claim-approved",
         "redteam-policy-escape",
         "redteam-exfil-blocked",
         "redteam-injection-contained",
@@ -37,6 +38,7 @@ def test_shipped_cases_all_pass(tmp_path: Path):
         "redteam-mobile-halt-unapproved",
         "redteam-infra-redeploy-unapproved",
         "redteam-packs-push-unapproved",
+        "redteam-substrate-claim-unapproved",
     ]
     assert main([str(CASES)]) == 0
 

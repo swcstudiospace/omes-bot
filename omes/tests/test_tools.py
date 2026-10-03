@@ -21,6 +21,7 @@ from omes.tools.mobile import MOBILE_TOOL_NAMES
 from omes.tools.infra import INFRA_TOOL_NAMES
 from omes.tools.packs import PACKS_TOOL_NAMES
 from omes.tools.ultrathink import ULT_TOOL_NAMES
+from omes.tools.substrate_tools import SUBSTRATE_TOOL_NAMES
 from omes.tools.quality import QUALITY_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
@@ -381,4 +382,5 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + QUALITY_TOOL_NAMES
         + PACKS_TOOL_NAMES
         + ULT_TOOL_NAMES
+        + SUBSTRATE_TOOL_NAMES
     )

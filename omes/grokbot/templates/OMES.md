@@ -26,6 +26,11 @@ any ultrathink plan, works its waves, and ships through a reviewed PR.
 New here: follow grokbot/SETUP.md — install, secrets, optional tool
 host, then the smoke prompt that proves the install.
 
+Substrate surface: on installs wired to the agent substrate (SUBSTRATE_URL
+plus a token), the turn opens with a shared brief and reports its tool
+trail with graph provenance; docs answer from RAGflow, episodes from the
+shared Hindsight bank. Unwired installs run fully local.
+
 ## Enabled skills
 
 ## Routines

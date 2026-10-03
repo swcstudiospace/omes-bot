@@ -9,7 +9,8 @@
 # Mobile names from register_mobile_tools, then Infra names from
 # register_infra_tools, then Quality names from register_quality_tools,
 # then App names from register_packs_tools, then Ultrathink
-# names from register_ultrathink_tools.
+# names from register_ultrathink_tools, then Substrate names from
+# register_substrate_tools.
 # This list is exactly those names, in that order.
 # Absorbed desk contracts (Phase 32): tool-rosters lead/systems/web/
 # android/ios/infra/quality/_core.yaml and tool-packs clippyos/desklanes/
@@ -122,3 +123,8 @@ tools:
   - ult_ship_pr
   - ult_ship_review
   - ult_ship_merge
+  - substrate_docs_search
+  - substrate_graph_claim
+  - substrate_graph_release
+  - substrate_graph_complete
+  - substrate_graph_heartbeat

@@ -1,12 +1,12 @@
 ---
 gsd_state_version: "1.0"
-milestone: v6
-current_phase: 38
-current_phase_name: Docs + GitBook
+milestone: v7
+current_phase: 43
+current_phase_name: Evals + ship
 status: completed
-last_updated: "2026-10-03T12:30:00Z"
+last_updated: "2026-10-03T19:05:00Z"
 last_activity: 2026-10-03
-last_activity_desc: v6 milestone audited (passed) and archived
+last_activity_desc: v7 milestone audited (passed) and archived
 progress:
   total_phases: 5
   completed_phases: 5
@@ -21,15 +21,15 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-10-03)
 
-**Core value:** Omes as an Add-Bot Grok product: magic keywords, native ultrathink, attachable MCP tool host, clean setup, GitBook docs.
-**Current focus:** v6 milestone complete — ready for next milestone
+**Core value:** Omes as a substrate surface: brief-on-open, turn/tool trail with graph provenance, shared memory, Hindsight episodes, RAGflow docs — behind the store lock.
+**Current focus:** v7 milestone complete — ready for next milestone
 
 ## Current Position
 
-Phase: 38 of 38 (Docs + GitBook, v6 milestone)
+Phase: 43 of 43 (Evals + ship, v7 milestone)
 Plan: 5 of 5 complete
 Status: Milestone complete, archived
-Last activity: 2026-10-03 — v6 milestone audited (passed) and archived
+Last activity: 2026-10-03 — v7 milestone audited (passed) and archived
 
 Progress: [██████████] 100%
 
@@ -49,7 +49,7 @@ Progress: [██████████] 100%
 
 **Recent Trend:**
 
-- Last 5 plans: 34-01, 35-01, 36-01, 37-01, 38-01
+- Last 5 plans: 39-01, 40-01, 41-01, 42-01, 43-01
 - Trend: Stable
 
 ## Accumulated Context
@@ -58,9 +58,9 @@ Progress: [██████████] 100%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
-- v6 scope: full milestone (user chose full over docs-first/agent-first slices 2026-10-03).
-- v6 runtime: hybrid architecture (Add-Bot template + optional MCP tool host), MIT license (user approved spike 2026-10-03).
-- Repo moved: swcstudiospace/omes-bot is the real repo (was SomeRandmGuyy/Omes-Bot); PR #2 closed as superseded.
+- v7 scope: substrate surface (user chose substrate-mediated + shared bank + fakes/live-probes 2026-10-03).
+- Omes is the grok-bot surface (no upstream `omes` surface; adding one is out of scope).
+- Graph mutations require approval; docs + heartbeat stay unflagged.
 
 ### Pending Todos
 

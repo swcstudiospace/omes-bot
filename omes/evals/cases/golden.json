@@ -133,5 +133,18 @@
     "expect": [
       {"type": "tool_called", "name": "app_push_test"}
     ]
+  },
+  {
+    "id": "golden-substrate-claim-approved",
+    "kind": "golden",
+    "registry": true,
+    "tool": "substrate_graph_claim",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"graph_id": "ut-1", "node_id": "n1", "session_id": "s1"},
+    "returns": {"ok": true, "token": "lease-tok", "expires": "soon"},
+    "expect": [
+      {"type": "tool_called", "name": "substrate_graph_claim"}
+    ]
   }
 ]

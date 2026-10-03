@@ -106,7 +106,12 @@
       "ult_ship_assess",
       "ult_ship_pr",
       "ult_ship_review",
-      "ult_ship_merge"
+      "ult_ship_merge",
+      "substrate_docs_search",
+      "substrate_graph_claim",
+      "substrate_graph_release",
+      "substrate_graph_complete",
+      "substrate_graph_heartbeat"
     ]
   },
   "paths": {

@@ -65,6 +65,12 @@ class Agent:
     :class:`MagicKeywordSettings` (all on when omitted). A user turn
     containing ``ultrathink``, ``orchestrate``, or ``workflowz`` as
     standalone prose gains that word's notice rows for the turn.
+
+    Substrate surface: ``substrate`` is a :class:`SubstrateSession` (or
+    duck-typed equivalent). Each turn opens it once (brief cached after the
+    first open), prepends its brief block to the system prompt, and emits
+    the prompt plus a turn-end note. Tool calls are reported from the tool
+    round. ``None`` keeps the turn fully local.
     """
 
     model: Model
@@ -84,6 +90,7 @@ class Agent:
     run_id: str | None = None
     tracer: Any | None = None
     magic_keywords: Any | None = None
+    substrate: Any | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -119,13 +126,16 @@ def run_conversation(
         agent.lease = lease
     lease.acquire()
     try:
-        return _run_conversation_turn(
+        system_message = _open_substrate(agent, user_message, system_message)
+        result = _run_conversation_turn(
             agent,
             user_message,
             system_message=system_message,
             conversation_history=conversation_history,
             task_id=task_id,
         )
+        _close_substrate_turn(agent, result)
+        return result
     finally:
         lease.release()
 
@@ -265,6 +275,37 @@ def _run_conversation_turn(
         return result
     finally:
         restore_tools(agent, original_tools)
+
+
+def _open_substrate(agent: Agent, user_message: Any, system_message: str | None) -> str | None:
+    """Open the substrate session; prepend its brief block. Never raises."""
+    substrate = getattr(agent, "substrate", None)
+    if substrate is None:
+        return system_message
+    try:
+        substrate.open()
+        block = substrate.brief_block()
+    except Exception:
+        return system_message
+    if block:
+        system_message = f"{block}\n\n{system_message}" if system_message else block
+    try:
+        substrate.on_prompt(user_message)
+    except Exception:
+        pass
+    return system_message
+
+
+def _close_substrate_turn(agent: Agent, result: dict) -> None:
+    """Report the turn-end note. Never raises."""
+    substrate = getattr(agent, "substrate", None)
+    if substrate is None:
+        return
+    try:
+        reason = result.get("turn_exit_reason") if isinstance(result, dict) else None
+        substrate.on_turn_end(reason)
+    except Exception:
+        pass
 
 
 def _install_system_prompt(agent: Agent, messages: list, system_message: str | None) -> None:

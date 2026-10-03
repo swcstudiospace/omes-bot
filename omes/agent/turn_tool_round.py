@@ -39,14 +39,16 @@ def run_tool_round(
     messages.append(_assistant_row(assistant_message, tool_calls))
     for call in tool_calls:
         name, arguments, call_id = _split_call(call)
+        content = _execute(agent, name, arguments)
         messages.append(
             {
                 "role": "tool",
                 "name": name,
                 "tool_call_id": call_id,
-                "content": _execute(agent, name, arguments),
+                "content": content,
             }
         )
+        _report_tool_call(agent, name, arguments, content)
     steer = _drain_pending_steer(agent)
     if steer and tool_calls:
         messages.append(steer_user_row(steer))
@@ -100,6 +102,18 @@ def _execute(agent: Any, name: str, arguments: dict) -> str:
     if isinstance(result, str):
         return result
     return str(result)
+
+
+def _report_tool_call(agent: Any, name: str, arguments: dict, content: str) -> None:
+    """Report one executed call to the substrate session. Never raises."""
+    substrate = getattr(agent, "substrate", None)
+    if substrate is None:
+        return
+    try:
+        ok = not (isinstance(content, str) and content.startswith("error:"))
+        substrate.on_tool_call(name, arguments, ok=ok)
+    except Exception:
+        pass
 
 
 def _call_without_args(fn: Any) -> Any:
