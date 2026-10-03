@@ -9,6 +9,7 @@ the only sanctioned rewrite, and this loop does not call it.
 
 from __future__ import annotations
 
+import uuid
 from dataclasses import dataclass
 from typing import Any
 
@@ -51,6 +52,9 @@ class Agent:
     Omp mode options: ``plan_mode`` refuses write tools without calling them;
     ``extensions`` is an :class:`ExtensionHooks` whose ``before_model`` hooks run
     before the legacy ``before_model`` hook each iteration.
+
+    Durability options: ``journal`` is a :class:`TurnJournal` that persists
+    every appended row; ``run_id`` names the run (a fresh hex id by default).
     """
 
     model: Model
@@ -66,6 +70,8 @@ class Agent:
     speculative_tools: Any | None = None
     plan_mode: bool = False
     extensions: Any | None = None
+    journal: Any | None = None
+    run_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -122,10 +128,12 @@ def _run_conversation_turn(
 ) -> dict:
     messages: list = conversation_history if conversation_history is not None else []
     emit(agent, "turn_start")
+    run_id = _begin_journal(agent)
     since = len(messages)
     _install_system_prompt(agent, messages, system_message)
     messages.append({"role": "user", "content": user_message})
     _emit_new_rows(agent, messages, since)
+    _journal_new_rows(agent, run_id, messages, since)
 
     api_call_count = 0
     final_response: str | None = None
@@ -189,6 +197,7 @@ def _run_conversation_turn(
                     messages.append(steer_user_row(late_steer))
                 apply_tool_marks(agent, messages, since)
                 _emit_new_rows(agent, messages, since)
+                _journal_new_rows(agent, run_id, messages, since)
                 if not account_output(
                     agent, *[_tool_content(row) for row in messages[since:]]
                 ):
@@ -208,6 +217,7 @@ def _run_conversation_turn(
                 finish_reason=str(finish_reason),
             )
             _emit_new_rows(agent, messages, since)
+            _journal_new_rows(agent, run_id, messages, since)
             final_response = verdict.final_response
             turn_exit_reason = verdict.turn_exit_reason
             break
@@ -233,7 +243,9 @@ def _run_conversation_turn(
             task_id=task_id,
         )
         _emit_new_rows(agent, messages, since)
+        _journal_new_rows(agent, run_id, messages, since)
         emit(agent, "turn_end", turn_exit_reason=result["turn_exit_reason"])
+        _finish_journal(agent, run_id, result)
         return result
     finally:
         restore_tools(agent, original_tools)
@@ -252,6 +264,37 @@ def _install_system_prompt(agent: Agent, messages: list, system_message: str | N
         messages.append(row)
     else:
         messages.insert(0, row)
+
+
+def _begin_journal(agent: Agent) -> str | None:
+    """Open the journal run. None when the agent journals nothing."""
+    journal = getattr(agent, "journal", None)
+    if journal is None:
+        return None
+    run_id = getattr(agent, "run_id", None)
+    if not run_id:
+        run_id = uuid.uuid4().hex
+        agent.run_id = run_id
+    journal.begin_run(run_id)
+    return run_id
+
+
+def _journal_new_rows(agent: Agent, run_id: str | None, messages: list, since: int) -> None:
+    """Persist rows appended at ``messages[since:]``. No journal, no-op."""
+    journal = getattr(agent, "journal", None)
+    if journal is None or run_id is None:
+        return
+    for row in messages[since:]:
+        journal.append(run_id, dict(row) if isinstance(row, dict) else {"row": row})
+
+
+def _finish_journal(agent: Agent, run_id: str | None, result: dict) -> None:
+    """Close the journal run with the result's reason and response."""
+    journal = getattr(agent, "journal", None)
+    if journal is None or run_id is None:
+        return
+    response = result.get("final_response", "")
+    journal.finish_run(run_id, str(result.get("turn_exit_reason", "stopped")), str(response))
 
 
 def _run_extension_hooks(agent: Agent, messages: list) -> dict | None:

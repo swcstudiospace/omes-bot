@@ -15,6 +15,8 @@ from typing import Any, Callable
 from omes.agent.conversation_loop import Agent, run_conversation
 from omes.agent.model import Model
 
+HISTORY_LIMIT = 20
+
 
 class JobStore:
     """One JSON file of jobs. A new store reloads what an earlier store wrote."""
@@ -42,6 +44,8 @@ class JobStore:
                 "completed": False,
                 "last_result": None,
                 "last_ran_at": None,
+                "history": [],
+                "claimed_at": None,
             }
         )
         self._save()
@@ -53,6 +57,8 @@ class JobStore:
         ``runner(prompt)`` is called once per due job. ``last_result`` becomes
         that string and ``last_ran_at`` becomes ``now``. An interval moves
         ``due_at`` to ``now + interval_seconds``. A one-shot job completes.
+        Each execution is recorded in the job's bounded history, and a job
+        already claimed or completed for ``now`` is not re-run.
         """
         ran: list[dict] = []
         for job in self.jobs:
@@ -60,8 +66,24 @@ class JobStore:
                 continue
             if job["due_at"] > now:
                 continue
+            history = job.get("history")
+            if not isinstance(history, list):
+                history = []
+                job["history"] = history
+            if job.get("claimed_at") == now:
+                continue
+            if any(
+                isinstance(entry, dict) and entry.get("ran_at") == now
+                for entry in history
+            ):
+                continue
+            job["claimed_at"] = now
+            self._save()
             job["last_result"] = runner(job["prompt"])
             job["last_ran_at"] = now
+            history.append({"ran_at": now, "result": job["last_result"]})
+            del history[:-HISTORY_LIMIT]
+            job["claimed_at"] = None
             interval = job.get("interval_seconds")
             if interval is not None:
                 job["due_at"] = now + interval
@@ -80,6 +102,10 @@ class JobStore:
         jobs = data.get("jobs") if isinstance(data, dict) else None
         if not isinstance(jobs, list):
             raise ValueError(f"job store {self.path} is not a jobs list")
+        for job in jobs:
+            if isinstance(job, dict):
+                job.setdefault("history", [])
+                job.setdefault("claimed_at", None)
         self.jobs = jobs
 
     def _save(self) -> None:
@@ -105,4 +131,4 @@ def run_due_jobs(
     return store.tick(now, runner)
 
 
-__all__ = ["JobStore", "run_due_jobs"]
+__all__ = ["HISTORY_LIMIT", "JobStore", "run_due_jobs"]
