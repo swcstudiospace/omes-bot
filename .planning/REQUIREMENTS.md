@@ -27,9 +27,9 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## Docs + GitBook
 
-- [ ] **DOC-01**: Build-aesthetics documentation (how Omes is built: agent, packs, contracts, receipts).
-- [ ] **DOC-02**: User guide + setup flow docs for Grok Bot installs.
-- [ ] **DOC-03**: GitBook Git Sync structure (`docs/`, `SUMMARY.md`) + dashboard connection guide.
+- [x] **DOC-01**: Build-aesthetics documentation (how Omes is built: agent, packs, contracts, receipts).
+- [x] **DOC-02**: User guide + setup flow docs for Grok Bot installs.
+- [x] **DOC-03**: GitBook Git Sync structure (`docs/`, `SUMMARY.md`) + dashboard connection guide.
 
 ## Traceability
 
@@ -43,9 +43,9 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 | MCP-02 | Phase 36 | Done |
 | TPL-01 | Phase 37 | Done |
 | TPL-02 | Phase 37 | Done |
-| DOC-01 | Phase 38 | Todo |
-| DOC-02 | Phase 38 | Todo |
-| DOC-03 | Phase 38 | Todo |
+| DOC-01 | Phase 38 | Done |
+| DOC-02 | Phase 38 | Done |
+| DOC-03 | Phase 38 | Done |
 
 **Coverage:**
 

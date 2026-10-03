@@ -1,0 +1,5 @@
+# GitBook space config: read the docs/ directory of the mapped repo.
+root: ./docs/
+structure:
+  readme: README.md
+  summary: SUMMARY.md

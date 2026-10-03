@@ -21,11 +21,11 @@ connector asks for it (Grok Bot settings or your host's env):
 
 | Secret | Needed for | Where it goes |
 | --- | --- | --- |
-| Model API key | Grok default model calls outside Grok Bot | host env only |
-| `X_BEARER_TOKEN` | X connector tools | credential broker env |
-| `TELEGRAM_BOT_TOKEN` | Telegram connector tools | credential broker env |
-| `DISCORD_BOT_TOKEN` | Discord connector tools | credential broker env |
-| GitHub token | Greptile reviews, ship PRs | host env (`GH_TOKEN`) |
+| `XAI_API_KEY` | Grok model calls outside Grok Bot | host env, resolved via the credential broker |
+| X API Bearer [REDACTED] | X connector tools | provided when wiring the connector |
+| Telegram bot token (BotFather) | Telegram connector tools | provided when wiring the connector |
+| Discord bot token | Discord connector tools | provided when wiring the connector |
+| GitHub token | Greptile reviews, ship PRs | host via `gh auth` |
 
 Skip what you don't use: every unconfigured client reports
 `not_configured` instead of failing.

@@ -29,7 +29,7 @@ parity checks pass.
 - [x] **Phase 35: Ultrathink native** - Grok-host routines + CLI bridge tools. (completed 2026-10-03)
 - [x] **Phase 36: MCP tool host** - Registry over MCP stdio + host profiles. (completed 2026-10-03)
 - [x] **Phase 37: Template + setup** - Add-Bot template, setup flow, MIT license. (completed 2026-10-03)
-- [ ] **Phase 38: Docs + GitBook** - Aesthetics, user guide, sync structure.
+- [x] **Phase 38: Docs + GitBook** - Aesthetics, user guide, sync structure. (completed 2026-10-03)
 
 ## Phase Details
 
@@ -101,7 +101,7 @@ Plans:
 
 Plans:
 
-- [ ] 38-01: Docs set, summary, sync guide
+- [x] 38-01: Docs set, summary, sync guide
 
 ## Progress
 
@@ -115,4 +115,4 @@ Phases execute in numeric order.
 | 35. Ultrathink native | 1/1 | Complete    | 2026-10-03 |
 | 36. MCP tool host | 1/1 | Complete    | 2026-10-03 |
 | 37. Template + setup | 1/1 | Complete    | 2026-10-03 |
-| 38. Docs + GitBook | 0/1 | Not started | — |
+| 38. Docs + GitBook | 1/1 | Complete    | 2026-10-03 |
