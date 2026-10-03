@@ -23,7 +23,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 8: Edit pipeline** - Apply, reject a bad hunk, and repair.
 - [x] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
 - [x] **Phase 10: Modes and learning** - Sessions, tasks, plan mode, extensions, autolearn, goals, advisor, exec, and security checks.
-- [ ] **Phase 11: Memory unification** - Omp memories, hindsight, and mnemopi on the phase 4 store.
+- [x] **Phase 11: Memory unification** - Omp memories, hindsight, and mnemopi on the phase 4 store.
 - [ ] **Phase 12: Providers and install surface** - Provider contract, Grok adapter, remaining adapters, and a template that matches the registry.
 
 ## Phase Details
@@ -172,7 +172,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 11-01: Land Omp memory clients on the phase 4 provider
+- [x] 11-01: Land Omp memory clients on the phase 4 provider
 
 ### Phase 12: Providers and install surface
 **Goal**: A fake provider can drive the agent, the Grok adapter speaks the same contract, and the template, roster, and assembled prompt match the tools and skills that exist.
@@ -206,5 +206,5 @@ Phases execute in numeric order.
 | 8. Edit pipeline | 1/1 | Complete | 2026-10-03 |
 | 9. LSP and DAP | 1/1 | Complete | 2026-10-03 |
 | 10. Modes and learning | 1/1 | Complete | 2026-10-03 |
-| 11. Memory unification | 0/1 | Not started | - |
+| 11. Memory unification | 1/1 | Complete | 2026-10-03 |
 | 12. Providers and install surface | 0/1 | Not started | - |
