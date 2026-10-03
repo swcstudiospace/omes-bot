@@ -7,8 +7,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## Magic keywords
 
-- [ ] **KEY-01**: `ultrathink`, `orchestrate`, `workflowz` recognized in prompts per Omp matching rules (lowercase standalone prose; code spans/blocks ignored; per-turn).
-- [ ] **KEY-02**: Each word injects its notice for the turn with requires-gates adapted to Omes tools (`orchestrate` needs `delegate_task`; `workflowz` needs `delegate_task` + subagent batching).
+- [x] **KEY-01**: `ultrathink`, `orchestrate`, `workflowz` recognized in prompts per Omp matching rules (lowercase standalone prose; code spans/blocks ignored; per-turn).
+- [x] **KEY-02**: Each word injects its notice for the turn with requires-gates adapted to Omes tools (`orchestrate` needs `delegate_task`; `workflowz` needs `delegate_task` + subagent batching).
 
 ## Ultrathink native
 
@@ -35,8 +35,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| KEY-01 | Phase 34 | Todo |
-| KEY-02 | Phase 34 | Todo |
+| KEY-01 | Phase 34 | Done |
+| KEY-02 | Phase 34 | Done |
 | ULT-01 | Phase 35 | Todo |
 | ULT-02 | Phase 35 | Todo |
 | MCP-01 | Phase 36 | Todo |

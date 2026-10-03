@@ -27,6 +27,7 @@ from omes.agent.harness import (
     wrap_tools,
 )
 from omes.agent.interrupt import InterruptFlag
+from omes.agent.magic_keywords import notices_for_turn
 from omes.agent.model import Model
 from omes.agent.modes import apply_plan_mode
 from omes.agent.prompt_builder import build_system_prompt, steer_user_row
@@ -59,6 +60,11 @@ class Agent:
 
     Observability: ``tracer`` is a :class:`Tracer` recording one span per
     model call.
+
+    Magic keywords: ``magic_keywords`` is a
+    :class:`MagicKeywordSettings` (all on when omitted). A user turn
+    containing ``ultrathink``, ``orchestrate``, or ``workflowz`` as
+    standalone prose gains that word's notice rows for the turn.
     """
 
     model: Model
@@ -77,6 +83,7 @@ class Agent:
     journal: Any | None = None
     run_id: str | None = None
     tracer: Any | None = None
+    magic_keywords: Any | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -137,6 +144,8 @@ def _run_conversation_turn(
     since = len(messages)
     _install_system_prompt(agent, messages, system_message)
     messages.append({"role": "user", "content": user_message})
+    if isinstance(user_message, str):
+        messages.extend(notices_for_turn(user_message, agent.tools, agent.magic_keywords))
     _emit_new_rows(agent, messages, since)
     _journal_new_rows(agent, run_id, messages, since)
 
