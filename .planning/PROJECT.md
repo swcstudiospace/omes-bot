@@ -75,9 +75,9 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 | v4 uses real pip dependencies for third-party integrations | User chose pip deps over in-house ports for tweepy, MCP SDK, PyRIT, APScheduler, aiogram, discord.py (2026-10-03) | — Pending |
 | v5 absorbs the desk as lead + domain packs | User chose one Omes Lead with packs over a 7-seat port, entire-desk scope, interactive device review (2026-10-03) | ✓ Good |
-| v6 ships the Add-Bot product on the hybrid runtime | Spike proved Grok Bot runs on xAI's computer and templates don't carry secrets/MCP; user approved template + optional MCP host (2026-10-03) | — Pending |
-| v6 integrates ultrathink without vendoring; Omes-Bot is MIT | claude-ultrathink is AGPL-3.0; user chose MIT + prompt/bridge integration (2026-10-03) | — Pending |
+| v6 ships the Add-Bot product on the hybrid runtime | Spike proved Grok Bot runs on xAI's computer and templates don't carry secrets/MCP; user approved template + optional MCP host (2026-10-03) | ✓ Good |
+| v6 integrates ultrathink without vendoring; Omes-Bot is MIT | claude-ultrathink is AGPL-3.0; user chose MIT + prompt/bridge integration (2026-10-03) | ✓ Good |
 | swcstudiospace/omes-bot is the real repo | User created it 2026-10-03; history pushed there, old PR #2 closed as superseded | ✓ Good |
 
 ---
-*Last updated: 2026-10-03 after v6 milestone creation (5 phases, 11 requirements)*
+*Last updated: 2026-10-03 after v6 milestone close (5/5 phases, 5/5 plans, 11/11 requirements; v6 archived)*

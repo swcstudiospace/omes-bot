@@ -1,10 +1,20 @@
 # Milestones
 
-## v6 — Grok ship (in progress)
+## v6 — Grok ship (2026-10-03)
 
-**Status:** In progress. 0/5 phases, 11 requirements Todo.
+**Status:** Complete. 5/5 phases, 5/5 plans, 11/11 requirements Done.
 
-**Scope:** Omes as an Add-Bot product — magic keywords, native ultrathink, MCP tool host, template + setup flow, GitBook docs. Ground truth: `.planning/research/v6-runtime-spike.md`.
+**Core value delivered:** Omes as a Grok Bot Add-Bot product — Omp magic keywords in the loop (differential-clean vs Omp), ultrathink natively integrated (skill + turn routine + 7 CLI bridge tools, zero AGPL vendored), the registry served over MCP stdio with OpenShell/AgentOS host profiles, a polished template + four-step setup flow with a runnable smoke check, MIT license, and a six-page docs set structured for GitBook Git Sync.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 235 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0.
+
+**Archive:** `milestones/v6-ROADMAP.md`, `milestones/v6-REQUIREMENTS.md`, `milestones/v6-MILESTONE-AUDIT.md`, `milestones/v6-phases/`.
+
+**Decisions:** hybrid runtime (template + optional MCP tool host) from the runtime spike; MIT license with bridge-only ultrathink integration; docs verified claim-by-claim against the codebase.
+
+**Deferred:** Grok marketplace listing (staff-added, no self-serve); GitBook/GitHub Sync connection (dashboard action); Greptile connection for the new repo (dashboard action).
+
+**Tech debt / known limits:** ultrathink max-effort override not ported (no Omes knob); workflowz eval-kernel contract rewritten for delegate batches; delegate excluded from the MCP server (needs a live parent); AgentOS cannot host CPython (actor-calls-host pattern documented).
 
 ## v5 — Desk packs (2026-10-03)
 
