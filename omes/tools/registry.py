@@ -23,18 +23,24 @@ class ToolRegistry:
     ``approval_log`` gates tools registered with ``requires_approval``. ``None``
     leaves every flagged tool unapproved. Unflagged tools are unchanged.
     ``policy`` refuses names the seat policy does not allow, before approvals
-    and before the handler. ``audit`` records one verdict per dispatch.
-    ``None`` for either keeps the historical behavior.
+    and before the handler. ``audit`` records one verdict per dispatch, and
+    ``tracer`` records one tool span (plus a policy span on refusals).
+    ``None`` for any of them keeps the historical behavior.
     """
 
     def __init__(
-        self, approval_log: Any = None, policy: Any = None, audit: Any = None
+        self,
+        approval_log: Any = None,
+        policy: Any = None,
+        audit: Any = None,
+        tracer: Any = None,
     ) -> None:
         self._tools: dict[str, _Tool] = {}
         self._order: list[str] = []
         self._approval_log = approval_log
         self._policy = policy
         self._audit = audit
+        self._tracer = tracer
 
     def register(
         self,
@@ -104,10 +110,18 @@ class ToolRegistry:
         return encoded
 
     def _record(self, tool: str, verdict: str, reason: str | None = None) -> None:
-        """Append one audit record when an audit log is attached."""
-        if self._audit is None:
-            return
-        self._audit.append(tool, verdict, reason)
+        """Append one audit record, and trace the dispatch, when attached."""
+        if self._audit is not None:
+            self._audit.append(tool, verdict, reason)
+        if self._tracer is not None:
+            fields: dict[str, Any] = {"verdict": verdict}
+            if reason is not None:
+                fields["reason"] = reason
+            self._tracer.span("tool", tool, fields)
+            if verdict == "denied" and reason == "policy forbids":
+                self._tracer.span(
+                    "policy", tool, {"verdict": "denied", "reason": f"policy forbids {tool}"}
+                )
 
 
 class _Tool:

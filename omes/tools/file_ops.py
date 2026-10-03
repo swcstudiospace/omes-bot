@@ -32,12 +32,14 @@ class FileWorkspace:
     """File tools bound to one directory. The root is resolved once.
 
     ``policy`` is a seat policy (or None). When set, the three writers refuse
-    a read-only path before reading or writing a byte.
+    a read-only path before reading or writing a byte. ``tracer`` records a
+    policy span for each refusal.
     """
 
-    def __init__(self, root: str | Path, *, policy: Any = None) -> None:
+    def __init__(self, root: str | Path, *, policy: Any = None, tracer: Any = None) -> None:
         self.root = require_directory(root)
         self._policy = policy
+        self._tracer = tracer
 
     def read_file(self, path: str) -> dict[str, Any]:
         """Return the UTF-8 contents of ``path``. The file is not created."""
@@ -143,6 +145,12 @@ class FileWorkspace:
         relative = _relative(self.root, target)
         if self._policy.allows_write(relative):
             return None
+        if self._tracer is not None:
+            self._tracer.span(
+                "policy",
+                relative,
+                {"verdict": "denied", "reason": f"policy forbids writing {relative}"},
+            )
         return {"error": f"policy forbids writing {relative}"}
 
 

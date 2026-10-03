@@ -9,6 +9,7 @@ the only sanctioned rewrite, and this loop does not call it.
 
 from __future__ import annotations
 
+import time
 import uuid
 from dataclasses import dataclass
 from typing import Any
@@ -55,6 +56,9 @@ class Agent:
 
     Durability options: ``journal`` is a :class:`TurnJournal` that persists
     every appended row; ``run_id`` names the run (a fresh hex id by default).
+
+    Observability: ``tracer`` is a :class:`Tracer` recording one span per
+    model call.
     """
 
     model: Model
@@ -72,6 +76,7 @@ class Agent:
     extensions: Any | None = None
     journal: Any | None = None
     run_id: str | None = None
+    tracer: Any | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -173,7 +178,9 @@ def _run_conversation_turn(
                 turn_exit_reason = "budget_exhausted"
                 break
             api_call_count += 1
+            started = time.monotonic()
             assistant_message = agent.model.complete(messages, original_tools)
+            _trace_model_call(agent, started)
             if not isinstance(assistant_message, dict):
                 raise TypeError("model.complete must return an assistant message dict")
             if not account_output(agent, assistant_message.get("content")):
@@ -264,6 +271,20 @@ def _install_system_prompt(agent: Agent, messages: list, system_message: str | N
         messages.append(row)
     else:
         messages.insert(0, row)
+
+
+def _trace_model_call(agent: Agent, started: float) -> None:
+    """Record one model span. No tracer, no-op."""
+    tracer = getattr(agent, "tracer", None)
+    if tracer is None:
+        return
+    elapsed_ms = round((time.monotonic() - started) * 1000.0, 3)
+    tracer.span(
+        "model",
+        type(agent.model).__name__,
+        {"model": type(agent.model).__name__},
+        duration_ms=max(0.0, elapsed_ms),
+    )
 
 
 def _begin_journal(agent: Agent) -> str | None:

@@ -7,6 +7,7 @@ from omes.providers.base import Provider, ProviderError, ProviderModel, Transpor
 from omes.providers.fake import FakeTransport
 from omes.providers.gemini import GeminiProvider
 from omes.providers.grok import GrokProvider
+from omes.providers.http import HttpTransport
 from omes.providers.ollama import OllamaProvider
 from omes.providers.openai import OpenAIProvider
 
@@ -17,6 +18,7 @@ __all__ = [
     "OllamaProvider",
     "OpenAIProvider",
     "FakeTransport",
+    "HttpTransport",
     "Provider",
     "ProviderError",
     "ProviderModel",
