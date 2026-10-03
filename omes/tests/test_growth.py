@@ -18,11 +18,13 @@ from omes.session.search import SessionStore, session_search
 from omes.skills_runtime.manager import skill_manage, skill_view
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
+from omes.tools.discord import DISCORD_TOOL_NAMES, DiscordClient, register_discord_tools
 from omes.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
 from omes.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.registry import ToolRegistry
+from omes.tools.telegram import TELEGRAM_TOOL_NAMES, TelegramClient, register_telegram_tools
 from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -457,6 +459,10 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_platform_tools(registry, home=tmp_path)
     register_ide_tools(registry, tmp_path)
     register_x_tools(registry, XClient(FakeTransport(), token="fake"))
+    register_telegram_tools(
+        registry, TelegramClient(make_bot=lambda token: None, token="fake")
+    )
+    register_discord_tools(registry, DiscordClient(make_client=lambda: None, token="fake"))
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -471,6 +477,8 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES
+        + TELEGRAM_TOOL_NAMES
+        + DISCORD_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

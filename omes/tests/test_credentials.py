@@ -34,7 +34,7 @@ def test_broker_injects_the_key_the_agent_never_handles():
     result = run_conversation(agent, "ping")
 
     assert result["final_response"] == "hi"
-    url, headers, _body = transport.calls[0]
+    method, url, headers, _body = transport.calls[0]
     assert url == "https://api.x.ai/v1/chat/completions"
     assert headers["Authorization"] == "Bearer xai-secret-value"
     assert model.api_key == ""

@@ -30,7 +30,11 @@
       "x_read_post",
       "x_post",
       "x_post_thread",
-      "x_upload_media"
+      "x_upload_media",
+      "telegram_updates",
+      "telegram_send",
+      "discord_read",
+      "discord_send"
     ]
   },
   "paths": {

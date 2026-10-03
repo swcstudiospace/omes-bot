@@ -1,5 +1,21 @@
 # Milestones
 
+## v4 — Third-party integrations (2026-10-03)
+
+**Status:** Complete. 5/5 phases, 5/5 plans, 11/11 requirements Done.
+
+**Core value delivered:** the Grok Bot wired to third-party libraries as real pip dependencies — a tweepy X transport behind the existing connector, an official-SDK MCP session client beside the one-shot caller, a PyRIT target with a keyless adversarial battery, an APScheduler backend driving JobStore jobs, and Telegram + Discord connector families in the Phase 17 shape with roster and policy entries.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 167 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
+
+**Archive:** `milestones/v4-ROADMAP.md`, `milestones/v4-REQUIREMENTS.md`.
+
+**Decisions:** pip deps over in-house ports for all six libraries (user chose all-candidates + pip deps); tweepy transport is bearer-only with an injectable client factory; media upload stays raw HTTP behind a fallback; PyRIT memory is in-memory SQLite; scheduler entries are memory-only with the JSON store authoritative and fires serialized; Discord is REST-only with no gateway.
+
+**Deferred:** OAuth1 user-context for live posting; chunked media upload; PyRIT orchestrator-driven multi-turn attacks and scorer-based judging; sweep/nightly wiring to the scheduler service; live inbound listeners for Telegram/Discord.
+
+**Tech debt / known limits:** no live-endpoint verification (fake transports/peers + scripted servers only); discord.py pulls an `audioop` deprecation warning on 3.12; CI install time grows with the six dependencies.
+
 ## v3 — Grok Bot (2026-10-03)
 
 **Status:** Complete. 4/4 phases, 4/4 plans, 10/10 requirements Done.

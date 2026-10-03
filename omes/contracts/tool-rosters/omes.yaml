@@ -2,7 +2,8 @@
 # Coding names from register_coding_tools, then growth names from register_growth_tools,
 # then delegate_task from register_delegate_tools, then platform names from
 # register_platform_tools, then IDE names from register_ide_tools,
-# then X names from register_x_tools.
+# then X names from register_x_tools, then Telegram names from
+# register_telegram_tools, then Discord names from register_discord_tools.
 # This list is exactly those names, in that order.
 version: 1
 seat: bot-00-omes
@@ -36,3 +37,7 @@ tools:
   - x_post
   - x_post_thread
   - x_upload_media
+  - telegram_updates
+  - telegram_send
+  - discord_read
+  - discord_send

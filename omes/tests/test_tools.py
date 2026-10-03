@@ -12,6 +12,8 @@ from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES
 from omes.tools.ide import IDE_TOOL_NAMES
 from omes.tools.x import X_TOOL_NAMES
+from omes.tools.telegram import TELEGRAM_TOOL_NAMES
+from omes.tools.discord import DISCORD_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES
@@ -361,4 +363,6 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES
+        + TELEGRAM_TOOL_NAMES
+        + DISCORD_TOOL_NAMES
     )

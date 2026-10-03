@@ -3,6 +3,14 @@ name = "omes-bot"
 version = "0.1.0"
 description = "One Grok programming bot. Hermes and oh-my-pi agent logic in one Python process."
 requires-python = ">=3.11"
+dependencies = [
+  "tweepy>=4.14",
+  "mcp>=1.0",
+  "pyrit>=1.0",
+  "apscheduler>=3.10",
+  "aiogram>=3.0",
+  "discord.py>=2.0",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["omes/tests"]
