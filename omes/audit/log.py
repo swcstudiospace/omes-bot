@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from omes.credentials.redact import redact_text
+
 VERDICTS = ("allowed", "denied", "error", "unknown")
 
 
@@ -26,7 +28,7 @@ class AuditLog:
         self._seq = self._last_seq()
 
     def append(self, tool: str, verdict: str, reason: str | None = None) -> dict:
-        """Append one record. Return it."""
+        """Append one record. The reason is stored redacted."""
         if verdict not in VERDICTS:
             raise ValueError(f"verdict must be one of {', '.join(VERDICTS)}")
         self._seq += 1
@@ -37,7 +39,7 @@ class AuditLog:
             "verdict": verdict,
         }
         if reason is not None:
-            record["reason"] = str(reason)
+            record["reason"] = redact_text(str(reason))
         with self.path.open("a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, ensure_ascii=False) + "\n")
         return record

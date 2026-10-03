@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any
 
+from omes.credentials.redact import redact_text
 from omes.memory.store import MemoryStore
 
 INDICATOR_GLYPH = "🧠"
@@ -94,7 +95,7 @@ class BuiltinMemoryProvider(MemoryProvider):
         if is_trivial_prompt(query if isinstance(query, str) or query is None else None):
             return ""
         self.store.load_from_disk()
-        return self.store.render()
+        return redact_text(self.store.render())
 
     def get_tool_schemas(self) -> list[dict[str, Any]]:
         return [

@@ -46,24 +46,42 @@ class Provider:
 
 
 class ProviderModel:
-    """A turn-loop ``Model`` driven by one provider plus one transport."""
+    """A turn-loop ``Model`` driven by one provider plus one transport.
+
+    With a broker, the key is resolved per request URL and the agent never
+    sees it: the request is built once with an empty key to learn the URL,
+    the broker approves the host and resolves the key, then the request is
+    rebuilt for real. Without a broker the ``api_key`` parameter rules.
+    """
 
     def __init__(
-        self, provider: Provider, model: str, transport: Transport, api_key: str = ""
+        self,
+        provider: Provider,
+        model: str,
+        transport: Transport,
+        api_key: str = "",
+        broker: Any = None,
     ) -> None:
         self.provider = provider
         self.model = model
         self.transport = transport
         self.api_key = api_key
+        self.broker = broker
 
     def complete(self, messages: list, tools: Any = None) -> dict:
         """Build, POST, and parse one assistant message."""
+        key = self.api_key
+        if self.broker is not None:
+            probe_url, _, _ = self.provider.build_request(
+                self.model, list(messages), tools, ""
+            )
+            key = self.broker.key_for(self.provider, probe_url)
         if self.provider.requires_key and (
-            not isinstance(self.api_key, str) or self.api_key == ""
+            not isinstance(key, str) or key == ""
         ):
             raise ProviderError(f"{self.provider.name} needs an API key")
         url, headers, body = self.provider.build_request(
-            self.model, list(messages), tools, self.api_key
+            self.model, list(messages), tools, key
         )
         try:
             payload = self.transport.post(url, headers, body)

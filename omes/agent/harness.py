@@ -43,10 +43,22 @@ def events_of(agent: Any) -> list:
 
 
 def emit(agent: Any, type: str, **payload: Any) -> dict:
-    """Append ``{"type": type, ...}`` to the agent's event sink."""
-    event = {"type": type, **payload}
+    """Append ``{"type": type, ...}`` to the agent's event sink.
+
+    String payload values are stored redacted: events must never carry keys.
+    """
+    event = {"type": type, **_redact_payload(payload)}
     events_of(agent).append(event)
     return event
+
+
+def _redact_payload(payload: dict) -> dict:
+    from omes.credentials.redact import redact_text
+
+    return {
+        key: redact_text(value) if isinstance(value, str) else value
+        for key, value in payload.items()
+    }
 
 
 # -------------------------------------------------------------- steer ---
