@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Coding toolset** - Registry, discovery, and the file, search, terminal, todo, clarify, web, and vision tools.
 - [x] **Phase 4: Skills and memory** - Skill manager, memory provider, session search, and the curator.
 - [x] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
-- [ ] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
+- [x] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
 - [ ] **Phase 7: Omp harness** - Events, steering, pause, budget, and compaction merged into the phase 2 loop.
 - [ ] **Phase 8: Edit pipeline** - Apply, reject a bad hunk, and repair.
 - [ ] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
@@ -107,7 +107,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 06-01: Code execution, MCP, browser, approvals, and plugin tools
+- [x] 06-01: Code execution, MCP, browser, approvals, and plugin tools
 
 ### Phase 7: Omp harness
 **Goal**: The phase 2 loop also behaves like the Omp agent core, still as one agent class.
@@ -201,7 +201,7 @@ Phases execute in numeric order.
 | 3. Coding toolset | 1/1 | Complete | 2026-10-02 |
 | 4. Skills and memory | 1/1 | Complete | 2026-10-02 |
 | 5. Delegation and cron | 1/1 | Complete | 2026-10-02 |
-| 6. Remaining Hermes tools | 0/1 | Not started | - |
+| 6. Remaining Hermes tools | 1/1 | Complete | 2026-10-03 |
 | 7. Omp harness | 0/1 | Not started | - |
 | 8. Edit pipeline | 0/1 | Not started | - |
 | 9. LSP and DAP | 0/1 | Not started | - |
