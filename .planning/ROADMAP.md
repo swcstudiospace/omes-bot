@@ -1,76 +1,74 @@
-# Roadmap: Omes Bot v2
+# Roadmap: Omes Bot v3
 
 ## Overview
 
-v1 built one agent that runs both Hermes and Omp logic (see `milestones/v1-ROADMAP.md`). v2 hardens that agent the way OpenShell and AgentOS harden theirs — declarative policy, a credential broker, durable runs, and real transports — while staying one in-process Python agent with one seat. Numbering continues from v1. A phase is done when its parity checks pass.
+v2 hardened the agent (see `milestones/v2-ROADMAP.md`). v3 turns it into a Grok Bot: an X connector tool family, an engagement sweep routine, nightly learning wired through the curator and autolearn, and an eval harness with CI. Numbering continues. A phase is done when its parity checks pass.
 
 ## Phases
 
 **Phase Numbering:**
 
-- Integer phases (13, 14, 15, 16): Planned v2 milestone work
-- Decimal phases (13.1, 13.2): Urgent insertions (marked with INSERTED)
+- Integer phases (17, 18, 19, 20): Planned v3 milestone work
+- Decimal phases (17.1, 17.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 13: Policy engine** - Seat policy, dispatch enforcement, advisor diffs, and a persisted audit log.
-- [x] **Phase 14: Credential broker** - Env-backed keys injected per approved endpoint, with secret redaction.
-- [x] **Phase 15: Durable runs** - Turn journal with resume, cron execution history, checkpointed workflows.
-- [x] **Phase 16: Transports and traces** - Stdlib HTTP with retries, and structured trace export.
+- [ ] **Phase 17: X connector** - Mentions, posts, threads, and media upload behind the broker.
+- [ ] **Phase 18: Engagement sweep** - Mentions in, queued reply drafts out, checkpointed.
+- [ ] **Phase 19: Nightly learning** - Transcripts reviewed, earned skills created.
+- [ ] **Phase 20: Eval harness** - Golden persona evals, red-team policy evals, CI.
 
 ## Phase Details
 
-### Phase 13: Policy engine
-**Goal**: A seat policy file governs what the agent may call, write, and reach, and every verdict is auditable.
-**Depends on**: v1 complete
-**Requirements**: POL-01, POL-02, POL-03, POL-04
+### Phase 17: X connector
+**Goal**: The agent reads and publishes on X through approval-gated registry tools, with credentials brokered per endpoint.
+**Depends on**: v2 complete
+**Requirements**: X-01, X-02, X-03
 **Success Criteria** (what must be TRUE):
-  1. A policy file declares allowed tools, path roots with read-only paths, and network hosts.
-  2. Dispatch refuses a disallowed tool before execution, and a write to a read-only path is refused with the file unchanged.
-  3. The advisor flags added tools, widened paths, and added hosts in a proposed policy change.
-  4. Every dispatch appends one record to the persisted audit log.
+  1. Mentions and single posts read through the connector with a fake transport.
+  2. Post and thread publish through the connector; both require approval, and unapproved publishing is refused.
+  3. Media bytes upload and return a media id that a post can attach.
 **Plans**: 1 plan
 
 Plans:
-- [x] 13-01: Seat policy, enforcement, advisor, and audit log
+- [ ] 17-01: X client, registry tools, and approval-gated publishing
 
-### Phase 14: Credential broker
-**Goal**: Secrets live in the broker and reach only approved endpoints; transcripts and logs never carry them.
-**Depends on**: Phase 13
-**Requirements**: CRED-01, CRED-02, CRED-03
+### Phase 18: Engagement sweep
+**Goal**: A scheduled sweep converts fresh mentions into queued reply drafts without publishing.
+**Depends on**: Phase 17
+**Requirements**: ENG-01, ENG-02
 **Success Criteria** (what must be TRUE):
-  1. Provider keys resolve from the environment through the broker; the agent never handles a key string.
-  2. A request to a host outside the policy allowlist gets no credential.
-  3. Keys and tokens are redacted in events, audit records, and rendered output.
+  1. A sweep over fixture mentions produces one draft per mention with reply targets and text.
+  2. The sweep checkpoints per mention and resumes after interruption without duplicating drafts.
 **Plans**: 1 plan
 
 Plans:
-- [x] 14-01: Broker, per-endpoint injection, and redaction
+- [ ] 18-01: Sweep routine with drafts and checkpoints
 
-### Phase 15: Durable runs
-**Goal**: Turns, jobs, and workflows survive a crash by resuming from persisted state.
-**Depends on**: Phase 14
-**Requirements**: DUR-01, DUR-02, DUR-03
+### Phase 19: Nightly learning
+**Goal**: The curator's nightly pass turns earned turns into skills and ignores the rest.
+**Depends on**: Phase 18
+**Requirements**: LRN-01, LRN-02
 **Success Criteria** (what must be TRUE):
-  1. A journaled turn resumes after a simulated crash with the transcript intact.
-  2. Cron executions are recorded with bounded history, and a completed tick is not re-run.
-  3. A three-step workflow interrupted mid-run resumes from its last checkpoint.
+  1. A nightly pass over fixture transcripts creates skills for earned turns through the curator.
+  2. Unearned turns write no skills.
 **Plans**: 1 plan
 
 Plans:
-- [x] 15-01: Turn journal, cron history, and checkpointed workflows
+- [ ] 19-01: Nightly curator pass over transcripts
 
-### Phase 16: Transports and traces
-**Goal**: Provider calls run over a real HTTP transport, and turns export structured traces.
-**Depends on**: Phase 15
-**Requirements**: NET-01, OBS-01
+### Phase 20: Eval harness
+**Goal**: Deterministic evals guard the persona and the policy, and CI runs everything.
+**Depends on**: Phase 19
+**Requirements**: EV-01, EV-02, EV-03
 **Success Criteria** (what must be TRUE):
-  1. A provider completes a call through the stdlib HTTP transport against a local fixture server, with a retry on a dropped first attempt.
-  2. A turn exports a trace with spans for the model call, tool calls, and policy verdicts.
+  1. Golden evals replay scripted turns and assert persona behavior from a cases file.
+  2. Red-team evals assert refusals for prompt-injection, exfiltration, and policy-escape attempts.
+  3. A CI workflow runs the suite and the evals.
 **Plans**: 1 plan
 
 Plans:
-- [x] 16-01: HTTP transport and trace export
+- [ ] 20-01: Eval cases, runner, and CI workflow
 
 ## Progress
 
@@ -80,7 +78,7 @@ Phases execute in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 13. Policy engine | 1/1 | Complete | 2026-10-03 |
-| 14. Credential broker | 1/1 | Complete | 2026-10-03 |
-| 15. Durable runs | 1/1 | Complete | 2026-10-03 |
-| 16. Transports and traces | 1/1 | Complete | 2026-10-03 |
+| 17. X connector | 0/1 | Not started | - |
+| 18. Engagement sweep | 0/1 | Not started | - |
+| 19. Nightly learning | 0/1 | Not started | - |
+| 20. Eval harness | 0/1 | Not started | - |

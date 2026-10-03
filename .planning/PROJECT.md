@@ -10,6 +10,8 @@ One Omes agent runs both agents' logic — loops, subagents, tools, skills, memo
 
 v2 milestone: that same agent, hardened the way OpenShell and AgentOS harden theirs — a declarative seat policy enforced at dispatch, a credential broker that keeps secrets out of transcripts, durable runs that resume after a crash, and real transports with structured traces. Still one in-process Python agent with one seat.
 
+v3 milestone: that hardened agent as a working Grok Bot — an X connector tool family with approval-gated publishing, an engagement sweep routine producing queued drafts, nightly learning through the curator, and an eval harness with CI.
+
 ## Requirements
 
 ### Validated
@@ -67,4 +69,4 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 
 ---
-*Last updated: 2026-10-03 after v2 milestone audit (v2 complete: all phases done, 113 tests passing)*
+*Last updated: 2026-10-03 after v3 milestone kickoff (scope approved: X connector, sweep, learning, evals)*

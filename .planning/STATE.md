@@ -1,12 +1,12 @@
 ---
 gsd_state_version: '1.0'
-status: milestone_complete
+status: executing
 progress:
   total_phases: 4
-  completed_phases: 4
+  completed_phases: 0
   total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -15,17 +15,17 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-10-03)
 
-**Core value:** One hardened Omes agent: policy-governed, credential-safe, durable, and observable.
-**Current focus:** v2 milestone complete (no active phase)
+**Core value:** One hardened Omes agent, now a working Grok Bot: X connector, engagement sweep, nightly learning, evals.
+**Current focus:** Phase 17 — X connector
 
 ## Current Position
 
-Phase: 16 of 16 (Transports and traces, v2 milestone)
-Plan: 4 of 4 complete
-Status: Milestone complete — see .planning/MILESTONES.md
-Last activity: 2026-10-03 — v2 audit passed (12/12 requirements Done, 113 passed, E2E probe OK), v2 archived
+Phase: 17 of 20 (X connector, v3 milestone)
+Plan: 1 of 1 in current phase
+Status: Ready
+Last activity: 2026-10-03 — v3 milestone created (user approved the suggested cut)
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -52,7 +52,7 @@ Progress: [██████████] 100%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
-- v2 scope: policy, broker, durability, transports/traces. In-process only, single seat (user decision 2026-10-03).
+- v3 scope: X connector, engagement sweep, nightly learning, eval harness (user approved suggested cut 2026-10-03).
 
 ### Pending Todos
 
@@ -70,9 +70,10 @@ None yet.
 | Chrome | TUI, desktop, gateways, Rust crates, packaging | Deferred | 2026-10-02 | v1 |
 | Sandbox | Container/namespace execution drivers | Deferred | 2026-10-03 | v2 |
 | Fleet | Multi-seat registry, gateway control plane | Deferred | 2026-10-03 | v2 |
+| X API | Search, streaming, likes/follows, chunked upload, OAuth flows | Deferred | 2026-10-03 | v3 |
 
 ## Session Continuity
 
 Last session: 2026-10-03
-Stopped at: v1 milestone closed. v2 milestone created, Phase 13 not started.
+Stopped at: v2 milestone closed and pushed to GitHub. v3 milestone created, Phase 17 not started.
 Resume file: None
