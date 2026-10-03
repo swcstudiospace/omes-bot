@@ -28,7 +28,7 @@ parity checks pass.
 - [x] **Phase 34: Magic keywords** - ultrathink/orchestrate/workflowz in the Omes loop. (completed 2026-10-03)
 - [x] **Phase 35: Ultrathink native** - Grok-host routines + CLI bridge tools. (completed 2026-10-03)
 - [x] **Phase 36: MCP tool host** - Registry over MCP stdio + host profiles. (completed 2026-10-03)
-- [ ] **Phase 37: Template + setup** - Add-Bot template, setup flow, MIT license.
+- [x] **Phase 37: Template + setup** - Add-Bot template, setup flow, MIT license. (completed 2026-10-03)
 - [ ] **Phase 38: Docs + GitBook** - Aesthetics, user guide, sync structure.
 
 ## Phase Details
@@ -87,7 +87,7 @@ Plans:
 
 Plans:
 
-- [ ] 37-01: Template polish, setup flow, license
+- [x] 37-01: Template polish, setup flow, license
 
 ### Phase 38: Docs + GitBook
 
@@ -114,5 +114,5 @@ Phases execute in numeric order.
 | 34. Magic keywords | 1/1 | Complete    | 2026-10-03 |
 | 35. Ultrathink native | 1/1 | Complete    | 2026-10-03 |
 | 36. MCP tool host | 1/1 | Complete    | 2026-10-03 |
-| 37. Template + setup | 0/1 | Not started | — |
+| 37. Template + setup | 1/1 | Complete    | 2026-10-03 |
 | 38. Docs + GitBook | 0/1 | Not started | — |

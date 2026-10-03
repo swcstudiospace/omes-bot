@@ -22,8 +22,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## Template + setup
 
-- [ ] **TPL-01**: Polished Add-Bot template + setup flow (install → secrets → optional custom MCP → smoke prompt) with a verifiable smoke check.
-- [ ] **TPL-02**: MIT LICENSE file at repo root.
+- [x] **TPL-01**: Polished Add-Bot template + setup flow (install → secrets → optional custom MCP → smoke prompt) with a verifiable smoke check.
+- [x] **TPL-02**: MIT LICENSE file at repo root.
 
 ## Docs + GitBook
 
@@ -41,8 +41,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 | ULT-02 | Phase 35 | Done |
 | MCP-01 | Phase 36 | Done |
 | MCP-02 | Phase 36 | Done |
-| TPL-01 | Phase 37 | Todo |
-| TPL-02 | Phase 37 | Todo |
+| TPL-01 | Phase 37 | Done |
+| TPL-02 | Phase 37 | Done |
 | DOC-01 | Phase 38 | Todo |
 | DOC-02 | Phase 38 | Todo |
 | DOC-03 | Phase 38 | Todo |

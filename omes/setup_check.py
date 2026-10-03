@@ -1,0 +1,129 @@
+"""Setup smoke check: verify an Omes install end to end, locally.
+
+`python -m omes.setup_check --root <repo>`: runs the roster, template,
+assembly, registry, and ultrathink checks and exits 0 only when every
+required check passes. Skips (ultrathink unconfigured) are reported,
+never failures.
+"""
+
+from __future__ import annotations
+
+import argparse
+import asyncio
+import os
+import sys
+from pathlib import Path
+from typing import Any
+
+from omes.assemble import load_roster, template_gaps
+from omes.mcp_server import build_server, default_registry, roster_names
+
+
+def check_roster(root: Path) -> tuple[bool, str]:
+    """Roster JSON loads with its required keys."""
+    path = root / "omes" / "grokbot" / "rosters" / "default.json"
+    try:
+        load_roster(path)
+    except SystemExit as exc:
+        return False, str(exc)
+    return True, f"roster ok ({path})"
+
+
+def check_template(root: Path) -> tuple[bool, str]:
+    """Template sections stay empty and name nothing missing."""
+    gaps = template_gaps(root / "omes")
+    if gaps:
+        return False, f"template gaps: {', '.join(gaps)}"
+    return True, "template ok (sections empty, no gaps)"
+
+
+def check_assembly(root: Path) -> tuple[bool, str]:
+    """Assembled prompt matches a fresh rebuild."""
+    from omes.assemble import render
+
+    omes = root / "omes"
+    try:
+        fresh = render(omes, omes / "grokbot" / "rosters" / "default.json")
+    except SystemExit as exc:
+        return False, f"assembly failed: {exc}"
+    shipped = omes / "prompts-assembled" / "OMES.xml"
+    try:
+        if shipped.read_text(encoding="utf-8") != fresh:
+            return False, f"{shipped} is stale; rerun assemble-prompts.sh"
+    except OSError as exc:
+        return False, f"cannot read {shipped}: {exc}"
+    return True, "assembly up to date"
+
+
+def check_registry(root: Path) -> tuple[bool, str]:
+    """Default registry builds and serves the roster over the MCP handlers."""
+    roster_path = root / "omes" / "contracts" / "tool-rosters" / "omes.yaml"
+    try:
+        roster = roster_names(roster_path.read_text(encoding="utf-8"))
+    except OSError as exc:
+        return False, f"cannot read {roster_path}: {exc}"
+    if not roster:
+        return False, "roster names no tools"
+    home = Path(os.path.expanduser("~"))
+    try:
+        registry = default_registry(root, home)
+    except Exception as exc:  # noqa: BLE001 - report, don't crash
+        return False, f"registry build failed: {type(exc).__name__}: {exc}"
+    from omes.mcp_server import list_tools_handler
+
+    listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
+    served = [tool.name for tool in listed.tools]
+    missing = [name for name in roster if name not in served]
+    missing = [name for name in missing if name != "delegate_task"]
+    if missing:
+        return False, f"registry does not serve: {', '.join(missing)}"
+    return True, f"registry serves {len(served)} roster tools"
+
+
+def check_ultrathink(root: Path) -> tuple[bool | None, str]:
+    """Ultrathink checkout configured, or clearly skipped."""
+    configured = os.environ.get("ULTRATHINK_ROOT", "")
+    if not configured:
+        return None, "ultrathink root not set (ULTRATHINK_ROOT) — bridge tools stay unconfigured"
+    if not Path(configured, "bin", "ultrathink-ship").is_file():
+        return False, f"ULTRATHINK_ROOT={configured} has no bin/ultrathink-ship"
+    return True, f"ultrathink checkout ok ({configured})"
+
+
+CHECKS = (
+    ("roster", check_roster),
+    ("template", check_template),
+    ("assembly", check_assembly),
+    ("registry", check_registry),
+    ("ultrathink", check_ultrathink),
+)
+
+
+def run_checks(root: Path) -> dict[str, Any]:
+    """Run every check; `{name: {ok, detail}}` plus `passed`."""
+    results: dict[str, Any] = {}
+    for name, fn in CHECKS:
+        try:
+            ok, detail = fn(root)
+        except Exception as exc:  # noqa: BLE001 - one bad check must not hide the rest
+            ok, detail = False, f"{type(exc).__name__}: {exc}"
+        results[name] = {"ok": ok, "detail": detail}
+    results["passed"] = all(item["ok"] is not False for item in
+                            (v for k, v in results.items() if k != "passed"))
+    return results
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(prog="omes-setup-check")
+    parser.add_argument("--root", type=Path, default=Path.cwd())
+    args = parser.parse_args(argv)
+    report = run_checks(args.root.resolve())
+    for name, _ in CHECKS:
+        item = report[name]
+        mark = "ok" if item["ok"] is True else ("skip" if item["ok"] is None else "FAIL")
+        print(f"[{mark}] {name}: {item['detail']}")
+    return 0 if report["passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -18,6 +18,14 @@ doctor, receipts, gateway, memory, uplift, dispatch, contract-first,
 tool-packs, merge-gate, docs, plus the platform and security skills) are
 files under skills/ and load from there.
 
+Magic words: `ultrathink` (think hard), `orchestrate` (fan work out to
+subagents and verify), `workflowz` (run the work as a batched workflow).
+Say `ultrathink` plus the ask to plan before doing: the turn resolves
+any ultrathink plan, works its waves, and ships through a reviewed PR.
+
+New here: follow grokbot/SETUP.md — install, secrets, optional tool
+host, then the smoke prompt that proves the install.
+
 ## Enabled skills
 
 ## Routines
