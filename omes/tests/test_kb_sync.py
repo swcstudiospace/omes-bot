@@ -186,6 +186,7 @@ def test_refresh_workflow_is_scheduled_and_secret_gated() -> None:
     assert "secrets.GREPTILE_API_KEY" in text
     assert "gh pr create" in text
     assert "GREPTILE_API_KEY=..." not in text and "echo $GREPTILE" not in text
+    assert "if: ${{ secrets." not in text
 
 
 def test_auth_failure_is_secret_free() -> None:

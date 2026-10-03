@@ -11,7 +11,6 @@ permissions:
 
 jobs:
   refresh:
-    if: ${{ secrets.GREPTILE_API_KEY != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,12 +19,18 @@ jobs:
           python-version: "3.12"
       - name: install
         run: pip install -e .
+      - name: check for API key
+        id: gate
+        env:
+          KEY_SET: ${{ secrets.GREPTILE_API_KEY != '' }}
+        run: echo "has_key=$KEY_SET" >> "$GITHUB_OUTPUT"
       - name: sync knowledge base
+        if: steps.gate.outputs.has_key == 'true'
         env:
           GREPTILE_API_KEY: ${{ secrets.GREPTILE_API_KEY }}
         run: python3 -m omes.greptile.kb_sync --repo swcstudiospace/omes-bot --out kb
       - name: open update PR
-        if: ${{ success() }}
+        if: steps.gate.outputs.has_key == 'true' && success()
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
