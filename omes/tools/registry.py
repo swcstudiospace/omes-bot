@@ -22,12 +22,19 @@ class ToolRegistry:
 
     ``approval_log`` gates tools registered with ``requires_approval``. ``None``
     leaves every flagged tool unapproved. Unflagged tools are unchanged.
+    ``policy`` refuses names the seat policy does not allow, before approvals
+    and before the handler. ``audit`` records one verdict per dispatch.
+    ``None`` for either keeps the historical behavior.
     """
 
-    def __init__(self, approval_log: Any = None) -> None:
+    def __init__(
+        self, approval_log: Any = None, policy: Any = None, audit: Any = None
+    ) -> None:
         self._tools: dict[str, _Tool] = {}
         self._order: list[str] = []
         self._approval_log = approval_log
+        self._policy = policy
+        self._audit = audit
 
     def register(
         self,
@@ -65,12 +72,18 @@ class ToolRegistry:
         tool = self._tools.get(name) if isinstance(name, str) else None
         if tool is None:
             label = name if isinstance(name, str) else type(name).__name__
+            self._record(label, "unknown")
             return _dump({"error": f"Unknown tool: {label}"})
+        if self._policy is not None and not self._policy.allows_tool(name):
+            self._record(name, "denied", reason="policy forbids")
+            return _dump({"error": f"policy forbids {name}", "tool": name})
         try:
             if tool.requires_approval and not _has_approval(self._approval_log, name):
+                self._record(name, "denied", reason="approval required")
                 return _dump({"error": "approval required", "tool": name})
             payload = _call(tool.handler, _arguments(arguments))
         except Exception as exc:
+            self._record(name, "error", reason=f"{type(exc).__name__}: {exc}")
             return _dump({"error": f"{type(exc).__name__}: {exc}"})
         # Growth handlers return a JSON string. Dispatch must return that string,
         # not a second encoding. Any other string is encoded below.
@@ -80,11 +93,21 @@ class ToolRegistry:
             except json.JSONDecodeError:
                 pass
             else:
+                self._record(name, "allowed")
                 return payload
         try:
-            return _dump(payload)
+            encoded = _dump(payload)
         except (TypeError, ValueError):
+            self._record(name, "error", reason="tool result is not JSON-serializable")
             return _dump({"error": "tool result is not JSON-serializable"})
+        self._record(name, "allowed")
+        return encoded
+
+    def _record(self, tool: str, verdict: str, reason: str | None = None) -> None:
+        """Append one audit record when an audit log is attached."""
+        if self._audit is None:
+            return
+        self._audit.append(tool, verdict, reason)
 
 
 class _Tool:

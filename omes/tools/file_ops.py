@@ -29,10 +29,15 @@ _HUNK_HEADER = re.compile(r"^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@")
 
 
 class FileWorkspace:
-    """File tools bound to one directory. The root is resolved once."""
+    """File tools bound to one directory. The root is resolved once.
 
-    def __init__(self, root: str | Path) -> None:
+    ``policy`` is a seat policy (or None). When set, the three writers refuse
+    a read-only path before reading or writing a byte.
+    """
+
+    def __init__(self, root: str | Path, *, policy: Any = None) -> None:
         self.root = require_directory(root)
+        self._policy = policy
 
     def read_file(self, path: str) -> dict[str, Any]:
         """Return the UTF-8 contents of ``path``. The file is not created."""
@@ -59,6 +64,8 @@ class FileWorkspace:
             target = resolve_inside(self.root, path)
         except PathError as exc:
             return {"error": str(exc)}
+        if (refused := self._refuse_write(target)) is not None:
+            return refused
         if target == self.root or (target.exists() and not target.is_file()):
             return {"error": f"not a file: {path}"}
         data = content.encode("utf-8")
@@ -77,6 +84,8 @@ class FileWorkspace:
             target = resolve_inside(self.root, path)
         except PathError as exc:
             return {"error": str(exc)}
+        if (refused := self._refuse_write(target)) is not None:
+            return refused
         relative = _relative(self.root, target)
         if not target.is_file():
             return {"error": f"file not found: {relative}"}
@@ -104,6 +113,8 @@ class FileWorkspace:
             target = resolve_inside(self.root, path)
         except PathError as exc:
             return {"error": str(exc)}
+        if (refused := self._refuse_write(target)) is not None:
+            return refused
         relative = _relative(self.root, target)
         if not target.is_file():
             return {"error": f"file not found: {relative}"}
@@ -124,6 +135,15 @@ class FileWorkspace:
         if new_bytes != original:
             target.write_bytes(new_bytes)
         return {"path": relative, "applied": True, "method": method}
+
+    def _refuse_write(self, target: Path) -> dict[str, Any] | None:
+        """Refusal when the policy marks this jailed path read-only."""
+        if self._policy is None:
+            return None
+        relative = _relative(self.root, target)
+        if self._policy.allows_write(relative):
+            return None
+        return {"error": f"policy forbids writing {relative}"}
 
 
 def require_directory(root: str | Path) -> Path:

@@ -40,9 +40,10 @@ def register_coding_tools(
     root: str | Path,
     web: Any = None,
     vision: Any = None,
+    policy: Any = None,
 ) -> list[str]:
     """Register every coding tool. ``web`` and ``vision`` are injected transports."""
-    workspace = FileWorkspace(root)
+    workspace = FileWorkspace(root, policy=policy)
     store = TodoStore()
     log = ClarifyLog()
     root_path = workspace.root
