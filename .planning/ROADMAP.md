@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Skills and memory** - Skill manager, memory provider, session search, and the curator.
 - [x] **Phase 5: Delegation and cron** - Isolated children and a scheduler that re-enters the same agent.
 - [x] **Phase 6: Remaining Hermes tools** - Code execution, MCP, browser, approvals, and plugin tool registration.
-- [ ] **Phase 7: Omp harness** - Events, steering, pause, budget, and compaction merged into the phase 2 loop.
+- [x] **Phase 7: Omp harness** - Events, steering, pause, budget, and compaction merged into the phase 2 loop.
 - [ ] **Phase 8: Edit pipeline** - Apply, reject a bad hunk, and repair.
 - [ ] **Phase 9: LSP and DAP** - A fixture diagnostic and a breakpoint session.
 - [ ] **Phase 10: Modes and learning** - Sessions, tasks, plan mode, extensions, autolearn, goals, advisor, exec, and security checks.
@@ -121,7 +121,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 07-01: Merge the Omp agent-core behavior into the conversation loop
+- [x] 07-01: Merge the Omp agent-core behavior into the conversation loop
 
 ### Phase 8: Edit pipeline
 **Goal**: The agent can apply an edit, refuse a bad hunk without touching the file, and repair a hunk that did not land.
@@ -202,7 +202,7 @@ Phases execute in numeric order.
 | 4. Skills and memory | 1/1 | Complete | 2026-10-02 |
 | 5. Delegation and cron | 1/1 | Complete | 2026-10-02 |
 | 6. Remaining Hermes tools | 1/1 | Complete | 2026-10-03 |
-| 7. Omp harness | 0/1 | Not started | - |
+| 7. Omp harness | 1/1 | Complete | 2026-10-03 |
 | 8. Edit pipeline | 0/1 | Not started | - |
 | 9. LSP and DAP | 0/1 | Not started | - |
 | 10. Modes and learning | 0/1 | Not started | - |
