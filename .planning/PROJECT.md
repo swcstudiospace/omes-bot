@@ -19,14 +19,14 @@ One Omes agent runs both agents' logic — loops, subagents, tools, skills, memo
 - [x] Single-seat Grok shell: directives, prompt, roster, template, deterministic assemble
 - [x] Hermes conversation loop and turn phases, with the prompt, steer, compression, and interrupt invariants
 - [x] Tool registry and the coding toolset
-- [ ] Remaining Hermes agent tools (code execution, MCP, browser, approvals, plugins)
+- [x] Remaining Hermes agent tools (code execution, MCP, browser, approvals, plugins)
 - [x] Skills, memory, session search, and the curator
 - [x] Delegation and cron re-entering the same agent
-- [ ] Omp harness behavior merged into that same loop
-- [ ] Omp edit pipeline, LSP, and DAP
-- [ ] Sessions, tasks, modes, plan mode, extensions, autolearn, goals, advisor, exec, and agent-side security
-- [ ] One memory store that serves both call shapes
-- [ ] Provider surface with a Grok adapter, and a Grok Bot template that matches what is actually registered
+- [x] Omp harness behavior merged into that same loop
+- [x] Omp edit pipeline, LSP, and DAP
+- [x] Sessions, tasks, modes, plan mode, extensions, autolearn, goals, advisor, exec, and agent-side security
+- [x] One memory store that serves both call shapes
+- [x] Provider surface with a Grok adapter, and a Grok Bot template that matches what is actually registered
 
 ### Out of Scope
 
@@ -64,4 +64,4 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | Grok shell stays in step with the registry | The roster is the index of tools actually registered. The template lists only skills and routines that exist on disk | — Pending |
 
 ---
-*Last updated: 2026-10-02 after Phase 0 repo boundary*
+*Last updated: 2026-10-03 after milestone audit (v1 complete: all phases done, 94 tests passing)*

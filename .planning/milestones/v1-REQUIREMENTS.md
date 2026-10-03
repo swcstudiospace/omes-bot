@@ -1,3 +1,5 @@
+# Milestone v1 archive — REQUIREMENTS (all Done, 2026-10-03)
+
 # Requirements: Omes Bot
 
 **Defined:** 2026-10-02

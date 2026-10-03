@@ -1,6 +1,6 @@
 ---
 gsd_state_version: '1.0'
-status: executing
+status: milestone_complete
 progress:
   total_phases: 12
   completed_phases: 12
@@ -16,14 +16,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-02)
 
 **Core value:** One Omes agent runs both Hermes and Omp agent logic.
-**Current focus:** Milestone audit and completion
+**Current focus:** v1 milestone complete (no active phase)
 
 ## Current Position
 
 Phase: 12 of 12 (Providers and install surface)
-Plan: 1 of 1 in current phase
-Status: Complete
-Last activity: 2026-10-03 — Phase 12 implemented, verified (94 passed), recorded as done
+Plan: 12 of 12 complete
+Status: Milestone complete — see .planning/MILESTONES.md
+Last activity: 2026-10-03 — Milestone audit passed (49/49 requirements Done, 94 passed, E2E probe OK), v1 archived
 
 Progress: [██████████] 100%
 
