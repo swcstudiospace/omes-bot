@@ -1,37 +1,37 @@
 ---
 gsd_state_version: '1.0'
-status: milestone_complete
+status: executing
 progress:
-  total_phases: 12
-  completed_phases: 12
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 4
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-02)
+See: .planning/PROJECT.md (updated 2026-10-03)
 
-**Core value:** One Omes agent runs both Hermes and Omp agent logic.
-**Current focus:** v1 milestone complete (no active phase)
+**Core value:** One hardened Omes agent: policy-governed, credential-safe, durable, and observable.
+**Current focus:** Phase 13 — Policy engine
 
 ## Current Position
 
-Phase: 12 of 12 (Providers and install surface)
-Plan: 12 of 12 complete
-Status: Milestone complete — see .planning/MILESTONES.md
-Last activity: 2026-10-03 — Milestone audit passed (49/49 requirements Done, 94 passed, E2E probe OK), v1 archived
+Phase: 13 of 16 (Policy engine, v2 milestone)
+Plan: 1 of 1 in current phase
+Status: Ready
+Last activity: 2026-10-03 — v2 milestone created (research + scope approved)
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3
+- Total plans completed: 0
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -52,7 +52,7 @@ Progress: [██████████] 100%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 
-- Phase 0: one Python agent; Temporal deferred; no commit into the parent repos repo; no push.
+- v2 scope: policy, broker, durability, transports/traces. In-process only, single seat (user decision 2026-10-03).
 
 ### Pending Todos
 
@@ -68,9 +68,11 @@ None yet.
 |----------|------|--------|-------------|-----------|
 | Durability | Temporal adapter after cron and delegation | Deferred | 2026-10-02 | v1 |
 | Chrome | TUI, desktop, gateways, Rust crates, packaging | Deferred | 2026-10-02 | v1 |
+| Sandbox | Container/namespace execution drivers | Deferred | 2026-10-03 | v2 |
+| Fleet | Multi-seat registry, gateway control plane | Deferred | 2026-10-03 | v2 |
 
 ## Session Continuity
 
-Last session: 2026-10-02
-Stopped at: Phase 3 toolset reviewed and committed. Phase 4 not started.
+Last session: 2026-10-03
+Stopped at: v1 milestone closed. v2 milestone created, Phase 13 not started.
 Resume file: None

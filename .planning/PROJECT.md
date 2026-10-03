@@ -8,6 +8,8 @@ Omes Bot is one Grok programming bot. It ports the Hermes Agent runtime and the 
 
 One Omes agent runs both agents' logic — loops, subagents, tools, skills, memory, and the rest of each runtime — so later tools, connectors, skills, memories, and routines have a real agent to attach to.
 
+v2 milestone: that same agent, hardened the way OpenShell and AgentOS harden theirs — a declarative seat policy enforced at dispatch, a credential broker that keeps secrets out of transcripts, durable runs that resume after a crash, and real transports with structured traces. Still one in-process Python agent with one seat.
+
 ## Requirements
 
 ### Validated
@@ -62,6 +64,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | Milestone discuss is the approved plan | Re-asking the merge would stall a decision that is already made | ✓ Good |
 | Product chrome stays out unless a phase's own tests cannot pass without it | The milestone is the agent, not the apps wrapped around it | — Pending |
 | Grok shell stays in step with the registry | The roster is the index of tools actually registered. The template lists only skills and routines that exist on disk | — Pending |
+| v2 stays in-process and single-seat | Container drivers and a fleet gateway are deferred; policy, broker, durability, and transports land first | — Pending |
 
 ---
-*Last updated: 2026-10-03 after milestone audit (v1 complete: all phases done, 94 tests passing)*
+*Last updated: 2026-10-03 after v2 milestone kickoff (scope approved: policy, broker, durability, transports)*
