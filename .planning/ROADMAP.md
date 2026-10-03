@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 13: Policy engine** - Seat policy, dispatch enforcement, advisor diffs, and a persisted audit log.
 - [x] **Phase 14: Credential broker** - Env-backed keys injected per approved endpoint, with secret redaction.
-- [ ] **Phase 15: Durable runs** - Turn journal with resume, cron execution history, checkpointed workflows.
+- [x] **Phase 15: Durable runs** - Turn journal with resume, cron execution history, checkpointed workflows.
 - [ ] **Phase 16: Transports and traces** - Stdlib HTTP with retries, and structured trace export.
 
 ## Phase Details
@@ -58,7 +58,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 15-01: Turn journal, cron history, and checkpointed workflows
+- [x] 15-01: Turn journal, cron history, and checkpointed workflows
 
 ### Phase 16: Transports and traces
 **Goal**: Provider calls run over a real HTTP transport, and turns export structured traces.
@@ -82,5 +82,5 @@ Phases execute in numeric order.
 |-------|----------------|--------|-----------|
 | 13. Policy engine | 1/1 | Complete | 2026-10-03 |
 | 14. Credential broker | 1/1 | Complete | 2026-10-03 |
-| 15. Durable runs | 0/1 | Not started | - |
+| 15. Durable runs | 1/1 | Complete | 2026-10-03 |
 | 16. Transports and traces | 0/1 | Not started | - |
