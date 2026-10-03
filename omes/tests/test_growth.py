@@ -32,6 +32,7 @@ from omes.tools.mobile import MOBILE_TOOL_NAMES, MobileClient, MobileContext, re
 from omes.tools.infra import INFRA_TOOL_NAMES, InfraClient, InfraContext, register_infra_tools
 from omes.tools.packs import PACKS_TOOL_NAMES, PacksClient, PacksContext, register_packs_tools
 from omes.tools.quality import QUALITY_TOOL_NAMES, QualityClient, QualityContext, register_quality_tools
+from omes.tools.ultrathink import ULT_TOOL_NAMES, UltrathinkClient, UltrathinkContext, register_ultrathink_tools
 from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -477,6 +478,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_infra_tools(registry, InfraClient(InfraContext()))
     register_quality_tools(registry, QualityClient(QualityContext(root=tmp_path)))
     register_packs_tools(registry, PacksClient(PacksContext()))
+    register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext()))
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -500,6 +502,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + INFRA_TOOL_NAMES
         + QUALITY_TOOL_NAMES
         + PACKS_TOOL_NAMES
+        + ULT_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

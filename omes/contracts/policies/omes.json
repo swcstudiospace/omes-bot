@@ -99,7 +99,14 @@
       "app_crash_reports",
       "app_scoreboard_get",
       "app_store_listing_get",
-      "app_render_job_status"
+      "app_render_job_status",
+      "ult_status",
+      "ult_track_complete",
+      "ult_session_mark",
+      "ult_ship_assess",
+      "ult_ship_pr",
+      "ult_ship_review",
+      "ult_ship_merge"
     ]
   },
   "paths": {

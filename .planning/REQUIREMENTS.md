@@ -12,8 +12,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## Ultrathink native
 
-- [ ] **ULT-01**: Ultrathink Grok-host flow (plan → kickoff → ship) available as Omes skills/routines (prompt-native, no dependency).
-- [ ] **ULT-02**: Bridge tools to the `bun` ultrathink CLI (uplift/track/ship); no vendored AGPL code in this repo.
+- [x] **ULT-01**: Ultrathink Grok-host flow (plan → kickoff → ship) available as Omes skills/routines (prompt-native, no dependency).
+- [x] **ULT-02**: Bridge tools to the `bun` ultrathink CLI (uplift/track/ship); no vendored AGPL code in this repo.
 
 ## MCP tool host
 
@@ -37,8 +37,8 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 |-------------|-------|--------|
 | KEY-01 | Phase 34 | Done |
 | KEY-02 | Phase 34 | Done |
-| ULT-01 | Phase 35 | Todo |
-| ULT-02 | Phase 35 | Todo |
+| ULT-01 | Phase 35 | Done |
+| ULT-02 | Phase 35 | Done |
 | MCP-01 | Phase 36 | Todo |
 | MCP-02 | Phase 36 | Todo |
 | TPL-01 | Phase 37 | Todo |
