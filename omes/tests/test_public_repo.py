@@ -68,12 +68,16 @@ def test_svgs_valid_and_self_contained() -> None:
 
 
 def test_packaging_is_public_complete() -> None:
-    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    parsed = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    project = parsed["project"]
     assert project["license"] == {"text": "MIT"}
     assert project["readme"] == "README.md"
     assert project["authors"] == [{"name": "SWC Studio"}]
     for key in ("Homepage", "Repository", "Documentation", "Issues", "Changelog"):
         assert project["urls"][key].startswith("https://github.com/swcstudiospace/omes-bot")
+    assert project["dependencies"] and "dependencies" not in project["urls"]
+    find = parsed["tool"]["setuptools"]["packages"]["find"]
+    assert find["include"] == ["omes*"]
     license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
     assert "MIT License" in license_text and "SWC Studio" in license_text
 

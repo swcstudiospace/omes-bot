@@ -16,13 +16,6 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-
-[project.urls]
-Homepage = "https://github.com/swcstudiospace/omes-bot"
-Repository = "https://github.com/swcstudiospace/omes-bot"
-Documentation = "https://github.com/swcstudiospace/omes-bot/tree/main/docs"
-Issues = "https://github.com/swcstudiospace/omes-bot/issues"
-Changelog = "https://github.com/swcstudiospace/omes-bot/blob/main/CHANGELOG.md"
 dependencies = [
   "tweepy>=4.14",
   "mcp>=1.0",
@@ -33,6 +26,20 @@ dependencies = [
   "playwright>=1.40",
   "Appium-Python-Client>=4.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/swcstudiospace/omes-bot"
+Repository = "https://github.com/swcstudiospace/omes-bot"
+Documentation = "https://github.com/swcstudiospace/omes-bot/tree/main/docs"
+Issues = "https://github.com/swcstudiospace/omes-bot/issues"
+Changelog = "https://github.com/swcstudiospace/omes-bot/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["omes*"]
+
+[tool.setuptools.package-data]
+omes = ["**/*.md", "**/*.yaml", "**/*.yml", "**/*.json", "**/*.xml", "**/*.sh"]
 
 [tool.pytest.ini_options]
 testpaths = ["omes/tests"]
