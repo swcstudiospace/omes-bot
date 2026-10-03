@@ -19,9 +19,11 @@ class ProviderError(RuntimeError):
 
 
 class Transport(Protocol):
-    """POST one JSON body. Return the decoded JSON response."""
+    """POST one JSON body, or GET one URL. Return the decoded JSON response."""
 
     def post(self, url: str, headers: dict, body: dict) -> dict: ...
+
+    def get(self, url: str, headers: dict, params: dict) -> dict: ...
 
 
 @dataclass

@@ -25,7 +25,12 @@
       "browser_navigate",
       "browser_snapshot",
       "lsp_diagnostics",
-      "dap_stop"
+      "dap_stop",
+      "x_mentions",
+      "x_read_post",
+      "x_post",
+      "x_post_thread",
+      "x_upload_media"
     ]
   },
   "paths": {

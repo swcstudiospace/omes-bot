@@ -13,6 +13,7 @@ from omes.agent.model import ScriptedModel
 from omes.memory.manager import MemoryManager
 from omes.memory.provider import BuiltinMemoryProvider, MemoryProvider, is_trivial_prompt
 from omes.memory.store import USER_CHAR_LIMIT, MemoryStore
+from omes.providers.fake import FakeTransport
 from omes.session.search import SessionStore, session_search
 from omes.skills_runtime.manager import skill_manage, skill_view
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
@@ -22,6 +23,7 @@ from omes.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.registry import ToolRegistry
+from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 ROOT = Path(__file__).resolve().parents[2]
 ROSTER = ROOT / "omes" / "contracts" / "tool-rosters" / "omes.yaml"
@@ -454,6 +456,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
     register_platform_tools(registry, home=tmp_path)
     register_ide_tools(registry, tmp_path)
+    register_x_tools(registry, XClient(FakeTransport(), token="fake"))
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -467,6 +470,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + DELEG_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
+        + X_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

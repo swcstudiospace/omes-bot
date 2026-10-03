@@ -18,6 +18,9 @@ PLAN_MODE_BLOCKED = frozenset(
         "execute_code",
         "run_terminal",
         "mcp_call",
+        "x_post",
+        "x_post_thread",
+        "x_upload_media",
     }
 )
 

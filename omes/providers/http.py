@@ -17,7 +17,7 @@ import json
 import socket
 import time
 from typing import Any, Callable
-from urllib.parse import urlsplit
+from urllib.parse import urlencode, urlsplit
 
 from omes.providers.base import ProviderError
 
@@ -49,18 +49,30 @@ class HttpTransport:
 
     def post(self, url: str, headers: dict, body: dict) -> dict:
         """POST one JSON body. Return the decoded JSON response."""
+        payload = json.dumps(body).encode("utf-8")
+        merged = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+        merged.update(headers or {})
+        return self._send("POST", url, merged, payload)
+
+    def get(self, url: str, headers: dict, params: dict) -> dict:
+        """GET one URL with a query string. Return the decoded JSON response."""
+        query = urlencode(sorted((params or {}).items()), doseq=True)
+        target = url + ("&" if "?" in url else "?") + query if query else url
+        merged = {"Accept": "application/json"}
+        merged.update(headers or {})
+        return self._send("GET", target, merged, None)
+
+    def _send(self, method: str, url: str, headers: dict, payload: bytes | None) -> dict:
+        """One request with retries. Hosts are allowlisted before any socket."""
         host, port, path, use_tls = _split(url)
         if host is None:
             raise ProviderError(f"cannot parse request host from {url!r}")
         if self._policy is not None and not self._policy.allows_host(host):
             raise ProviderError(f"network blocked to host {host}")
-        payload = json.dumps(body).encode("utf-8")
-        merged = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
-        merged.update(headers or {})
         last: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
-                return self._once(host, port, path, use_tls, merged, payload, url)
+                return self._once(method, host, port, path, use_tls, headers, payload, url)
             except _Retryable as exc:
                 last = exc
                 if attempt < self._max_retries and self._backoff > 0:
@@ -72,12 +84,13 @@ class HttpTransport:
 
     def _once(
         self,
+        method: str,
         host: str,
         port: int,
         path: str,
         use_tls: bool,
         headers: dict,
-        payload: bytes,
+        payload: bytes | None,
         url: str,
     ) -> dict:
         try:
@@ -86,7 +99,7 @@ class HttpTransport:
             raise _Retryable(str(exc) or type(exc).__name__) from exc
         try:
             try:
-                connection.request("POST", path, body=payload, headers=headers)
+                connection.request(method, path, body=payload, headers=headers)
                 response = connection.getresponse()
                 status = response.status
                 raw = response.read()

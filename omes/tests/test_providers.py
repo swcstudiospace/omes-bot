@@ -14,6 +14,7 @@ from omes.providers.anthropic import AnthropicProvider
 from omes.providers.base import ProviderError, ProviderModel
 from omes.providers.fake import FakeTransport
 from omes.providers.gemini import GeminiProvider
+from omes.providers.fake import FakeTransport
 from omes.providers.grok import XAI_DEFAULT_BASE_URL, GrokProvider
 from omes.providers.ollama import OllamaProvider
 from omes.providers.openai import OpenAIProvider
@@ -25,6 +26,7 @@ from omes.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omes.tools.registry import ToolRegistry
+from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 OMES = Path(__file__).resolve().parents[1]
 ROSTER = OMES / "contracts" / "tool-rosters" / "omes.yaml"
@@ -40,7 +42,7 @@ def test_fake_transport_completes_a_turn_through_the_contract():
 
     assert result["final_response"] == "hello"
     assert len(transport.calls) == 1
-    url, headers, body = transport.calls[0]
+    method, url, headers, body = transport.calls[0]
     assert url == XAI_DEFAULT_BASE_URL + "/chat/completions"
     assert headers["Authorization"] == "Bearer fake-key"
     assert body["model"] == "grok-4"
@@ -79,7 +81,7 @@ def test_grok_adapter_round_trips_a_tool_call_and_needs_a_key():
     assert row["role"] == "assistant"
     assert row["tool_calls"][0]["function"]["name"] == "read_file"
     assert row["finish_reason"] == "tool_calls"
-    assert transport.calls[0][2]["tools"][0]["function"]["name"] == "read_file"
+    assert transport.calls[0][3]["tools"][0]["function"]["name"] == "read_file"
 
     keyless = ProviderModel(GrokProvider(), "grok-4", transport, api_key="")
     with pytest.raises(ProviderError, match="needs an API key"):
@@ -95,7 +97,7 @@ def test_openai_adapter_answers_the_contract():
     row = model.complete([{"role": "user", "content": "hi"}])
 
     assert row == {"role": "assistant", "content": "ok", "finish_reason": "stop"}
-    url, headers, body = transport.calls[0]
+    method, url, headers, body = transport.calls[0]
     assert url == "https://api.openai.com/v1/chat/completions"
     assert headers["Authorization"] == "Bearer fake-key"
     assert "tools" not in body
@@ -134,7 +136,7 @@ def test_anthropic_adapter_answers_the_contract():
             "function": {"name": "read_file", "arguments": '{"path": "x"}'},
         }
     ]
-    url, headers, body = transport.calls[0]
+    method, url, headers, body = transport.calls[0]
     assert url == "https://api.anthropic.com/v1/messages"
     assert headers["x-api-key"] == "fake-key"
     assert headers["anthropic-version"] == "2023-06-01"
@@ -163,7 +165,7 @@ def test_gemini_adapter_answers_the_contract():
 
     assert row["tool_calls"][0]["function"]["name"] == "read_file"
     assert json.loads(row["tool_calls"][0]["function"]["arguments"]) == {"path": "x"}
-    url, headers, body = transport.calls[0]
+    method, url, headers, body = transport.calls[0]
     assert url == (
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-3:generateContent"
     )
@@ -193,7 +195,7 @@ def test_ollama_adapter_answers_the_contract_without_a_key():
     row = model.complete([{"role": "user", "content": "read x"}])
 
     assert row["tool_calls"][0]["id"] == "call-9"
-    url, headers, body = transport.calls[0]
+    method, url, headers, body = transport.calls[0]
     assert url == "http://localhost:11434/api/chat"
     assert "Authorization" not in headers
     assert body["stream"] is False
@@ -234,6 +236,7 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
     register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
     register_platform_tools(registry, home=tmp_path)
     register_ide_tools(registry, tmp_path)
+    register_x_tools(registry, XClient(FakeTransport(), token="fake"))
 
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
@@ -242,6 +245,7 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         + DELEG_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
+        + X_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     assert [item["function"]["name"] for item in offered] == roster

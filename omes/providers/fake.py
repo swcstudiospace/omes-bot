@@ -16,9 +16,17 @@ class FakeTransport:
         self.calls: list[tuple[str, dict, dict]] = []
 
     def post(self, url: str, headers: dict, body: dict) -> dict:
-        self.calls.append((url, dict(headers), body))
+        self.calls.append(("POST", url, dict(headers), body))
         if self.post_fn is not None:
             return self.post_fn(url, headers, body)
+        if not self.script:
+            raise ProviderError("fake transport script is empty")
+        return self.script.pop(0)
+
+    def get(self, url: str, headers: dict, params: dict) -> dict:
+        self.calls.append(("GET", url, dict(headers), dict(params or {})))
+        if self.post_fn is not None:
+            return self.post_fn(url, headers, params)
         if not self.script:
             raise ProviderError("fake transport script is empty")
         return self.script.pop(0)

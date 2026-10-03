@@ -1,7 +1,8 @@
 # Tools the Omes agent may be offered.
 # Coding names from register_coding_tools, then growth names from register_growth_tools,
 # then delegate_task from register_delegate_tools, then platform names from
-# register_platform_tools, then IDE names from register_ide_tools.
+# register_platform_tools, then IDE names from register_ide_tools,
+# then X names from register_x_tools.
 # This list is exactly those names, in that order.
 version: 1
 seat: bot-00-omes
@@ -30,3 +31,8 @@ tools:
   - browser_snapshot
   - lsp_diagnostics
   - dap_stop
+  - x_mentions
+  - x_read_post
+  - x_post
+  - x_post_thread
+  - x_upload_media

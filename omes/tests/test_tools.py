@@ -11,6 +11,7 @@ from omes.tools.clarify import ClarifyLog, clarify
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES
 from omes.tools.ide import IDE_TOOL_NAMES
+from omes.tools.x import X_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
 from omes.tools.offer import offered_schemas
 from omes.tools.platform import PLATFORM_TOOL_NAMES
@@ -359,4 +360,5 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + DELEG_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
+        + X_TOOL_NAMES
     )
