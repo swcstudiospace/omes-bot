@@ -22,11 +22,14 @@ Single lookups and one-file edits go direct.
    `resolve_turn_plan()`. When it finds `last-plan.json`, read the
    spec it points at: the ORIGINAL element is the user's verbatim
    words, the Graph of Thought is the work breakdown, WORKFLOW is
-   the wave order. When nothing is found, there is no plan for
-   this turn — do not reuse an older one.
+   the wave order. When nothing is found — or the plan is flagged
+   stale — there is no plan for this turn: work the ask directly
+   and never reuse an older spec.
 2. **Track.** Use `ult_track_complete` with the session state file
-   so the plan's rows exist before engineering starts. Mark
-   `kicked-off` via `ult_session_mark` once tracking is real.
+   to finish *creating* the plan's tracker rows before engineering
+   starts (the command completes the tracking setup, not the
+   work). Mark `kicked-off` via `ult_session_mark` once the rows
+   are real.
 3. **Work the waves.** One wave at a time, in dependency order.
    Parallel units in the same wave go out as one `delegate_task`
    batch with explicit files, changes, and acceptance criteria.

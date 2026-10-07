@@ -23,9 +23,9 @@ connector asks for it:
 | Secret | Needed for | Where it goes |
 | --- | --- | --- |
 | `XAI_API_KEY` | Grok model calls outside Grok Bot | host env, resolved via the credential broker |
-| X API bearer token | X connector tools | provided when wiring the connector |
-| Telegram bot token (BotFather) | Telegram connector tools | provided when wiring the connector |
-| Discord bot token | Discord connector tools | provided when wiring the connector |
+| `X_API_TOKEN` | X connector tools | host env, read by the tool host |
+| `TELEGRAM_BOT_TOKEN` | Telegram connector tools | host env, read by the tool host |
+| `DISCORD_BOT_TOKEN` | Discord connector tools | host env, read by the tool host |
 | GitHub token | Reviews, ship PRs | host via `gh auth` |
 
 Skip what you don't use: every unconfigured client reports

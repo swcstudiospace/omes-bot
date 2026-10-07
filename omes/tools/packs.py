@@ -135,7 +135,7 @@ class PacksClient:
         records = [rec for name in sorted(self.loaded) for rec in self.loaded[name]]
         return {"ok": True, "loaded": records, "tools": sorted(pack.get("tools") or []),
                 "live_tools": self._live_tools(),
-                "note": "the pack's tools appear on the next tools/list"}
+                "note": "loaded set recorded; call the pack through the app_* backends"}
 
     def _base(self, app: str) -> str:
         return (self.ctx.api_bases.get(app) or "").rstrip("/")

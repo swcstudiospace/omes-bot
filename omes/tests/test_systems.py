@@ -81,6 +81,20 @@ def test_sql_queries_pass_through_and_fail_open(tmp_path):
     assert bare.events_query("select 1")["error"].startswith("not_configured")
 
 
+def test_sql_queries_stay_read_only(tmp_path):
+    import pytest
+
+    client = SystemsClient(_ctx(tmp_path))
+    assert client.index_query("WITH recent AS (SELECT 1) SELECT * FROM recent;")["rows"]
+    assert client.events_query("-- nightly\nselect 2") == {"rows": []}
+    for bad in ("DELETE FROM events", "update rows set x = 1", "DROP TABLE t",
+                "select 1; delete from t", "/* x */ insert into t values (1)",
+                "EXPLAIN DELETE FROM t", ""):
+        with pytest.raises(ValueError):
+            client.index_query(bad)
+    assert client.index_query("EXPLAIN SELECT 1")["rows"]
+
+
 def test_cache_namespaces_expires_and_refuses_secrets(tmp_path):
     client = SystemsClient(_ctx(tmp_path))
     assert client.cache("set", "k", value="v") == {"key": "k", "ok": True}

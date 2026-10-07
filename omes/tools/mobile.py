@@ -48,6 +48,16 @@ def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
 
 
+def _safe_shot_name(name: str) -> str | None:
+    """`<stem>.png` confined to the artifacts dir, else None."""
+    stem = name[:-4] if name.endswith(".png") else name
+    if not stem or stem in (".", "..") or "/" in stem or "\\" in stem:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.~-]*", stem):
+        return None
+    return stem + ".png"
+
+
 def _git_vcs(root: str):
     def show(ref: str, path: str) -> str | None:
         run = subprocess.run(["git", "show", f"{ref}:{path}"], cwd=root,
@@ -118,11 +128,18 @@ class MobileClient:
         edit_id = self._edit(play, package_name)
         if isinstance(edit_id, dict):
             return edit_id
+        current = play.track(package_name, edit_id, track)
+        if not isinstance(current, dict) or current.get("error"):
+            reason = current.get("error", "upstream_error") if isinstance(current, dict) else "upstream_error"
+            return _error("upstream_error", f"cannot read track before rollout: {reason}")
+        existing = (current.get("body") or {}).get("releases") or []
         status = "inProgress" if user_fraction < 1.0 else "completed"
         release: dict[str, Any] = {"versionCodes": [str(version_code)], "status": status}
         if user_fraction < 1.0:
             release["userFraction"] = user_fraction
-        updated = play.update_track(package_name, edit_id, track, {"track": track, "releases": [release]})
+        merged = [row for row in existing if str(version_code) not in
+                  [str(code) for code in (row.get("versionCodes") or [])]] + [release]
+        updated = play.update_track(package_name, edit_id, track, {"track": track, "releases": merged})
         if not isinstance(updated, dict) or updated.get("error"):
             return _passthrough(updated, "track update failed")
         committed = play.commit(package_name, edit_id)
@@ -216,19 +233,34 @@ class MobileClient:
                  for b in (builds.get("body") or {}).get("data") or []]
         return {"app_id": app_id, "builds": items}
 
-    def appstore_phased_release(self, version: str, halt_signal: str) -> dict[str, Any]:
-        """Activate a phased release for one version string."""
-        asc = self._asc()
-        if isinstance(asc, dict):
-            return asc
-        versions = asc.request("GET", "/appStoreVersions",
-                               params={"filter[versionString]": version, "limit": 1})
+    def _appstore_version_id(self, asc: Any, version: str,
+                               app_id: str | None) -> str | dict[str, Any]:
+        """One version id for a string, or an error. Refuses ambiguity."""
+        params: dict[str, Any] = {"filter[versionString]": version, "limit": 2}
+        if app_id:
+            params["filter[app]"] = app_id
+        versions = asc.request("GET", "/appStoreVersions", params=params)
         if not isinstance(versions, dict) or versions.get("error"):
             return _passthrough(versions, "version lookup failed")
         data = (versions.get("body") or {}).get("data") or []
         if not data:
             return _error("not_found", "no App Store version with that string")
-        version_id = data[0]["id"]
+        if len(data) > 1:
+            return _error("ambiguous",
+                          "that version string matches several apps; pass app_id")
+        if not isinstance(data[0], dict) or not data[0].get("id"):
+            return _error("upstream_error", "version lookup returned no id")
+        return data[0]["id"]
+
+    def appstore_phased_release(self, version: str, halt_signal: str,
+                                app_id: str | None = None) -> dict[str, Any]:
+        """Activate a phased release for one version string."""
+        asc = self._asc()
+        if isinstance(asc, dict):
+            return asc
+        version_id = self._appstore_version_id(asc, version, app_id)
+        if isinstance(version_id, dict):
+            return version_id
         body = {"data": {"type": "appStoreVersionPhasedReleases", "attributes": {"phasedReleaseState": "ACTIVE"},
                          "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": version_id}}}}}
         result = asc.request("POST", "/appStoreVersionPhasedReleases", json=body)
@@ -236,16 +268,23 @@ class MobileClient:
             return _passthrough(result, "phased release failed")
         return {"ok": True, "halt_signal": halt_signal, "phased_release": (result.get("body") or {}).get("data")}
 
-    def appstore_pause_release(self, version: str, reason: str) -> dict[str, Any]:
+    def appstore_pause_release(self, version: str, reason: str,
+                               app_id: str | None = None) -> dict[str, Any]:
         """Pause the phased release of one version string."""
         asc = self._asc()
         if isinstance(asc, dict):
             return asc
-        versions = asc.request("GET", "/appStoreVersions",
-                               params={"filter[versionString]": version,
-                                       "include": "appStoreVersionPhasedRelease", "limit": 1})
+        params: dict[str, Any] = {"filter[versionString]": version,
+                                  "include": "appStoreVersionPhasedRelease", "limit": 2}
+        if app_id:
+            params["filter[app]"] = app_id
+        versions = asc.request("GET", "/appStoreVersions", params=params)
         if not isinstance(versions, dict) or versions.get("error"):
             return _passthrough(versions, "version lookup failed")
+        data = (versions.get("body") or {}).get("data") or []
+        if len(data) > 1:
+            return _error("ambiguous",
+                          "that version string matches several apps; pass app_id")
         included = (versions.get("body") or {}).get("included") or []
         phased = next((i for i in included if i.get("type") == "appStoreVersionPhasedReleases"), None)
         if not phased:
@@ -326,7 +365,9 @@ class MobileClient:
         peer = self._backend(backend)
         if isinstance(peer, dict):
             return peer
-        shot_name = (name or f"device-{abs(hash(device_id)) % 10**8}") + ".png"
+        shot_name = _safe_shot_name(name or f"device-{abs(hash(device_id)) % 10**8}")
+        if shot_name is None:
+            return _error("invalid_name", "screenshot name stays inside the artifacts dir")
         target = str(Path(self.ctx.artifacts_dir) / shot_name)
         try:
             if backend == "appium":
@@ -442,10 +483,10 @@ def register_mobile_tools(registry: ToolRegistry, client: MobileClient) -> list[
         "mob_lint_baseline_diff": lambda baseline_path, base_ref, head_ref: _wrap(
             client.lint_baseline_diff, baseline_path, base_ref, head_ref),
         "mob_testflight_status": lambda bundle_id, build=None: _wrap(client.testflight_status, bundle_id, build=build),
-        "mob_appstore_phased_release": lambda version, halt_signal: _wrap(
-            client.appstore_phased_release, version, halt_signal),
-        "mob_appstore_pause_release": lambda version, reason: _wrap(
-            client.appstore_pause_release, version, reason),
+        "mob_appstore_phased_release": lambda version, halt_signal, app_id=None: _wrap(
+            client.appstore_phased_release, version, halt_signal, app_id=app_id),
+        "mob_appstore_pause_release": lambda version, reason, app_id=None: _wrap(
+            client.appstore_pause_release, version, reason, app_id=app_id),
         "mob_entitlements_diff": lambda base_ref, head_ref, target_dir="ios": _wrap(
             client.entitlements_diff, base_ref, head_ref, target_dir=target_dir),
         "mob_review_risk_check": lambda base_ref, head_ref: _wrap(client.review_risk_check, base_ref, head_ref),
@@ -496,10 +537,12 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
     "mob_testflight_status": ("Recent TestFlight builds. Read-only.",
                               _object({"bundle_id": _string("Bundle id."), "build": _string("Build filter.")}, ["bundle_id"])),
     "mob_appstore_phased_release": ("Activate a phased release. Requires approval.",
-                                    _object({"version": _string("Version string."), "halt_signal": _string("Halt condition.")},
+                                    _object({"version": _string("Version string."), "halt_signal": _string("Halt condition."),
+                                                   "app_id": _string("App id when the string is ambiguous.")},
                                             ["version", "halt_signal"])),
     "mob_appstore_pause_release": ("Pause a phased release. Requires approval.",
-                                   _object({"version": _string("Version string."), "reason": _string("Pause reason.")},
+                                   _object({"version": _string("Version string."), "reason": _string("Pause reason."),
+                                                  "app_id": _string("App id when the string is ambiguous.")},
                                            ["version", "reason"])),
     "mob_entitlements_diff": ("Entitlement changes across two refs. Read-only.",
                               _object({"base_ref": _string("Base ref."), "head_ref": _string("Head ref."),

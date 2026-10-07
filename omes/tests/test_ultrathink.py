@@ -71,12 +71,15 @@ def test_unconfigured_nonzero_and_approvals():
     log = ApprovalLog()
     registry = ToolRegistry(approval_log=log)
     register_ultrathink_tools(registry, UltrathinkClient(_ctx()))
-    for gated in ("ult_track_complete", "ult_ship_pr", "ult_ship_review", "ult_ship_merge"):
-        assert json.loads(registry.dispatch(gated, {"state": "s.json"})) == {
+    for gated in ("ult_track_complete", "ult_session_mark", "ult_ship_pr",
+                  "ult_ship_review", "ult_ship_merge"):
+        args = {"state": "s.json", "mark": "synced"} if gated == "ult_session_mark" else {"state": "s.json"}
+        assert json.loads(registry.dispatch(gated, args)) == {
             "error": "approval required", "tool": gated}
     assert log.approve("ult_ship_pr", "ada").get("approved") is True
     assert json.loads(registry.dispatch("ult_ship_pr", {"state": "s.json"}))["ok"] is True
     assert json.loads(registry.dispatch("ult_status", {}))["ok"] is True
+    assert log.approve("ult_session_mark", "ada").get("approved") is True
     assert "kicked-off or synced" in json.loads(registry.dispatch(
         "ult_session_mark", {"state": "s.json", "mark": "bogus"}))["error"]
 
@@ -91,8 +94,21 @@ def test_resolve_turn_plan(tmp_path):
     (second / "last-plan.json").write_text(json.dumps({"specPath": str(spec)}), encoding="utf-8")
     found = resolve_turn_plan(state_dirs=[first, second])
     assert found["found"] is True and found["spec_exists"] is True
+    assert found["stale"] is False
     assert found["plan_path"].endswith("last-plan.json")
     (first / "last-plan.json").write_text("not json", encoding="utf-8")
     assert resolve_turn_plan(state_dirs=[first])["found"] is False
     assert resolve_turn_plan(state_dirs=[tmp_path / "missing"])["found"] is False
     assert resolve_turn_plan(env={"HOME": str(tmp_path)})["found"] is False
+    import os as _os
+    import time as _time
+
+    aged = tmp_path / "aged"
+    aged.mkdir()
+    plan_file = aged / "last-plan.json"
+    plan_file.write_text(json.dumps({"specPath": str(spec)}), encoding="utf-8")
+    old = _time.time() - 25 * 3600.0
+    _os.utime(plan_file, (old, old))
+    stale = resolve_turn_plan(state_dirs=[aged])
+    assert stale["found"] is False and stale["stale"] is True
+    assert resolve_turn_plan(state_dirs=[aged], max_age_hours=48.0)["found"] is True

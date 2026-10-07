@@ -27,7 +27,8 @@ ULT_TOOL_NAMES = (
     "ult_ship_merge",
 )
 
-APPROVAL_TOOLS = frozenset({"ult_track_complete", "ult_ship_pr", "ult_ship_review", "ult_ship_merge"})
+APPROVAL_TOOLS = frozenset({"ult_track_complete", "ult_session_mark", "ult_ship_pr",
+                               "ult_ship_review", "ult_ship_merge"})
 _MARKS = ("kicked-off", "synced")
 OUTPUT_TAIL = 2000
 
@@ -166,7 +167,7 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
     "ult_status": ("Ultrathink planner status. Read-only.", _object({}, [])),
     "ult_track_complete": ("Finish tracker rows for one session. Requires approval.",
                            _object({"state": _STATE}, ["state"])),
-    "ult_session_mark": ("Mark one session kicked-off or synced. Read-only.",
+    "ult_session_mark": ("Mark one session kicked-off or synced. Requires approval.",
                          _object({"state": _STATE, "mark": _string("kicked-off or synced.")},
                                 ["state", "mark"])),
     "ult_ship_assess": ("Assess ship readiness for one session. Read-only.",

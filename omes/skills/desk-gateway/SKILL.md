@@ -7,6 +7,14 @@ gates: [G-5, G-6, G-7]
 
 # Desk Gateway
 
+## Omes adaptation
+
+Omes has no Desk Gateway: tools come from the in-process registry
+(or the Omes MCP tool host at `python -m omes.mcp_server`), and
+the roster is `contracts/tool-rosters/omes.yaml`. Read "gateway"
+below as that registry, "seat" as the single Omes bot, and
+refusals as blockers for the operator, not retry loops.
+
 ## When this applies (L1)
 
 Every `desk_*` tool you hold comes from the Desk Gateway at `https://desk.swcstudio.space/mcp/<seat>`.

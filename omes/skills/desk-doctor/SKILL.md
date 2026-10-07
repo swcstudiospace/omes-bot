@@ -7,6 +7,13 @@ gates: [G-7]
 
 # Desk Doctor
 
+## Omes adaptation
+
+Omes runs `lead_doctor` instead of `desk_doctor`, against the one
+Omes roster — no gateway, no seats. The checks below (prompt,
+skills, memory, roster, registration) are the same checks;
+`prompt_sha256` refers to `prompts-assembled/OMES.xml`.
+
 ## When this applies (L1)
 
 `/desk doctor` is `desk_doctor` with `action: check`. It is the integrity report for one seat: is

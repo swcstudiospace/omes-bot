@@ -19,9 +19,11 @@ class FakeRunner:
     def __init__(self, exits=None):
         self.exits = exits if exits is not None else {}
         self.calls: list[list] = []
+        self.cwds: list = []
 
     def __call__(self, argv, timeout=120, cwd=None):
         self.calls.append(argv)
+        self.cwds.append(cwd)
         code = self.exits.get(argv[3] if len(argv) > 3 else "", 0)
         return {"exit_code": code, "stdout": "out", "stderr": ""}
 
@@ -60,10 +62,12 @@ def _receipt(bot="bot-01-systems"):
 
 
 def test_gates_run_aggregates(tmp_path):
-    client = QualityClient(_ctx(tmp_path))
+    run = FakeRunner()
+    client = QualityClient(_ctx(tmp_path, run=run))
     result = client.gates_run()
     assert result["ok"] is True
     assert sorted(result["gates"]) == ["assemble", "evals", "suite"]
+    assert run.cwds == [str(tmp_path)] * 3
 
 
 def test_gates_run_failure(tmp_path):
@@ -76,10 +80,12 @@ def test_gates_run_failure(tmp_path):
 
 
 def test_greptile_actions(tmp_path):
-    client = QualityClient(_ctx(tmp_path))
+    greptile = FakeGreptile()
+    client = QualityClient(_ctx(tmp_path, greptile=greptile))
     triggered = client.greptile_review("trigger", pr_number=3)
     assert triggered["ok"] is True
     assert "queued" in triggered["note"]
+    assert greptile.calls[0] == ("trigger", "swcstudiospace/omes-bot", 3)
     got = client.greptile_review("get", review_id="r-1")
     assert got["result"]["conclusion"] == "pass"
     comments = client.greptile_review("comments", pr_number=3)
@@ -113,6 +119,10 @@ def test_receipt_approve_refusals(tmp_path):
     assert refused["problems"]
     assert "not_found" in client.receipt_approve("missing.json")["error"]
     assert "invalid_args" in client.receipt_approve("../escape.json")["error"]
+    anon = tmp_path / "anon.json"
+    anon.write_text(json.dumps({k: v for k, v in _receipt().items() if k != "bot"}),
+                    encoding="utf-8")
+    assert "invalid_receipt" in client.receipt_approve("anon.json")["error"]
 
 
 def test_waiver_record(tmp_path):
@@ -157,6 +167,23 @@ def test_contract_ack_status_coverage(tmp_path):
     assert after["complete"] is True
 
 
+def test_contract_ack_status_reads_yaml_proposal(tmp_path):
+    changes = tmp_path / "contracts" / "changes"
+    changes.mkdir(parents=True)
+    (changes / "c-3.yaml").write_text(
+        "change_id: c-3\nbreaking: false\nconsumers_required:\n"
+        "  - bot-00-omes\n  - \"bot:with-colon\"\nacknowledgements: []\n",
+        encoding="utf-8")
+    client = QualityClient(_ctx(tmp_path))
+    before = client.contract_ack_status("c-3")
+    assert before["missing"] == ["bot-00-omes", "bot:with-colon"]
+    assert before["complete"] is False
+    client.contract_ack("c-3", True, "fine")
+    after = client.contract_ack_status("c-3")
+    assert after["missing"] == ["bot:with-colon"]
+    assert after["complete"] is False
+
+
 def test_supply_chain_check(tmp_path):
     vcs = {"diff_names": lambda base, head: ["pyproject.toml", "uv.lock", "main.py"],
            "diff": lambda base, head, paths: "+dep = \"latest\"\n+other = \"1.0\"\n+git+https://x\n"}
@@ -181,6 +208,22 @@ def test_secret_scan(tmp_path):
     clean = client.secret_scan(["clean.py"])
     assert clean["ok"] is True
     assert "invalid_args" in client.secret_scan(["../x"])["error"]
+
+
+def test_secret_scan_default_skips_generated(tmp_path):
+    venv = tmp_path / ".venv" / "lib"
+    venv.mkdir(parents=True)
+    (venv / "dep.py").write_text('token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8")
+    (tmp_path / "src.py").write_text("x = 1\n", encoding="utf-8")
+    client = QualityClient(_ctx(tmp_path))
+    result = client.secret_scan()
+    assert result["ok"] is True
+    assert result["truncated"] is False
+    assert result["findings"] == []
+    (tmp_path / "src.py").write_text('token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8")
+    flagged = client.secret_scan()
+    assert flagged["ok"] is False
+    assert flagged["findings"] == [{"path": "src.py", "line": 1}]
 
 
 def test_register_quality_tools_approval(tmp_path):

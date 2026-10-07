@@ -7,6 +7,7 @@ from pathlib import Path
 
 from omes.memory.store import MemoryStore
 from omes.tools.approvals import ApprovalLog
+from omes.credentials.redact import REDACTED
 from omes.tools.lead import (
     LEAD_TOOL_NAMES,
     EventStore,
@@ -129,6 +130,17 @@ def test_intake_claim_ack_round_trip(tmp_path: Path):
     local = client.intake_ack(second["intake_id"], "done")
     assert local["notify"] == {"delivered": False, "reason": "origin has no callback"}
     assert "not_found" in client.intake_ack("in-missing", "done")["error"]
+
+    store = client.ctx.intake
+    stranded = store.submit("stuck work")
+    store.next(None, "gone-worker", now=1000.0)
+    assert store.get(stranded["intake_id"])["status"] == "in_progress"
+    assert store.next(None, "new-worker", now=1000.0) is None
+    reclaimed = store.next(None, "new-worker", now=1000.0 + 3601.0)
+    assert reclaimed["intake_id"] == stranded["intake_id"]
+    assert store.release(stranded["intake_id"]) is True
+    assert store.get(stranded["intake_id"])["status"] == "open"
+    assert store.release("in-missing") is False
 
 
 def test_graph_and_bus_passthrough_and_unconfigured(tmp_path: Path):
@@ -268,6 +280,12 @@ def test_events_size_cap_audit_and_emit(tmp_path: Path):
     assert outcome["ok"] is True and emitted and emitted[0]["kind"] == "ticketed"
     rows = client.ctx.events.records()
     assert rows[0]["payload"] == {"ticket": "t-1"} and rows[0]["seq"] == 1
+
+    token = "ghp_" + "x" * 36
+    nested = client.event_emit("ticketed", payload={"meta": {"client_secret": token}})
+    assert nested["ok"] is True
+    assert client.ctx.events.records()[-1]["payload"] == {"meta": {"client_secret": REDACTED}}
+    assert emitted[-1]["payload"] == {"meta": {"client_secret": REDACTED}}
 
     (tmp_path / "b").mkdir()
     local = LeadClient(_ctx(tmp_path / "b"))

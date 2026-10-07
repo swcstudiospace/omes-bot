@@ -12,6 +12,7 @@ from __future__ import annotations
 import fnmatch
 import hashlib
 import json
+import os
 import re
 import secrets
 import shutil
@@ -23,7 +24,7 @@ from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from typing import Any, Callable
 
-from omes.credentials.redact import redact_text
+from omes.credentials.redact import redact_text, redact_value
 from omes.memory.hindsight import Hindsight
 from omes.memory.store import MemoryStore
 from omes.receipts import ReceiptError, validate_receipt
@@ -83,8 +84,16 @@ class IntakeStore:
         self._save()
         return record
 
-    def next(self, origin: str | None, by: str) -> dict | None:
-        """Claim the oldest open order for `by`. None when empty."""
+    def next(self, origin: str | None, by: str, *,
+             reclaim_after: float = 3600.0, now: float | None = None) -> dict | None:
+        """Claim the oldest open order for `by`. None when empty.
+
+        Orders stuck `in_progress` past `reclaim_after` seconds are
+        released first, so a crashed dispatcher never strands the
+        queue. Pass `now` (epoch seconds) in tests.
+        """
+        current = time.time() if now is None else now
+        self.reclaim_stale(max_age_seconds=reclaim_after, now=current)
         for record in self.orders:
             if record.get("status") != "open":
                 continue
@@ -92,9 +101,40 @@ class IntakeStore:
                 continue
             record["status"] = "in_progress"
             record["by"] = by
+            record["claimed_at"] = current
             self._save()
             return record
         return None
+
+    def release(self, intake_id: str) -> bool:
+        """Return one order to open. False when missing."""
+        record = self.get(intake_id)
+        if record is None:
+            return False
+        record["status"] = "open"
+        record["by"] = None
+        record["claimed_at"] = None
+        self._save()
+        return True
+
+    def reclaim_stale(self, max_age_seconds: float = 3600.0,
+                      now: float | None = None) -> list[str]:
+        """Release `in_progress` orders older than the lease. Returns ids."""
+        current = time.time() if now is None else now
+        released: list[str] = []
+        for record in self.orders:
+            if record.get("status") != "in_progress":
+                continue
+            claimed = record.get("claimed_at")
+            if isinstance(claimed, (int, float)) and current - claimed <= max_age_seconds:
+                continue
+            record["status"] = "open"
+            record["by"] = None
+            record["claimed_at"] = None
+            released.append(str(record.get("intake_id")))
+        if released:
+            self._save()
+        return released
 
     def get(self, intake_id: str) -> dict | None:
         """One order by id, or None."""
@@ -133,7 +173,9 @@ class IntakeStore:
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         text = json.dumps({"orders": self.orders}, ensure_ascii=False, indent=2) + "\n"
-        self.path.write_text(text, encoding="utf-8")
+        tmp = self.path.with_name(self.path.name + ".tmp")
+        tmp.write_text(text, encoding="utf-8")
+        os.replace(tmp, self.path)
 
 
 class RosterStore:
@@ -199,7 +241,7 @@ class EventStore:
         record = {
             "seq": self._seq,
             "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-            **{k: redact_text(v) if isinstance(v, str) else v for k, v in event.items()},
+            **{k: redact_value(v) for k, v in event.items()},
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with self.path.open("a", encoding="utf-8") as handle:
@@ -307,7 +349,7 @@ class LeadClient:
         results = []
         for bank in names:
             entries = Hindsight(self.ctx.memory, bank).recall(query, limit=limit)
-            results.append({"bank": bank, "entries": [redact_text(e) for e in entries]})
+            results.append({"bank": bank, "entries": [redact_value(e) for e in entries]})
         return {"banks": names, "results": results}
 
     def ownership_resolve(self, paths: list[str]) -> dict[str, Any]:
@@ -454,7 +496,8 @@ class LeadClient:
         stored = self.ctx.events.append(event) if self.ctx.events else None
         if self.ctx.substrate is None:
             return {"ok": True, "stored": stored, "emitted": False}
-        result = self.ctx.substrate.emit({k: v for k, v in event.items() if v is not None})
+        outgoing = stored if isinstance(stored, dict) else redact_value(event)
+        result = self.ctx.substrate.emit({k: v for k, v in outgoing.items() if v is not None})
         if not isinstance(result, dict) or result.get("error"):
             reason = result.get("reason", "event not accepted") if isinstance(result, dict) else "event not accepted"
             code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"

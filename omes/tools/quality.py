@@ -42,9 +42,10 @@ def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
 
 
-def _default_run(argv: list[str], timeout: int = 120) -> dict[str, Any]:
+def _default_run(argv: list[str], timeout: int = 120,
+                 cwd: str | None = None) -> dict[str, Any]:
     try:
-        run = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+        run = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, cwd=cwd)
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"exit_code": 127, "stdout": "", "stderr": str(exc)}
     return {"exit_code": run.returncode, "stdout": run.stdout, "stderr": run.stderr}
@@ -102,7 +103,7 @@ class QualityContext:
     greptile: Any = None
     acks: AckStore | None = None
     vcs: Any = None
-    repo_slug: str = "SomeRandmGuyy/Omes-Bot"
+    repo_slug: str = "swcstudiospace/omes-bot"
     bot_id: str = "bot-00-omes"
 
 
@@ -173,6 +174,8 @@ class QualityClient:
             receipt = json.loads(target.read_text(encoding="utf-8"))
         except ValueError:
             return _error("invalid_receipt", "receipt is not valid JSON")
+        if not receipt.get("bot"):
+            return _error("invalid_receipt", "receipt names no authoring bot")
         if receipt.get("bot") == self.ctx.bot_id:
             return _error("self_approval", "QUALITY cannot approve a QUALITY receipt")
         try:
@@ -226,13 +229,20 @@ class QualityClient:
             raise ValueError("change_id must be a non-empty string")
         entry = (self.ctx.acks.acks.get(change_id) if self.ctx.acks else None) or {"acknowledgements": []}
         required: list[str] = []
-        for suffix in (".json",):
+        for suffix in (".yaml", ".yml", ".json"):
             proposal = Path(self.ctx.root) / "contracts" / "changes" / f"{change_id}{suffix}"
             if proposal.is_file():
                 try:
-                    required = list((json.loads(proposal.read_text(encoding="utf-8")) or {}).get("consumers_required") or [])
-                except ValueError:
-                    required = []
+                    text = proposal.read_text(encoding="utf-8")
+                except OSError:
+                    break
+                if suffix == ".json":
+                    try:
+                        required = list((json.loads(text) or {}).get("consumers_required") or [])
+                    except ValueError:
+                        required = []
+                else:
+                    required = _yaml_consumers(text)
                 break
         acked = {a["bot"] for a in entry["acknowledgements"] if a.get("ack")}
         rejected = [a for a in entry["acknowledgements"] if not a.get("ack")]
@@ -257,11 +267,14 @@ class QualityClient:
                 "unverified": ["licence and CVE lookup is not wired; run the supply-chain skill's audit commands"]}
 
     def secret_scan(self, paths: list[str] | None = None) -> dict[str, Any]:
-        """Secret-shape scan of given files (default: whole tree, max 2000)."""
+        """Secret-shape scan of given files (default: tree minus generated dirs, max 2000)."""
         root = Path(self.ctx.root)
+        truncated = False
         if paths is None:
-            targets = [str(p.relative_to(root)) for p in sorted(root.rglob("*"))
-                       if p.is_file() and ".git/" not in str(p)][:2000]
+            candidates = [p for p in sorted(root.rglob("*"))
+                          if p.is_file() and not _generated(p.relative_to(root))]
+            truncated = len(candidates) > 2000
+            targets = [str(p.relative_to(root)) for p in candidates[:2000]]
         else:
             if not isinstance(paths, list) or any(not _repo_relative(p) for p in paths):
                 return _error("invalid_args", "paths must be repo-relative")
@@ -279,7 +292,41 @@ class QualityClient:
                         break
             if len(findings) >= 50:
                 break
-        return {"ok": not findings, "gate": "G-3", "files": len(targets), "findings": findings}
+        outcome: dict[str, Any] = {"ok": not findings and not truncated, "gate": "G-3",
+                                         "files": len(targets), "findings": findings,
+                                         "truncated": truncated}
+        if truncated:
+            outcome["note"] = ("default scan skips generated dirs and stops at 2000 files; "
+                               "pass paths to cover the rest")
+        return outcome
+
+
+def _yaml_consumers(text: str) -> list[str]:
+    """`consumers_required` block list from a fixed-shape proposal.
+
+    No PyYAML in Omes: this reads only the `  - item` block the
+    systems emitter writes (plain or double-quoted scalars).
+    """
+    consumers: list[str] = []
+    in_block = False
+    for line in text.splitlines():
+        if not in_block:
+            if line.strip() == "consumers_required:":
+                in_block = True
+            continue
+        stripped = line.strip()
+        if stripped == "":
+            continue
+        if not stripped.startswith("- "):
+            break
+        item = stripped[2:].strip()
+        if len(item) >= 2 and item.startswith('"') and item.endswith('"'):
+            try:
+                item = json.loads(item)
+            except ValueError:
+                pass
+        consumers.append(item)
+    return consumers
 
 
 def _takes_cwd(run: Any) -> bool:
@@ -289,6 +336,18 @@ def _takes_cwd(run: Any) -> bool:
         return len(inspect.signature(run).parameters) >= 3
     except (TypeError, ValueError):
         return False
+
+
+_GENERATED_PARTS = frozenset({
+    ".git", ".hg", ".svn", ".venv", "venv", "node_modules", "__pycache__",
+    ".tox", ".mypy_cache", ".pytest_cache", "dist", "build", ".eggs",
+})
+
+
+def _generated(relative: Path) -> bool:
+    """True when a repo-relative path lives under a generated directory."""
+    return any(part in _GENERATED_PARTS or part.endswith(".egg-info")
+               for part in relative.parts)
 
 
 def _repo_relative(path: Any) -> bool:

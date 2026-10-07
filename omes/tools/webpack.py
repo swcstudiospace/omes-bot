@@ -10,6 +10,8 @@ injected seams; tests use fakes only.
 from __future__ import annotations
 
 import hashlib
+import ipaddress
+import re
 import time
 import urllib.request
 from dataclasses import dataclass, field
@@ -36,6 +38,53 @@ FETCH_TIMEOUT = 15.0
 
 def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
+
+
+_LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".invalid")
+
+
+def _safe_shot_name(name: str) -> str | None:
+    """`<stem>.png` confined to the artifacts dir, else None."""
+    stem = name[:-4] if name.endswith(".png") else name
+    if not stem or stem in (".", "..") or "/" in stem or "\\" in stem:
+        return None
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.~-]*", stem):
+        return None
+    return stem + ".png"
+
+
+def _check_url(url: str, allowed_hosts: tuple[str, ...] | None) -> str | None:
+    """Refusal text for an unfetchable URL, else None.
+
+    http(s) only, with a host; loopback/link-local/private/reserved
+    literal IPs and local names are always refused (no metadata or
+    intranet fetches). When `allowed_hosts` is set the host must
+    also match it exactly or as a subdomain.
+    """
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return "invalid_url: unparseable URL"
+    if parsed.scheme not in ("http", "https"):
+        return "invalid_url: only http and https URLs may be fetched"
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if not host:
+        return "invalid_url: URL has no host"
+    if host == "localhost" or host.endswith(_LOCAL_SUFFIXES):
+        return f"forbidden_host: {host} is not fetchable"
+    try:
+        address = ipaddress.ip_address(host)
+    except ValueError:
+        address = None
+    if address is not None and (address.is_loopback or address.is_private
+                                or address.is_link_local or address.is_multicast
+                                or address.is_reserved or address.is_unspecified):
+        return f"forbidden_host: {host} is not fetchable"
+    if allowed_hosts is not None and not any(
+            host == allowed.lower() or host.endswith("." + allowed.lower())
+            for allowed in allowed_hosts):
+        return f"forbidden_host: {host} is not in the fetch allowlist"
+    return None
 
 
 def _default_fetch(url: str, timeout: float = FETCH_TIMEOUT) -> dict[str, Any]:
@@ -69,6 +118,7 @@ class WebContext:
     browser_factory: Any = None
     vision: Any = None
     artifacts_dir: str | Path = "artifacts/reviews"
+    allowed_hosts: tuple[str, ...] | None = None
 
 
 class WebClient:
@@ -132,6 +182,9 @@ class WebClient:
             raise ValueError("url must be a non-empty string")
         if isinstance(expect_status, bool) or not isinstance(expect_status, int):
             raise ValueError("expect_status must be an integer")
+        blocked = _check_url(url, self.ctx.allowed_hosts)
+        if blocked is not None:
+            return {"url": url, "error": blocked}
         host = urlparse(url).hostname or ""
         fetch = self.ctx.fetch or _default_fetch
         result = fetch(url, FETCH_TIMEOUT)
@@ -188,7 +241,10 @@ class WebClient:
             navigated = browser.navigate(url)
             if navigated.get("error"):
                 return {"url": url, "connectivity": connectivity, "error": navigated["error"]}
-            shot_name = (name or f"review-{abs(hash(url)) % 10**8}") + ".png"
+            shot_name = _safe_shot_name(name or f"review-{abs(hash(url)) % 10**8}")
+            if shot_name is None:
+                return {"url": url, "connectivity": connectivity, "page": navigated,
+                        "error": "invalid_name: screenshot name stays inside the artifacts dir"}
             shot = browser.screenshot(str(Path(self.ctx.artifacts_dir) / shot_name))
             if shot.get("error"):
                 return {"url": url, "connectivity": connectivity, "page": navigated,

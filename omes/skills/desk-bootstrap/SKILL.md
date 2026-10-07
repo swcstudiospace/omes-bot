@@ -7,6 +7,16 @@ gates: [G-7]
 
 # Desk Bootstrap
 
+## Omes adaptation
+
+Omes is one bot, not seven seats: there is no Desk Gateway to
+connect and no LEAD to wait for. First run = Grok Bot install
+from the Omes template, then `grokbot/SETUP.md` (secrets, optional
+tool host, smoke prompt). The `lead_*` tools (`lead_doctor`,
+`lead_roster_status`, `lead_ownership_resolve`) replace the
+`desk_doctor` calls below; read the rest of this skill as the
+procedure those tools implement.
+
 ## When this applies (L1)
 
 You are a Bot created from a Programming Desk template, on your first run or re-running

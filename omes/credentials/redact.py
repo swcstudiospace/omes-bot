@@ -40,4 +40,17 @@ def redact_text(text: Any, extra: tuple[str, ...] = ()) -> Any:
     return text
 
 
-__all__ = ["REDACTED", "redact_text"]
+def redact_value(value: Any, extra: tuple[str, ...] = ()) -> Any:
+    """Recursively redact strings inside dicts, lists, and tuples."""
+    if isinstance(value, str):
+        return redact_text(value, extra)
+    if isinstance(value, dict):
+        return {key: redact_value(item, extra) for key, item in value.items()}
+    if isinstance(value, list):
+        return [redact_value(item, extra) for item in value]
+    if isinstance(value, tuple):
+        return tuple(redact_value(item, extra) for item in value)
+    return value
+
+
+__all__ = ["REDACTED", "redact_text", "redact_value"]

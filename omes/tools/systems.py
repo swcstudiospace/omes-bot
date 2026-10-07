@@ -9,6 +9,7 @@ behind an injectable VCS reader. No network in tests.
 
 from __future__ import annotations
 
+import re
 import secrets
 import subprocess
 import time
@@ -231,11 +232,28 @@ class SystemsClient:
         return {"path": path, "content": text[:ARTIFACT_LIMIT], "truncated": len(text) > ARTIFACT_LIMIT}
 
 
+_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+
+
 def _check_sql(sql: Any, limit: Any) -> None:
     if not isinstance(sql, str) or sql == "":
         raise ValueError("sql must be a non-empty string")
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
         raise ValueError("limit must be a positive integer")
+    full = _COMMENT.sub(" ", sql).strip()
+    lines = [line.strip() for line in full.splitlines()
+             if line.strip() and not line.strip().startswith("--")]
+    if not lines:
+        raise ValueError("sql must be a read-only SELECT/WITH query")
+    words = lines[0].replace("(", " (").split()
+    first = words[0].rstrip(";").lower() if words else ""
+    if first == "explain":
+        rest = [w.rstrip(";").lower() for w in words[1:] if w.lower() != "analyze"]
+        first = rest[0] if rest else ""
+    if first not in ("select", "with", "values", "table"):
+        raise ValueError("sql must be a read-only SELECT/WITH query")
+    if ";" in " ".join(lines).rstrip().rstrip(";"):
+        raise ValueError("sql must be a single statement")
 
 
 def _repo_relative(path: Any) -> bool:

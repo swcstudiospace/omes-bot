@@ -119,6 +119,13 @@ def test_preview_shape_mismatch_and_failure(tmp_path):
     assert "fetch failed" in failing.preview_check("https://x/")["error"]
     with pytest.raises(ValueError, match="non-empty string"):
         client.preview_check("")
+    assert "only http" in client.preview_check("file:///etc/passwd")["error"]
+    assert "forbidden_host" in client.preview_check("http://localhost:9/")["error"]
+    assert "forbidden_host" in client.preview_check("http://169.254.169.254/")["error"]
+    assert "forbidden_host" in client.preview_check("http://10.0.0.9/")["error"]
+    scoped = WebClient(_ctx(tmp_path, allowed_hosts=("acme.test",)))
+    assert scoped.preview_check("https://acme.test/")["matches"] is True
+    assert "allowlist" in scoped.preview_check("https://other.test/")["error"]
 
 
 def test_bundle_scan_findings(tmp_path):
@@ -145,6 +152,7 @@ def test_review_page_orchestrates_all_three(tmp_path):
     assert "not configured" in blind.review_page("https://acme.test/", "q")["vision"]["error"]
     failing = WebClient(_ctx(tmp_path, fetch=lambda url, timeout: {"error": "upstream_error: down"}))
     assert failing.review_page("https://x/", "q")["error"] == "connectivity failed"
+    assert "invalid_name" in client.review_page("https://acme.test/", "q", name="../../evil")["error"]
 
 
 def test_browser_lifecycle_and_errors(tmp_path):

@@ -86,17 +86,26 @@ class InfraClient:
 
     def railway_logs(self, project: str, service: str, deployment_id: str | None = None,
                      lines: int = 100) -> dict[str, Any]:
-        """Recent log lines for a deployment (default: latest)."""
+        """Recent log lines for a deployment (default: latest).
+
+        The project/service lookup always runs first, and a supplied
+        id must belong to that service: the latest id passes, older
+        ids need a client `deployment()` lookup to confirm membership.
+        """
         if self.ctx.railway is None:
             return {"lines": [], **_error("not_configured", "Railway API token is not configured")}
         if isinstance(lines, bool) or not isinstance(lines, int) or lines < 1:
             raise ValueError("lines must be a positive integer")
+        found = self._find_service(project, service)
+        latest = (found["service"].get("latest_deployment") or {}) if found else {}
+        if not found or not latest.get("id"):
+            return {"lines": [], **_error("not_found", "service or latest deployment not found")}
         if not deployment_id:
-            found = self._find_service(project, service)
-            latest = (found["service"].get("latest_deployment") or {}) if found else {}
-            if not found or not latest.get("id"):
-                return {"lines": [], **_error("not_found", "service or latest deployment not found")}
             deployment_id = latest["id"]
+        elif deployment_id != latest["id"]:
+            allowed = self._deployment_belongs(found, deployment_id)
+            if allowed is not True:
+                return {"lines": [], **allowed}
         result = self.ctx.railway.logs(deployment_id, int(lines))
         if not isinstance(result, dict) or result.get("error"):
             return {"lines": [], **(result if isinstance(result, dict) else {"error": "upstream_error"})}
@@ -193,6 +202,32 @@ class InfraClient:
         if self.ctx.railway is None:
             return names
         return [n for n in names if self.ctx.railway.project_id(n)]
+
+    def _deployment_belongs(self, found: dict[str, Any],
+                            deployment_id: str) -> bool | dict[str, Any]:
+        """True when `deployment_id` belongs to the resolved service.
+
+        Uses the client `deployment()` lookup when present; without
+        it only the latest id is knowable, so anything else is
+        refused rather than fetched blind.
+        """
+        lookup = getattr(self.ctx.railway, "deployment", None)
+        if lookup is None:
+            return _error("forbidden", "that deployment is not the service latest, "
+                                       "and this client cannot verify older deployments")
+        try:
+            detail = lookup(deployment_id)
+        except (ValueError, TypeError, OSError) as exc:
+            return _error("upstream_error", f"deployment lookup failed: {exc}")
+        node = ((detail or {}).get("body") or {}).get("data", {}).get("deployment") or {}
+        service = found.get("service") or {}
+        if node.get("serviceId") and node["serviceId"] != service.get("id"):
+            return _error("forbidden", "that deployment belongs to another service")
+        if node.get("projectId") and node["projectId"] != found.get("project_id"):
+            return _error("forbidden", "that deployment belongs to another project")
+        if not node:
+            return _error("not_found", "deployment not found")
+        return True
 
     def _find_service(self, project: str, service_name: str) -> dict[str, Any] | None:
         status = self.railway_status(project)

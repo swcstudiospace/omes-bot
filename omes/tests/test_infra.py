@@ -29,6 +29,16 @@ class FakeRailway:
         self.calls.append(("logs", deployment_id, lines))
         return {"body": {"data": {"deploymentLogs": ["l1", "l2"]}}}
 
+    def deployment(self, deployment_id):
+        self.calls.append(("deployment", deployment_id))
+        owners = {"d-8": ("p-acme", "s-1"), "d-7": ("p-acme", "s-2"),
+                  "d-6": ("p-other", "s-1")}
+        if deployment_id not in owners:
+            return {"body": {"data": {"deployment": {}}}}
+        project_id, service_id = owners[deployment_id]
+        return {"body": {"data": {"deployment": {"id": deployment_id, "projectId": project_id,
+                                                 "serviceId": service_id}}}}
+
     def variable_names(self, project_id, environment_id, service_id):
         self.calls.append(("vars", project_id, environment_id, service_id))
         return {"names": ["PORT", "TOKEN"]}
@@ -75,6 +85,25 @@ def test_railway_status_logs_vars_redeploy():
     assert "not_configured" in bare.railway_redeploy("a", "b", "d")["error"]
     empty = InfraClient(InfraContext(railway=FakeRailway()))
     assert "no Railway project" in empty.railway_status()["error"]
+
+
+def test_railway_logs_binds_deployment_to_service():
+    client = InfraClient(_ctx())
+    latest = client.railway_logs("acme", "web", deployment_id="d-9")
+    assert latest == {"deployment_id": "d-9", "lines": ["l1", "l2"]}
+    older = client.railway_logs("acme", "web", deployment_id="d-8")
+    assert older == {"deployment_id": "d-8", "lines": ["l1", "l2"]}
+    assert "another service" in client.railway_logs("acme", "web", deployment_id="d-7")["error"]
+    assert "another project" in client.railway_logs("acme", "web", deployment_id="d-6")["error"]
+    assert "not_found" in client.railway_logs("acme", "web", deployment_id="d-0")["error"]
+    assert "not found" in client.railway_logs("acme", "nope", deployment_id="d-8")["error"]
+
+    class NoLookup(FakeRailway):
+        deployment = None
+
+    stuck = InfraClient(_ctx(railway=NoLookup()))
+    assert stuck.railway_logs("acme", "web", deployment_id="d-9")["deployment_id"] == "d-9"
+    assert "cannot verify" in stuck.railway_logs("acme", "web", deployment_id="d-8")["error"]
 
 
 def test_tailscale_parse_and_probes():

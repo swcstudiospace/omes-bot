@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
@@ -38,8 +39,14 @@ def _candidates(env: dict[str, str]) -> list[Path]:
 
 
 def resolve_turn_plan(*, state_dirs: list[str | Path] | None = None,
-                      env: dict[str, str] | None = None) -> dict[str, Any]:
-    """Return `{found, plan_path, spec_path, spec_exists}` for this turn."""
+                      env: dict[str, str] | None = None,
+                      max_age_hours: float = 24.0) -> dict[str, Any]:
+    """Return `{found, plan_path, spec_path, spec_exists, stale}` for this turn.
+
+    A plan older than `max_age_hours` belongs to an earlier request:
+    it comes back `found: False` with `stale: True` so the turn
+    never works a previous prompt's spec.
+    """
     if state_dirs is not None:
         paths = [Path(d) / "last-plan.json" for d in state_dirs]
     else:
@@ -55,8 +62,16 @@ def resolve_turn_plan(*, state_dirs: list[str | Path] | None = None,
             continue
         if not isinstance(plan, dict):
             continue
+        try:
+            age_hours = (time.time() - path.stat().st_mtime) / 3600.0
+        except OSError:
+            continue
+        if age_hours > max_age_hours:
+            return {"found": False, "plan_path": str(path), "spec_path": None,
+                    "spec_exists": False, "stale": True}
         spec_path = plan.get("specPath") if isinstance(plan.get("specPath"), str) else None
         spec_exists = bool(spec_path) and Path(spec_path).is_file()
         return {"found": True, "plan_path": str(path), "spec_path": spec_path,
-                "spec_exists": spec_exists}
-    return {"found": False, "plan_path": None, "spec_path": None, "spec_exists": False}
+                "spec_exists": spec_exists, "stale": False}
+    return {"found": False, "plan_path": None, "spec_path": None, "spec_exists": False,
+            "stale": False}

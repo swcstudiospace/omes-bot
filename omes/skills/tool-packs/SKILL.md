@@ -7,6 +7,15 @@ gates: [G-4, G-7]
 
 # Tool Packs
 
+## Omes adaptation
+
+Omes loads packs with `app_tools_load {app, task_id}` (approval
+required) and calls the pack through the `app_*` backends
+(`app_api_smoke`, `app_push_test`, …) — no connector refresh, no
+per-seat tool lists. The 20-live-tools ceiling still holds and
+unloading still closes the ticket's pack. Read `desk_app_tools_load`
+below as `app_tools_load`.
+
 ## When this applies (L1)
 
 A tool pack is a contract-defined bundle of at most five application-specific tools

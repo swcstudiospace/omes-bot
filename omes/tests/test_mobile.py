@@ -118,6 +118,12 @@ def test_play_track_status_and_rollout(tmp_path):
     assert "forbidden" in client.play_staged_rollout("com.acme.app", "production", 8, 1.0, "x")["error"]
     full = client.play_staged_rollout("com.acme.app", "production", 8, 1.0, "x", confirm_full=True)
     assert full["release"]["status"] == "completed"
+    play = FakePlay()
+    merging = MobileClient(_ctx(tmp_path, play=play))
+    merging.play_staged_rollout("com.acme.app", "production", 9, 0.5, "x")
+    body = [call[4] for call in play.calls if call[0] == "update"][0]
+    codes = [code for row in body["releases"] for code in row["versionCodes"]]
+    assert codes == ["7", "9"]
     bare = MobileClient(MobileContext(root=tmp_path))
     assert "not_configured" in bare.play_track_status("com.acme.app", "t")["error"]
     try:
@@ -158,6 +164,18 @@ def test_testflight_and_phased_flows(tmp_path):
     assert active["ok"] is True and active["phased_release"]["id"] == "pr-1"
     paused = client.appstore_pause_release("1.2", "regression")
     assert paused == {"ok": True, "reason": "regression", "phased_release_id": "pr-1"}
+
+    class AmbiguousAsc(FakeAsc):
+        def request(self, method, path, params=None, json=None):
+            if path == "/appStoreVersions" and not (params or {}).get("filter[app]"):
+                return {"body": {"data": [{"id": "v-1"}, {"id": "v-2"}]}}
+            return super().request(method, path, params=params, json=json)
+
+    cloudy = MobileClient(_ctx(tmp_path, asc=AmbiguousAsc()))
+    assert "ambiguous" in cloudy.appstore_phased_release("1.2", "x")["error"]
+    assert "ambiguous" in cloudy.appstore_pause_release("1.2", "x")["error"]
+    scoped = cloudy.appstore_phased_release("1.2", "x", app_id="app-1")
+    assert scoped["ok"] is True
     bare = MobileClient(MobileContext(root=tmp_path))
     assert "not_configured" in bare.testflight_status("com.acme.app")["error"]
 
@@ -197,6 +215,8 @@ def test_devices_list_review_act_and_backend_errors(tmp_path):
     assert listed["errors"] == ["adb down"]
     report = client.device_review("d-1", "fake", "is login visible?", name="login")
     assert report["screenshot"]["path"].endswith("login.png")
+    assert "invalid_name" in client.device_review("d-1", "fake", "q", name="../evil")["error"]
+    assert "invalid_name" in client.device_review("d-1", "fake", "q", name="/abs")["error"]
     assert "login visible" in report["vision"]["answer"]
     assert "no appium device backend" in client.device_review("d", "appium", "q")["error"]
     acted = client.device_act("d-1", "fake", "tap", x=10, y=20)
