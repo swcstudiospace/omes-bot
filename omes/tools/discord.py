@@ -13,7 +13,10 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
-import discord
+try:
+    import discord
+except ImportError:  # Python 3.13+: audioop removal breaks discord.py's import
+    discord = None  # type: ignore[assignment]
 
 from omes.tools.registry import ToolRegistry
 
@@ -38,7 +41,9 @@ class _DiscordProvider:
     requires_key = True
 
 
-def _default_client() -> discord.Client:
+def _default_client() -> Any:
+    if discord is None:
+        raise DiscordError("discord.py is not importable on this Python")
     return discord.Client(intents=discord.Intents.default())
 
 

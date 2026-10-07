@@ -47,6 +47,9 @@ python3 -m venv .venv
 .venv/bin/python -m omes.mcp_server --root .
 ```
 
+For the exact verified dependency set instead of fresh floors:
+`.venv/bin/pip install -r requirements-lock.txt`.
+
 Then add it as a **custom MCP** server in your Grok Bot's
 settings, pointing at that command. Prefer a sandbox: see
 [Tool host](tool-host.md) for the OpenShell profile and AgentOS

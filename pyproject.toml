@@ -14,17 +14,19 @@ classifiers = [
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "tweepy>=4.14",
-  "mcp>=1.0",
-  "pyrit>=1.0",
-  "apscheduler>=3.10",
-  "aiogram>=3.0",
-  "discord.py>=2.0",
-  "playwright>=1.40",
-  "Appium-Python-Client>=4.0",
+  "tweepy>=4.17",
+  "mcp>=2.3,<3",
+  "pyrit>=1.1",
+  "apscheduler>=3.11",
+  "aiogram>=3.31",
+  "discord.py>=2.7",
+  "playwright>=1.63",
+  "Appium-Python-Client>=6.0",
 ]
 
 [project.optional-dependencies]

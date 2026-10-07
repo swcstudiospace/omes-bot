@@ -5,8 +5,12 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-import discord
 import pytest
+
+try:
+    import discord
+except ImportError:  # Python 3.13+: audioop removal breaks discord.py's import
+    discord = None  # type: ignore[assignment]
 
 from omes.credentials.broker import CredentialBroker
 from omes.policy.policy import SeatPolicy
@@ -207,9 +211,12 @@ def test_blank_token_is_refused_before_any_peer_call():
 
 
 def test_library_failures_name_the_operation():
+    class _LibraryBoom(Exception):
+        pass
+
     class ExplodingClient(FakeDiscordClient):
         async def login(self, token: str):
-            raise discord.DiscordException("boom")
+            raise _LibraryBoom("boom")
 
     def make() -> FakeDiscordClient:
         return ExplodingClient(_channels())
@@ -219,4 +226,14 @@ def test_library_failures_name_the_operation():
 
 
 def test_default_factory_builds_a_real_client():
+    pytest.importorskip("discord")
+    assert discord is not None
     assert isinstance(DiscordClient().make_client(), discord.Client)
+
+
+def test_default_client_names_missing_library(monkeypatch):
+    import omes.tools.discord as tools_discord
+
+    monkeypatch.setattr(tools_discord, "discord", None)
+    with pytest.raises(DiscordError, match="not importable"):
+        tools_discord._default_client()

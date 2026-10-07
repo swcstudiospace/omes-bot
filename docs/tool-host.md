@@ -18,6 +18,11 @@ the registry's own text. Approval-gated tools (deploys,
 publishes, merges, tracker writes) stay gated: pre-approve in
 the host process or call them from a session that approves.
 
+The host speaks MCP spec `2026-07-28` via the v2 Python SDK
+(`mcp>=2,<3`): snake_case in Python (`is_error`,
+`input_schema`), camelCase on the wire. Raw wire payloads
+(Greptile KB client, scripted peers) stay camelCase.
+
 ## OpenShell
 
 Prefer running the host sandboxed. NVIDIA OpenShell
