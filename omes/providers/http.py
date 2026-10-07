@@ -1,11 +1,11 @@
 """Real HTTP transport for providers: stdlib only, retries, host allowlist.
 
-`HttpTransport` implements the `Transport.post` seam over `http.client`:
+`HttpTransport` implements the `Transport` seams over `http.client`:
 JSON request bodies, JSON responses (`post_text` for plain-text bodies),
-per-call timeouts, and retries on connection failures, timeouts, HTTP 408,
-HTTP 429 (honoring `Retry-After` up to 60s), and HTTP 5xx. With a seat
-policy attached, hosts outside the allowlist are refused before any socket
-exists.
+line-iterated `stream` responses, per-call timeouts, and retries on
+connection failures, timeouts, HTTP 408, HTTP 429 (honoring `Retry-After`
+up to 60s), and HTTP 5xx. With a seat policy attached, hosts outside the
+allowlist are refused before any socket exists.
 
 The `connect` factory (default: stdlib HTTP/HTTPS connections) exists so
 tests can run the same request/response framing over a socketpair to a
@@ -18,7 +18,7 @@ import contextlib
 import http.client
 import json
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from typing import Any
 from urllib.parse import urlencode, urlsplit
 
@@ -71,6 +71,17 @@ class HttpTransport:
         merged = {"Accept": "application/json"}
         merged.update(headers or {})
         return self._send("GET", target, merged, None)
+
+    def stream(self, url: str, headers: dict, body: dict) -> Iterator[str]:
+        """POST once and yield response lines. Retries end at first byte."""
+        payload = json.dumps(body).encode("utf-8")
+        merged = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(payload)),
+            "Accept": "text/event-stream",
+        }
+        merged.update(headers or {})
+        return self._stream_lines(url, merged, payload)
 
     def post_text(self, url: str, headers: dict, body: dict) -> str:
         """POST one JSON body. Return the raw UTF-8 response body."""
@@ -140,6 +151,67 @@ class HttpTransport:
         if retry_after is not None:
             delay = max(delay, retry_after)
         return delay
+
+    def _stream_lines(self, url: str, headers: dict, payload: bytes) -> Iterator[str]:
+        """Yield response lines. Status errors retry; mid-stream ends it."""
+        host, port, path, use_tls = _split(url)
+        if host is None:
+            raise ProviderError(f"cannot parse request host from {url!r}")
+        if self._policy is not None and not self._policy.allows_host(host):
+            raise ProviderError(f"network blocked to host {host}")
+        last: Exception | None = None
+        for attempt in range(self._max_retries + 1):
+            try:
+                yield from self._stream_once(
+                    host, port, path, use_tls, headers, payload, url
+                )
+                return
+            except _Retryable as exc:
+                last = exc
+                delay = self._delay(attempt, exc.retry_after)
+                if delay is not None:
+                    time.sleep(delay)
+            except ProviderError:
+                raise
+        assert last is not None
+        raise ProviderError(
+            f"stream from {host} failed after retries: {last}"
+        ) from last
+
+    def _stream_once(
+        self,
+        host: str,
+        port: int,
+        path: str,
+        use_tls: bool,
+        headers: dict,
+        payload: bytes,
+        url: str,
+    ) -> Iterator[str]:
+        """One POST; yield decoded lines. Errors raise before first yield."""
+        try:
+            connection = self._connect(host, port, self._timeout, use_tls)
+        except OSError as exc:
+            raise _Retryable(str(exc) or type(exc).__name__) from exc
+        try:
+            try:
+                connection.request("POST", path, body=payload, headers=headers)
+                response = connection.getresponse()
+                status = response.status
+                seen: dict[str, str] = {}
+                for key, value in response.getheaders():
+                    seen.setdefault(str(key).lower(), str(value))
+            except (http.client.HTTPException, TimeoutError, OSError) as exc:
+                raise _Retryable(str(exc) or type(exc).__name__) from exc
+            _check_status(status, url, seen)
+            while True:
+                raw = response.readline()
+                if not raw:
+                    return
+                yield raw.decode("utf-8", "replace").rstrip("\r\n")
+        finally:
+            with contextlib.suppress(OSError):
+                connection.close()
 
     def _once(
         self,

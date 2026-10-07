@@ -57,10 +57,12 @@ class _Fixture:
         statuses: list[int],
         payload: dict,
         headers: list[str] | None = None,
+        raw_bodies: list[bytes] | None = None,
     ) -> None:
         self.statuses = list(statuses)
         self.payload = payload
         self.headers = list(headers or [])
+        self.raw_bodies = list(raw_bodies or [])
         self.requests: list[dict] = []
         self._lock = threading.Lock()
 
@@ -97,7 +99,11 @@ class _Fixture:
                 )
                 status = self.statuses.pop(0) if self.statuses else 200
                 extra = self.headers.pop(0) if self.headers else ""
-            data = json.dumps(self.payload).encode("utf-8")
+                raw_body = self.raw_bodies.pop(0) if self.raw_bodies else None
+            if raw_body is not None:
+                data = raw_body
+            else:
+                data = json.dumps(self.payload).encode("utf-8")
             sock.sendall(
                 f"HTTP/1.1 {status} X\r\nContent-Type: application/json\r\n"
                 f"Content-Length: {len(data)}\r\nConnection: close\r\n{extra}\r\n".encode()
@@ -319,3 +325,58 @@ def test_model_spans_omit_usage_when_absent():
     spans = [span for span in tracer.spans() if span["kind"] == "model"]
     assert len(spans) == 1
     assert "usage" not in spans[0]["fields"]
+
+
+def test_http_transport_streams_lines_and_retries_status_errors():
+    sse = (
+        b'data: {"choices": [{"delta": {"content": "a"}}]}\n\n'
+        b": keep-alive\n\n"
+        b'data: {"choices": [{"delta": {"content": "b"}}]}\n\n'
+        b"data: [DONE]\n\n"
+    )
+    fixture = _Fixture([429, 200], {}, raw_bodies=[b"{}", sse])
+    transport = HttpTransport(
+        timeout=5, max_retries=1, backoff=0, connect=fixture.connect
+    )
+    lines = list(
+        transport.stream("http://fixture.local/chat/completions", {}, {"model": "m"})
+    )
+
+    assert [line for line in lines if line.startswith("data:")] == [
+        'data: {"choices": [{"delta": {"content": "a"}}]}',
+        'data: {"choices": [{"delta": {"content": "b"}}]}',
+        "data: [DONE]",
+    ]
+    assert len(fixture.requests) == 2
+
+
+def test_http_transport_stream_refuses_error_status_without_retry():
+    fixture = _Fixture([404], {}, raw_bodies=[b"{}"])
+    transport = HttpTransport(
+        timeout=5, max_retries=3, backoff=0, connect=fixture.connect
+    )
+    with pytest.raises(ProviderError, match="HTTP 404"):
+        list(transport.stream("http://fixture.local/chat/completions", {}, {}))
+    assert len(fixture.requests) == 1
+
+
+def test_loop_consumes_streamed_output_end_to_end():
+    lines = [
+        'data: {"choices": [{"delta": {"content": "stream"}}]}',
+        'data: {"choices": [{"delta": {"content": "ed"}}]}',
+        "data: [DONE]",
+    ]
+    transport = FakeTransport(stream_script=[lines])
+    agent = Agent(
+        model=ProviderModel(
+            GrokProvider(), "grok-4", transport, api_key="k", stream=True
+        ),
+        tools={},
+        max_iterations=4,
+    )
+    result = run_conversation(agent, "go")
+
+    assert result["final_response"] == "streamed"
+    stream_url, _, stream_body = transport.stream_calls[0]
+    assert stream_url == "https://api.x.ai/v1/chat/completions"
+    assert stream_body["stream"] is True

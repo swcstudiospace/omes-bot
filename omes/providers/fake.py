@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 from omes.providers.base import ProviderError
@@ -10,10 +11,17 @@ from omes.providers.base import ProviderError
 class FakeTransport:
     """Replay scripted payloads. ``post_fn`` overrides the script per call."""
 
-    def __init__(self, script: list[dict] | None = None, post_fn: Any = None) -> None:
+    def __init__(
+        self,
+        script: list[dict] | None = None,
+        post_fn: Any = None,
+        stream_script: list | None = None,
+    ) -> None:
         self.script = list(script) if script else []
         self.post_fn = post_fn
+        self.stream_script = list(stream_script) if stream_script else []
         self.calls: list[tuple[str, str, dict, dict]] = []
+        self.stream_calls: list[tuple[str, dict, dict]] = []
 
     def post(self, url: str, headers: dict, body: dict) -> dict:
         self.calls.append(("POST", url, dict(headers), body))
@@ -30,6 +38,12 @@ class FakeTransport:
         if not self.script:
             raise ProviderError("fake transport script is empty")
         return self.script.pop(0)
+
+    def stream(self, url: str, headers: dict, body: dict) -> Iterator[str]:
+        self.stream_calls.append((url, dict(headers), dict(body)))
+        if not self.stream_script:
+            raise ProviderError("fake transport stream script is empty")
+        return iter(self.stream_script.pop(0))
 
 
 __all__ = ["FakeTransport"]

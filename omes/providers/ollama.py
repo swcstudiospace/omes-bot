@@ -1,7 +1,8 @@
-"""Ollama wire: local /api/chat, no key, no streaming."""
+"""Ollama wire: local /api/chat, no key, NDJSON streaming."""
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any
 
@@ -61,6 +62,53 @@ class OllamaProvider(Provider):
                 ("eval_count", "completion_tokens"),
             ),
         )
+
+    def parse_stream(self, lines: Any) -> tuple[dict[str, Any], dict[str, int] | None]:
+        """Accumulate Ollama NDJSON objects into ``(row, usage?)``."""
+        texts: list[str] = []
+        calls: list[dict[str, Any]] = []
+        usage: dict[str, int] | None = None
+        for line in lines or []:
+            if not isinstance(line, str) or not line.strip():
+                continue
+            try:
+                event = json.loads(line)
+            except ValueError:
+                continue
+            if not isinstance(event, dict):
+                continue
+            message = event.get("message") or {}
+            if isinstance(message, dict):
+                if isinstance(message.get("content"), str):
+                    texts.append(message["content"])
+                for call in message.get("tool_calls") or []:
+                    if not isinstance(call, dict):
+                        continue
+                    function = call.get("function") or {}
+                    if isinstance(function, dict) and function.get("name"):
+                        calls.append(
+                            {
+                                "id": "",
+                                "function": {
+                                    "name": function["name"],
+                                    "arguments": function.get("arguments"),
+                                },
+                            }
+                        )
+            block = self._usage_from(
+                event,
+                None,
+                (
+                    ("prompt_eval_count", "prompt_tokens"),
+                    ("eval_count", "completion_tokens"),
+                ),
+            )
+            if block is not None:
+                usage = block
+        row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
+        if calls:
+            row["tool_calls"] = [normalize_tool_call(call) for call in calls]
+        return row, usage
 
 
 def _text(value: Any) -> str:

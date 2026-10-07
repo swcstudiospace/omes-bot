@@ -88,6 +88,72 @@ class AnthropicProvider(Provider):
             ),
         )
 
+    def parse_stream(self, lines: Any) -> tuple[dict[str, Any], dict[str, int] | None]:
+        """Accumulate Anthropic SSE deltas into ``(row, usage?)``."""
+        texts: list[str] = []
+        calls: dict[int, dict[str, Any]] = {}
+        usage: dict[str, int] = {}
+        for event in self._sse_data(lines):
+            kind = event.get("type")
+            if kind == "message_start":
+                message = event.get("message") or {}
+                block = self._usage_from(
+                    message if isinstance(message, dict) else {},
+                    "usage",
+                    (("input_tokens", "prompt_tokens"),),
+                )
+                if block is not None:
+                    usage.update(block)
+            elif kind == "content_block_start":
+                block = event.get("content_block") or {}
+                index = event.get("index", 0)
+                if (
+                    isinstance(block, dict)
+                    and block.get("type") == "tool_use"
+                    and isinstance(index, int)
+                ):
+                    calls[index] = {
+                        "id": str(block.get("id", "")),
+                        "name": str(block.get("name", "")),
+                        "arguments": "",
+                    }
+            elif kind == "content_block_delta":
+                delta = event.get("delta") or {}
+                index = event.get("index", 0)
+                if not isinstance(delta, dict) or not isinstance(index, int):
+                    continue
+                if delta.get("type") == "text_delta":
+                    piece = delta.get("text")
+                    if isinstance(piece, str) and piece:
+                        texts.append(piece)
+                elif delta.get("type") == "input_json_delta":
+                    piece = delta.get("partial_json")
+                    if isinstance(piece, str) and index in calls:
+                        calls[index]["arguments"] += piece
+            elif kind == "message_delta":
+                block = self._usage_from(
+                    event,
+                    "usage",
+                    (("output_tokens", "completion_tokens"),),
+                )
+                if block is not None:
+                    usage.update(block)
+        row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
+        merged = [calls[index] for index in sorted(calls) if calls[index]["name"]]
+        if merged:
+            row["tool_calls"] = [
+                {
+                    "id": slot["id"],
+                    "type": "function",
+                    "function": {
+                        "name": slot["name"],
+                        "arguments": _arguments(slot["arguments"]),
+                    },
+                }
+                for slot in merged
+            ]
+        return row, usage or None
+
 
 def to_anthropic_messages(messages: list) -> tuple[str, list[dict]]:
     """Split system rows out; map the rest to user/assistant turns."""

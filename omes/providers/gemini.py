@@ -70,6 +70,26 @@ class GeminiProvider(Provider):
             row["tool_calls"] = calls
         return row
 
+    def stream_request(
+        self, model: str, messages: list, tools: Any, api_key: str
+    ) -> tuple[str, dict, dict]:
+        """POST ``streamGenerateContent`` with SSE responses."""
+        system, contents = to_gemini_contents(messages)
+        url = (
+            self.base_url.rstrip("/") + f"/models/{model}:streamGenerateContent?alt=sse"
+        )
+        headers = {
+            "x-goog-api-key": api_key,
+            "Content-Type": "application/json",
+        }
+        body: dict[str, Any] = {"contents": contents}
+        if system:
+            body["systemInstruction"] = {"parts": [{"text": system}]}
+        declarations = to_gemini_tools(tools)
+        if declarations is not None:
+            body["tools"] = [{"functionDeclarations": declarations}]
+        return url, headers, body
+
     def parse_usage(self, payload: dict) -> dict[str, int] | None:
         return self._usage_from(
             payload,
@@ -80,6 +100,53 @@ class GeminiProvider(Provider):
                 ("totalTokenCount", "total_tokens"),
             ),
         )
+
+    def parse_stream(self, lines: Any) -> tuple[dict[str, Any], dict[str, int] | None]:
+        """Accumulate Gemini SSE candidates into ``(row, usage?)``."""
+        texts: list[str] = []
+        calls: list[dict[str, Any]] = []
+        usage: dict[str, int] | None = None
+        for event in self._sse_data(lines):
+            for candidate in event.get("candidates") or []:
+                if not isinstance(candidate, dict):
+                    continue
+                content = candidate.get("content") or {}
+                parts = content.get("parts") if isinstance(content, dict) else None
+                for part in parts or []:
+                    if not isinstance(part, dict):
+                        continue
+                    if isinstance(part.get("text"), str):
+                        texts.append(part["text"])
+                    call = part.get("functionCall")
+                    if isinstance(call, dict) and call.get("name"):
+                        calls.append(
+                            {
+                                "name": str(call["name"]),
+                                "arguments": _arguments(call.get("args")),
+                            }
+                        )
+            block = self._usage_from(
+                event,
+                "usageMetadata",
+                (
+                    ("promptTokenCount", "prompt_tokens"),
+                    ("candidatesTokenCount", "completion_tokens"),
+                    ("totalTokenCount", "total_tokens"),
+                ),
+            )
+            if block is not None:
+                usage = block
+        row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
+        if calls:
+            row["tool_calls"] = [
+                {
+                    "id": "",
+                    "type": "function",
+                    "function": {"name": call["name"], "arguments": call["arguments"]},
+                }
+                for call in calls
+            ]
+        return row, usage
 
 
 def to_gemini_contents(messages: list) -> tuple[str, list[dict]]:
