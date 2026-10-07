@@ -2,9 +2,10 @@
 
 `HttpTransport` implements the `Transport.post` seam over `http.client`:
 JSON request bodies, JSON responses (`post_text` for plain-text bodies),
-per-call timeouts, and retries on connection failures, timeouts, and HTTP
-5xx. With a seat policy attached, hosts outside the allowlist are refused
-before any socket exists.
+per-call timeouts, and retries on connection failures, timeouts, HTTP 408,
+HTTP 429 (honoring `Retry-After` up to 60s), and HTTP 5xx. With a seat
+policy attached, hosts outside the allowlist are refused before any socket
+exists.
 
 The `connect` factory (default: stdlib HTTP/HTTPS connections) exists so
 tests can run the same request/response framing over a socketpair to a
@@ -98,8 +99,9 @@ class HttpTransport:
                 )
             except _Retryable as exc:
                 last = exc
-                if attempt < self._max_retries and self._backoff > 0:
-                    time.sleep(self._backoff * (attempt + 1))
+                delay = self._delay(attempt, exc.retry_after)
+                if delay is not None:
+                    time.sleep(delay)
             except ProviderError:
                 raise
         assert last is not None
@@ -122,12 +124,22 @@ class HttpTransport:
                 )
             except _Retryable as exc:
                 last = exc
-                if attempt < self._max_retries and self._backoff > 0:
-                    time.sleep(self._backoff * (attempt + 1))
+                delay = self._delay(attempt, exc.retry_after)
+                if delay is not None:
+                    time.sleep(delay)
             except ProviderError:
                 raise
         assert last is not None
         raise ProviderError(f"request to {host} failed after retries: {last}") from last
+
+    def _delay(self, attempt: int, retry_after: float | None) -> float | None:
+        """Seconds to sleep before the next attempt. None means no sleep."""
+        if attempt >= self._max_retries or self._backoff <= 0:
+            return None
+        delay = self._backoff * (attempt + 1)
+        if retry_after is not None:
+            delay = max(delay, retry_after)
+        return delay
 
     def _once(
         self,
@@ -140,8 +152,10 @@ class HttpTransport:
         payload: bytes | None,
         url: str,
     ) -> dict:
-        status, raw = self._request(method, host, port, path, use_tls, headers, payload)
-        _check_status(status, url)
+        status, headers_out, raw = self._request(
+            method, host, port, path, use_tls, headers, payload
+        )
+        _check_status(status, url, headers_out)
         try:
             decoded = json.loads(raw.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -161,8 +175,10 @@ class HttpTransport:
         payload: bytes | None,
         url: str,
     ) -> str:
-        status, raw = self._request(method, host, port, path, use_tls, headers, payload)
-        _check_status(status, url)
+        status, headers_out, raw = self._request(
+            method, host, port, path, use_tls, headers, payload
+        )
+        _check_status(status, url, headers_out)
         try:
             return raw.decode("utf-8")
         except UnicodeDecodeError as exc:
@@ -177,8 +193,8 @@ class HttpTransport:
         use_tls: bool,
         headers: dict,
         payload: bytes | None,
-    ) -> tuple[int, bytes]:
-        """One socket round trip. Return the status and raw body bytes."""
+    ) -> tuple[int, dict[str, str], bytes]:
+        """One socket round trip. Return status, headers, and raw body bytes."""
         try:
             connection = self._connect(host, port, self._timeout, use_tls)
         except OSError as exc:
@@ -189,24 +205,47 @@ class HttpTransport:
                 response = connection.getresponse()
                 status = response.status
                 raw = response.read()
+                seen: dict[str, str] = {}
+                for key, value in response.getheaders():
+                    seen.setdefault(str(key).lower(), str(value))
             except (http.client.HTTPException, TimeoutError, OSError) as exc:
                 raise _Retryable(str(exc) or type(exc).__name__) from exc
         finally:
             with contextlib.suppress(OSError):
                 connection.close()
-        return status, raw
+        return status, seen, raw
 
 
-def _check_status(status: int, url: str) -> None:
-    """Raise for error statuses. 5xx is retryable, 4xx is final."""
+def _check_status(status: int, url: str, headers: dict[str, str]) -> None:
+    """Raise for error statuses. 408, 429, and 5xx retry; 4xx is final."""
+    if status == 408 or status == 429:
+        raise _Retryable(f"HTTP {status}", retry_after=_retry_after(headers))
     if 500 <= status <= 599:
         raise _Retryable(f"HTTP {status}")
     if 400 <= status <= 499:
         raise ProviderError(f"HTTP {status} from {url}")
 
 
+def _retry_after(headers: dict[str, str]) -> float | None:
+    """Seconds from a `Retry-After` header, capped at 60. None when absent."""
+    raw = headers.get("retry-after")
+    if raw is None:
+        return None
+    try:
+        seconds = float(raw.strip())
+    except ValueError:
+        return None
+    if seconds < 0:
+        return None
+    return min(seconds, 60.0)
+
+
 class _Retryable(Exception):
     """A failure worth one more attempt."""
+
+    def __init__(self, message: str, retry_after: float | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 def _stdlib_connect(

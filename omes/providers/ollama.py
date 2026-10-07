@@ -52,6 +52,16 @@ class OllamaProvider(Provider):
             raise ProviderError(f"{self.name} response has no usable content")
         return row
 
+    def parse_usage(self, payload: dict) -> dict[str, int] | None:
+        return self._usage_from(
+            payload,
+            None,
+            (
+                ("prompt_eval_count", "prompt_tokens"),
+                ("eval_count", "completion_tokens"),
+            ),
+        )
+
 
 def _text(value: Any) -> str:
     if value is None:

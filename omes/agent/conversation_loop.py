@@ -349,10 +349,20 @@ def _trace_model_call(agent: Agent, started: float) -> None:
     if tracer is None:
         return
     elapsed_ms = round((time.monotonic() - started) * 1000.0, 3)
+    fields: dict[str, Any] = {"model": type(agent.model).__name__}
+    usage = getattr(agent.model, "last_usage", None)
+    if isinstance(usage, dict) and usage:
+        counters = {
+            key: value
+            for key, value in usage.items()
+            if isinstance(value, int) and not isinstance(value, bool)
+        }
+        if counters:
+            fields["usage"] = counters
     tracer.span(
         "model",
         type(agent.model).__name__,
-        {"model": type(agent.model).__name__},
+        fields,
         duration_ms=max(0.0, elapsed_ms),
     )
 

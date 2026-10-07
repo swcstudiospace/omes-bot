@@ -5,7 +5,8 @@ name, base URL, env vars, request quirks) and the Omp provider wire shapes
 (``packages/ai/src/providers``): each adapter builds one HTTP request from
 the transcript and parses one response into the loop's assistant row. The
 transport is injected, so tests run behind ``FakeTransport`` and never touch
-a socket. No auth brokers, retries, streaming, or usage accounting.
+a socket. Retries live in the transport; usage is recorded per call. No
+streaming yet.
 """
 
 from __future__ import annotations
@@ -46,6 +47,27 @@ class Provider:
         """Return the loop's assistant row for one response payload."""
         raise NotImplementedError
 
+    def parse_usage(self, payload: dict) -> dict[str, int] | None:
+        """Normalized usage from one response payload. None when absent."""
+        raise NotImplementedError
+
+    def _usage_from(
+        self,
+        payload: dict,
+        section: str | None,
+        pairs: tuple[tuple[str, str], ...],
+    ) -> dict[str, int] | None:
+        """Pick normalized int counters from a payload section."""
+        node = payload if section is None else payload.get(section)
+        if not isinstance(node, dict):
+            return None
+        found: dict[str, int] = {}
+        for wire, normalized in pairs:
+            value = node.get(wire)
+            if isinstance(value, int) and not isinstance(value, bool) and value >= 0:
+                found[normalized] = value
+        return found or None
+
 
 class ProviderModel:
     """A turn-loop ``Model`` driven by one provider plus one transport.
@@ -69,6 +91,7 @@ class ProviderModel:
         self.transport = transport
         self.api_key = api_key
         self.broker = broker
+        self.last_usage: dict[str, int] | None = None
 
     def complete(self, messages: list, tools: Any = None) -> dict:
         """Build, POST, and parse one assistant message."""
@@ -103,6 +126,7 @@ class ProviderModel:
             ) from exc
         if not isinstance(row, dict) or row.get("role") != "assistant":
             raise ProviderError(f"{self.provider.name} returned no assistant message")
+        self.last_usage = self.provider.parse_usage(payload)
         return row
 
 

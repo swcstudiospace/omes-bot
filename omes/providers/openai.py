@@ -56,6 +56,17 @@ class OpenAIProvider(Provider):
             row["finish_reason"] = str(finish)
         return row
 
+    def parse_usage(self, payload: dict) -> dict[str, int] | None:
+        return self._usage_from(
+            payload,
+            "usage",
+            (
+                ("prompt_tokens", "prompt_tokens"),
+                ("completion_tokens", "completion_tokens"),
+                ("total_tokens", "total_tokens"),
+            ),
+        )
+
 
 def to_openai_messages(messages: list) -> list[dict]:
     """Map transcript rows to chat-completions messages."""

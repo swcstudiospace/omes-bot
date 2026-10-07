@@ -7,6 +7,7 @@ import http.client
 import json
 import socket
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -16,6 +17,7 @@ from omes.agent.model import ScriptedModel
 from omes.audit.trace import Tracer
 from omes.policy.policy import SeatPolicy
 from omes.providers.base import ProviderError, ProviderModel
+from omes.providers.fake import FakeTransport
 from omes.providers.grok import GrokProvider
 from omes.providers.http import HttpTransport
 from omes.tools.coding import register_coding_tools
@@ -50,9 +52,15 @@ class _PairedConnection(http.client.HTTPConnection):
 class _Fixture:
     """Scripted HTTP peer over socketpairs: real request/response bytes."""
 
-    def __init__(self, statuses: list[int], payload: dict) -> None:
+    def __init__(
+        self,
+        statuses: list[int],
+        payload: dict,
+        headers: list[str] | None = None,
+    ) -> None:
         self.statuses = list(statuses)
         self.payload = payload
+        self.headers = list(headers or [])
         self.requests: list[dict] = []
         self._lock = threading.Lock()
 
@@ -88,10 +96,11 @@ class _Fixture:
                     {"target": lines[0], "body": json.loads(body or b"{}")}
                 )
                 status = self.statuses.pop(0) if self.statuses else 200
+                extra = self.headers.pop(0) if self.headers else ""
             data = json.dumps(self.payload).encode("utf-8")
             sock.sendall(
                 f"HTTP/1.1 {status} X\r\nContent-Type: application/json\r\n"
-                f"Content-Length: {len(data)}\r\nConnection: close\r\n\r\n".encode()
+                f"Content-Length: {len(data)}\r\nConnection: close\r\n{extra}\r\n".encode()
                 + data
             )
         except (OSError, ValueError):
@@ -143,6 +152,66 @@ def test_http_transport_refuses_blocked_hosts_and_gives_up():
     with pytest.raises(ProviderError, match="HTTP 404"):
         client.post("http://fixture.local/chat/completions", {}, {"model": "m"})
     assert len(missing.requests) == 1
+
+
+def test_http_transport_retries_408_and_429_then_succeeds():
+    fixture = _Fixture([408, 429, 200], _payload())
+    transport = HttpTransport(
+        timeout=5, max_retries=3, backoff=0.01, connect=fixture.connect
+    )
+    row = transport.post("http://fixture.local/chat/completions", {}, {"model": "m"})
+
+    assert row["choices"][0]["message"]["content"] == "live"
+    assert len(fixture.requests) == 3
+
+
+def test_http_transport_honors_retry_after_up_to_the_cap(monkeypatch):
+    sleeps: list[float] = []
+    monkeypatch.setattr(time, "sleep", sleeps.append)
+    fixture = _Fixture(
+        [429, 429, 200], _payload(), headers=["Retry-After: 5\r\n", "", ""]
+    )
+    transport = HttpTransport(
+        timeout=5, max_retries=3, backoff=0.01, connect=fixture.connect
+    )
+    transport.post("http://fixture.local/chat/completions", {}, {"model": "m"})
+
+    assert sleeps == [5.0, 0.01 * 2]
+
+    capped_sleeps: list[float] = []
+    monkeypatch.setattr(time, "sleep", capped_sleeps.append)
+    capped = _Fixture([429, 200], _payload(), headers=["Retry-After: 999\r\n", ""])
+    retrying = HttpTransport(
+        timeout=5, max_retries=1, backoff=0.01, connect=capped.connect
+    )
+    retrying.post("http://fixture.local/chat/completions", {}, {"model": "m"})
+
+    assert capped_sleeps == [60.0]
+
+
+def test_http_transport_gives_up_on_persistent_429s():
+    fixture = _Fixture([429, 429, 429], _payload())
+    transport = HttpTransport(
+        timeout=5, max_retries=2, backoff=0.01, connect=fixture.connect
+    )
+    with pytest.raises(ProviderError, match="failed after retries"):
+        transport.post("http://fixture.local/chat/completions", {}, {"model": "m"})
+    assert len(fixture.requests) == 3
+
+
+def test_http_transport_never_sleeps_when_backoff_is_zero(monkeypatch):
+    def _boom(seconds: float) -> None:
+        raise AssertionError(f"slept {seconds}s with backoff=0")
+
+    monkeypatch.setattr(time, "sleep", _boom)
+    fixture = _Fixture([429, 200], _payload(), headers=["Retry-After: 30\r\n", ""])
+    transport = HttpTransport(
+        timeout=5, max_retries=1, backoff=0, connect=fixture.connect
+    )
+    row = transport.post("http://fixture.local/chat/completions", {}, {"model": "m"})
+
+    assert row["choices"][0]["message"]["content"] == "live"
+    assert len(fixture.requests) == 2
 
 
 def test_traces_cover_tools_policy_and_model_calls(tmp_path: Path):
@@ -203,3 +272,50 @@ def test_traces_cover_tools_policy_and_model_calls(tmp_path: Path):
     assert all(span["kind"] == "model" for span in exported["spans"])
     assert all(span["duration_ms"] >= 0 for span in exported["spans"])
     assert all(span["ts"].endswith("Z") for span in exported["spans"])
+
+
+def test_model_spans_carry_usage_when_the_model_reports_it():
+    scripted = FakeTransport(
+        script=[
+            {
+                "choices": [{"message": {"content": "done"}}],
+                "usage": {
+                    "prompt_tokens": 8,
+                    "completion_tokens": 2,
+                    "total_tokens": 10,
+                },
+            }
+        ]
+    )
+    tracer = Tracer()
+    agent = Agent(
+        model=ProviderModel(GrokProvider(), "grok-4", scripted, api_key="k"),
+        tools={},
+        max_iterations=4,
+        tracer=tracer,
+    )
+    result = run_conversation(agent, "ping")
+
+    assert result["final_response"] == "done"
+    spans = [span for span in tracer.spans() if span["kind"] == "model"]
+    assert len(spans) == 1
+    assert spans[0]["fields"]["usage"] == {
+        "prompt_tokens": 8,
+        "completion_tokens": 2,
+        "total_tokens": 10,
+    }
+
+
+def test_model_spans_omit_usage_when_absent():
+    tracer = Tracer()
+    agent = Agent(
+        model=ScriptedModel([{"role": "assistant", "content": "done"}]),
+        tools={},
+        max_iterations=4,
+        tracer=tracer,
+    )
+    run_conversation(agent, "ping")
+
+    spans = [span for span in tracer.spans() if span["kind"] == "model"]
+    assert len(spans) == 1
+    assert "usage" not in spans[0]["fields"]

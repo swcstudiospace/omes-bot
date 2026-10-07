@@ -70,6 +70,17 @@ class GeminiProvider(Provider):
             row["tool_calls"] = calls
         return row
 
+    def parse_usage(self, payload: dict) -> dict[str, int] | None:
+        return self._usage_from(
+            payload,
+            "usageMetadata",
+            (
+                ("promptTokenCount", "prompt_tokens"),
+                ("candidatesTokenCount", "completion_tokens"),
+                ("totalTokenCount", "total_tokens"),
+            ),
+        )
+
 
 def to_gemini_contents(messages: list) -> tuple[str, list[dict]]:
     """Split system rows out; map the rest to user/model contents."""

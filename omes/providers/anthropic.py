@@ -32,7 +32,7 @@ class AnthropicProvider(Provider):
         system, wire = to_anthropic_messages(messages)
         body: dict[str, Any] = {
             "model": model,
-            "max_tokens": 4096,
+            "max_tokens": 8192,
             "messages": wire,
         }
         if system:
@@ -77,6 +77,16 @@ class AnthropicProvider(Provider):
         if stop:
             row["finish_reason"] = str(stop)
         return row
+
+    def parse_usage(self, payload: dict) -> dict[str, int] | None:
+        return self._usage_from(
+            payload,
+            "usage",
+            (
+                ("input_tokens", "prompt_tokens"),
+                ("output_tokens", "completion_tokens"),
+            ),
+        )
 
 
 def to_anthropic_messages(messages: list) -> tuple[str, list[dict]]:

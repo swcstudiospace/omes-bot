@@ -175,7 +175,7 @@ def test_anthropic_adapter_answers_the_contract():
         ]
     )
     model = ProviderModel(
-        AnthropicProvider(), "claude-1", transport, api_key="fake-key"
+        AnthropicProvider(), "claude-sonnet-4", transport, api_key="fake-key"
     )
     row = model.complete(
         [
@@ -198,6 +198,7 @@ def test_anthropic_adapter_answers_the_contract():
     assert headers["anthropic-version"] == "2023-06-01"
     assert body["system"] == "sys"
     assert body["messages"] == [{"role": "user", "content": "read x"}]
+    assert body["max_tokens"] == 8192
 
 
 def test_gemini_adapter_answers_the_contract():
@@ -360,3 +361,71 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
             "unverified": [],
         }
     )
+
+
+def test_usage_normalizes_across_providers():
+    assert OpenAIProvider().parse_usage(
+        {"usage": {"prompt_tokens": 10, "completion_tokens": 4, "total_tokens": 14}}
+    ) == {"prompt_tokens": 10, "completion_tokens": 4, "total_tokens": 14}
+    assert GrokProvider().parse_usage(
+        {"usage": {"prompt_tokens": 3, "completion_tokens": 1, "total_tokens": 4}}
+    ) == {"prompt_tokens": 3, "completion_tokens": 1, "total_tokens": 4}
+    assert AnthropicProvider().parse_usage(
+        {"usage": {"input_tokens": 7, "output_tokens": 2}}
+    ) == {"prompt_tokens": 7, "completion_tokens": 2}
+    assert GeminiProvider().parse_usage(
+        {
+            "usageMetadata": {
+                "promptTokenCount": 5,
+                "candidatesTokenCount": 6,
+                "totalTokenCount": 11,
+            }
+        }
+    ) == {"prompt_tokens": 5, "completion_tokens": 6, "total_tokens": 11}
+    assert OllamaProvider().parse_usage({"prompt_eval_count": 9, "eval_count": 3}) == {
+        "prompt_tokens": 9,
+        "completion_tokens": 3,
+    }
+
+
+def test_usage_ignores_absent_and_junk_counters():
+    assert OpenAIProvider().parse_usage({}) is None
+    assert OpenAIProvider().parse_usage({"usage": None}) is None
+    assert OpenAIProvider().parse_usage({"usage": {"prompt_tokens": True}}) is None
+    assert OpenAIProvider().parse_usage({"usage": {"prompt_tokens": -1}}) is None
+    assert AnthropicProvider().parse_usage({"usage": {"input_tokens": "9"}}) is None
+    assert GeminiProvider().parse_usage({"usageMetadata": []}) is None
+
+
+def test_complete_records_last_usage():
+    transport = FakeTransport(
+        script=[
+            {
+                "choices": [
+                    {
+                        "message": {"content": "hi"},
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 12,
+                    "completion_tokens": 2,
+                    "total_tokens": 14,
+                },
+            }
+        ]
+    )
+    model = ProviderModel(GrokProvider(), "grok-4", transport, api_key="fake-key")
+    assert model.last_usage is None
+    row = model.complete([{"role": "user", "content": "hi"}])
+    assert row["content"] == "hi"
+    assert model.last_usage == {
+        "prompt_tokens": 12,
+        "completion_tokens": 2,
+        "total_tokens": 14,
+    }
+
+    bare = FakeTransport(script=[{"choices": [{"message": {"content": "yo"}}]}])
+    plain = ProviderModel(GrokProvider(), "grok-4", bare, api_key="fake-key")
+    plain.complete([{"role": "user", "content": "yo"}])
+    assert plain.last_usage is None
