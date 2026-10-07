@@ -120,7 +120,9 @@ def to_gemini_contents(messages: list) -> tuple[str, list[dict]]:
                     )
             contents.append({"role": "model", "parts": parts or [{"text": ""}]})
             continue
-        contents.append({"role": "user", "parts": [{"text": _text(row.get("content"))}]})
+        contents.append(
+            {"role": "user", "parts": [{"text": _text(row.get("content"))}]}
+        )
     return "\n".join(system_parts), contents
 
 

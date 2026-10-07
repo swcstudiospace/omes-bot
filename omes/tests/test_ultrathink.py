@@ -22,24 +22,56 @@ def _run_factory(routes):
     def run(argv, timeout=120):
         calls.append(argv)
         for binary, sub, result in routes:
-            if argv[0].endswith(f"/bin/{binary}") and argv[1:1 + len(sub)] == sub:
+            if argv[0].endswith(f"/bin/{binary}") and argv[1 : 1 + len(sub)] == sub:
                 return dict(result)
         return {"exit_code": 1, "stdout": "", "stderr": "no route"}
 
-    run.calls = calls
     return run
 
 
 def _ctx(**overrides):
-    base = dict(root="/opt/ultrathink", run=_run_factory([
-        ("ultrathink", ["status"], {"exit_code": 0, "stdout": "Prompt Uplift on\n", "stderr": ""}),
-        ("ultrathink-mcp", ["track", "complete"], {"exit_code": 0, "stdout": '{"ok": true}', "stderr": ""}),
-        ("ultrathink-mcp", ["session", "mark"], {"exit_code": 0, "stdout": '{"synced": true}', "stderr": ""}),
-        ("ultrathink-ship", ["assess"], {"exit_code": 0, "stdout": '{"done": true}', "stderr": ""}),
-        ("ultrathink-ship", ["pr"], {"exit_code": 0, "stdout": '{"ok": true}', "stderr": ""}),
-        ("ultrathink-ship", ["review"], {"exit_code": 0, "stdout": '{"ready": true}', "stderr": ""}),
-        ("ultrathink-ship", ["merge"], {"exit_code": 0, "stdout": '{"merged": true}', "stderr": ""}),
-    ]))
+    base = dict(
+        root="/opt/ultrathink",
+        run=_run_factory(
+            [
+                (
+                    "ultrathink",
+                    ["status"],
+                    {"exit_code": 0, "stdout": "Prompt Uplift on\n", "stderr": ""},
+                ),
+                (
+                    "ultrathink-mcp",
+                    ["track", "complete"],
+                    {"exit_code": 0, "stdout": '{"ok": true}', "stderr": ""},
+                ),
+                (
+                    "ultrathink-mcp",
+                    ["session", "mark"],
+                    {"exit_code": 0, "stdout": '{"synced": true}', "stderr": ""},
+                ),
+                (
+                    "ultrathink-ship",
+                    ["assess"],
+                    {"exit_code": 0, "stdout": '{"done": true}', "stderr": ""},
+                ),
+                (
+                    "ultrathink-ship",
+                    ["pr"],
+                    {"exit_code": 0, "stdout": '{"ok": true}', "stderr": ""},
+                ),
+                (
+                    "ultrathink-ship",
+                    ["review"],
+                    {"exit_code": 0, "stdout": '{"ready": true}', "stderr": ""},
+                ),
+                (
+                    "ultrathink-ship",
+                    ["merge"],
+                    {"exit_code": 0, "stdout": '{"merged": true}', "stderr": ""},
+                ),
+            ]
+        ),
+    )
     base.update(overrides)
     return UltrathinkContext(**base)
 
@@ -48,7 +80,10 @@ def test_bridge_verbs_and_argv():
     client = UltrathinkClient(_ctx())
     assert client.status() == {"ok": True, "output": "Prompt Uplift on\n"}
     assert client.track_complete("s.json") == {"ok": True, "result": {"ok": True}}
-    assert client.session_mark("s.json", "synced") == {"ok": True, "result": {"synced": True}}
+    assert client.session_mark("s.json", "synced") == {
+        "ok": True,
+        "result": {"synced": True},
+    }
     assert client.ship_assess("s.json") == {"ok": True, "result": {"done": True}}
     assert client.ship_pr("s.json") == {"ok": True, "result": {"ok": True}}
     assert client.ship_review("s.json") == {"ok": True, "result": {"ready": True}}
@@ -63,25 +98,49 @@ def test_unconfigured_nonzero_and_approvals():
     bare = UltrathinkClient(UltrathinkContext())
     assert "not_configured" in bare.status()["error"]
     assert "not_configured" in bare.ship_pr("s.json")["error"]
-    failing = UltrathinkClient(_ctx(run=lambda argv, timeout=120: {
-        "exit_code": 2, "stdout": "", "stderr": "boom"}))
+    failing = UltrathinkClient(
+        _ctx(
+            run=lambda argv, timeout=120: {
+                "exit_code": 2,
+                "stdout": "",
+                "stderr": "boom",
+            }
+        )
+    )
     assert "upstream_error" in failing.ship_assess("s.json")["error"]
     assert "boom" in failing.ship_assess("s.json")["output_tail"]
 
     log = ApprovalLog()
     registry = ToolRegistry(approval_log=log)
     register_ultrathink_tools(registry, UltrathinkClient(_ctx()))
-    for gated in ("ult_track_complete", "ult_session_mark", "ult_ship_pr",
-                  "ult_ship_review", "ult_ship_merge"):
-        args = {"state": "s.json", "mark": "synced"} if gated == "ult_session_mark" else {"state": "s.json"}
+    for gated in (
+        "ult_track_complete",
+        "ult_session_mark",
+        "ult_ship_pr",
+        "ult_ship_review",
+        "ult_ship_merge",
+    ):
+        args = (
+            {"state": "s.json", "mark": "synced"}
+            if gated == "ult_session_mark"
+            else {"state": "s.json"}
+        )
         assert json.loads(registry.dispatch(gated, args)) == {
-            "error": "approval required", "tool": gated}
+            "error": "approval required",
+            "tool": gated,
+        }
     assert log.approve("ult_ship_pr", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("ult_ship_pr", {"state": "s.json"}))["ok"] is True
+    assert (
+        json.loads(registry.dispatch("ult_ship_pr", {"state": "s.json"}))["ok"] is True
+    )
     assert json.loads(registry.dispatch("ult_status", {}))["ok"] is True
     assert log.approve("ult_session_mark", "ada").get("approved") is True
-    assert "kicked-off or synced" in json.loads(registry.dispatch(
-        "ult_session_mark", {"state": "s.json", "mark": "bogus"}))["error"]
+    assert (
+        "kicked-off or synced"
+        in json.loads(
+            registry.dispatch("ult_session_mark", {"state": "s.json", "mark": "bogus"})
+        )["error"]
+    )
 
 
 def test_resolve_turn_plan(tmp_path):
@@ -91,7 +150,9 @@ def test_resolve_turn_plan(tmp_path):
     second.mkdir()
     spec = second / "spec.xml"
     spec.write_text("<ORIGINAL>hi</ORIGINAL>", encoding="utf-8")
-    (second / "last-plan.json").write_text(json.dumps({"specPath": str(spec)}), encoding="utf-8")
+    (second / "last-plan.json").write_text(
+        json.dumps({"specPath": str(spec)}), encoding="utf-8"
+    )
     found = resolve_turn_plan(state_dirs=[first, second])
     assert found["found"] is True and found["spec_exists"] is True
     assert found["stale"] is False

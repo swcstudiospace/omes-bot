@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 from omes.tools.approvals import ApprovalLog
 from omes.tools.quality import (
@@ -46,8 +47,12 @@ class FakeGreptile:
 
 
 def _ctx(tmp_path, **overrides):
-    base = dict(root=str(tmp_path), run=FakeRunner(), greptile=FakeGreptile(),
-                acks=AckStore(tmp_path / "acks.json"))
+    base: dict[str, Any] = dict(
+        root=str(tmp_path),
+        run=FakeRunner(),
+        greptile=FakeGreptile(),
+        acks=AckStore(tmp_path / "acks.json"),
+    )
     base.update(overrides)
     return QualityContext(**base)
 
@@ -90,7 +95,9 @@ def test_greptile_actions(tmp_path):
     assert got["result"]["conclusion"] == "pass"
     comments = client.greptile_review("comments", pr_number=3)
     assert comments["note"].startswith("comments")
-    bad = QualityClient(_ctx(tmp_path, greptile=None)).greptile_review("get", review_id="r-1")
+    bad = QualityClient(_ctx(tmp_path, greptile=None)).greptile_review(
+        "get", review_id="r-1"
+    )
     assert "not_configured" in bad["error"]
 
 
@@ -99,8 +106,13 @@ def test_receipt_approve_stamps(tmp_path):
     target.write_text(json.dumps(_receipt()), encoding="utf-8")
     client = QualityClient(_ctx(tmp_path))
     result = client.receipt_approve("plan.json", note="looks good")
-    assert result == {"ok": True, "receipt_path": "plan.json", "approved_by": "bot-00-omes",
-                      "pushed": False, "reason": result["reason"]}
+    assert result == {
+        "ok": True,
+        "receipt_path": "plan.json",
+        "approved_by": "bot-00-omes",
+        "pushed": False,
+        "reason": result["reason"],
+    }
     stamped = json.loads(target.read_text(encoding="utf-8"))
     assert stamped["approved_by"] == "bot-00-omes"
     assert stamped["approved_at"]
@@ -120,8 +132,10 @@ def test_receipt_approve_refusals(tmp_path):
     assert "not_found" in client.receipt_approve("missing.json")["error"]
     assert "invalid_args" in client.receipt_approve("../escape.json")["error"]
     anon = tmp_path / "anon.json"
-    anon.write_text(json.dumps({k: v for k, v in _receipt().items() if k != "bot"}),
-                    encoding="utf-8")
+    anon.write_text(
+        json.dumps({k: v for k, v in _receipt().items() if k != "bot"}),
+        encoding="utf-8",
+    )
     assert "invalid_receipt" in client.receipt_approve("anon.json")["error"]
 
 
@@ -155,8 +169,9 @@ def test_contract_ack_lifecycle(tmp_path):
 def test_contract_ack_status_coverage(tmp_path):
     changes = tmp_path / "contracts" / "changes"
     changes.mkdir(parents=True)
-    (changes / "c-2.json").write_text(json.dumps({"consumers_required": ["bot-00-omes"]}),
-                                      encoding="utf-8")
+    (changes / "c-2.json").write_text(
+        json.dumps({"consumers_required": ["bot-00-omes"]}), encoding="utf-8"
+    )
     client = QualityClient(_ctx(tmp_path))
     before = client.contract_ack_status("c-2")
     assert before["missing"] == ["bot-00-omes"]
@@ -172,8 +187,9 @@ def test_contract_ack_status_reads_yaml_proposal(tmp_path):
     changes.mkdir(parents=True)
     (changes / "c-3.yaml").write_text(
         "change_id: c-3\nbreaking: false\nconsumers_required:\n"
-        "  - bot-00-omes\n  - \"bot:with-colon\"\nacknowledgements: []\n",
-        encoding="utf-8")
+        '  - bot-00-omes\n  - "bot:with-colon"\nacknowledgements: []\n',
+        encoding="utf-8",
+    )
     client = QualityClient(_ctx(tmp_path))
     before = client.contract_ack_status("c-3")
     assert before["missing"] == ["bot-00-omes", "bot:with-colon"]
@@ -185,8 +201,12 @@ def test_contract_ack_status_reads_yaml_proposal(tmp_path):
 
 
 def test_supply_chain_check(tmp_path):
-    vcs = {"diff_names": lambda base, head: ["pyproject.toml", "uv.lock", "main.py"],
-           "diff": lambda base, head, paths: "+dep = \"latest\"\n+other = \"1.0\"\n+git+https://x\n"}
+    vcs = {
+        "diff_names": lambda base, head: ["pyproject.toml", "uv.lock", "main.py"],
+        "diff": lambda base, head, paths: (
+            '+dep = "latest"\n+other = "1.0"\n+git+https://x\n'
+        ),
+    }
     client = QualityClient(_ctx(tmp_path, vcs=vcs))
     result = client.supply_chain_check("a", "b")
     assert result["lockfiles_changed"] == ["uv.lock"]
@@ -199,7 +219,9 @@ def test_supply_chain_check(tmp_path):
 
 def test_secret_scan(tmp_path):
     (tmp_path / "clean.py").write_text("x = 1\n", encoding="utf-8")
-    (tmp_path / "dirty.py").write_text('token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8")
+    (tmp_path / "dirty.py").write_text(
+        'token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8"
+    )
     client = QualityClient(_ctx(tmp_path))
     flagged = client.secret_scan(["dirty.py", "clean.py"])
     assert flagged["ok"] is False
@@ -220,7 +242,9 @@ def test_secret_scan_default_skips_generated(tmp_path):
     assert result["ok"] is True
     assert result["truncated"] is False
     assert result["findings"] == []
-    (tmp_path / "src.py").write_text('token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8")
+    (tmp_path / "src.py").write_text(
+        'token = "ghp_' + "x" * 36 + '"\n', encoding="utf-8"
+    )
     flagged = client.secret_scan()
     assert flagged["ok"] is False
     assert flagged["findings"] == [{"path": "src.py", "line": 1}]
@@ -234,9 +258,20 @@ def test_register_quality_tools_approval(tmp_path):
     names = register_quality_tools(registry, client)
     assert names == list(QUALITY_TOOL_NAMES)
     assert json.loads(registry.dispatch("qua_gates_run", {}))["ok"] is True
-    assert json.loads(registry.dispatch("qua_contract_ack_status", {"change_id": "c-9"}))["missing"] == []
-    assert json.loads(registry.dispatch("qua_supply_chain_check", {"base_ref": "a", "head_ref": "b"}))[
-        "verdict"] == "no dependency change"
+    assert (
+        json.loads(registry.dispatch("qua_contract_ack_status", {"change_id": "c-9"}))[
+            "missing"
+        ]
+        == []
+    )
+    assert (
+        json.loads(
+            registry.dispatch(
+                "qua_supply_chain_check", {"base_ref": "a", "head_ref": "b"}
+            )
+        )["verdict"]
+        == "no dependency change"
+    )
     assert json.loads(registry.dispatch("qua_secret_scan", {"paths": []}))["ok"] is True
     for name, args in (
         ("qua_greptile_review", {"action": "get", "review_id": "r-1"}),
@@ -244,7 +279,16 @@ def test_register_quality_tools_approval(tmp_path):
         ("qua_waiver_record", {"pr_number": 1, "comment_ids": ["c"], "reason": "x"}),
         ("qua_contract_ack", {"change_id": "c-9", "ack": True, "note": "ok"}),
     ):
-        assert json.loads(registry.dispatch(name, args)) == {"error": "approval required", "tool": name}
+        assert json.loads(registry.dispatch(name, args)) == {
+            "error": "approval required",
+            "tool": name,
+        }
     assert log.approve("qua_contract_ack", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("qua_contract_ack", {"change_id": "c-9", "ack": True, "note": "ok"}))[
-        "ok"] is True
+    assert (
+        json.loads(
+            registry.dispatch(
+                "qua_contract_ack", {"change_id": "c-9", "ack": True, "note": "ok"}
+            )
+        )["ok"]
+        is True
+    )

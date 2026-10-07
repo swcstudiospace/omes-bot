@@ -12,7 +12,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path, PurePosixPath
-from typing import Any
 
 SCHEMA_VERSION = 1
 
@@ -30,9 +29,7 @@ class SeatPolicy:
         paths = document.get("paths") or {}
         self._read_only = tuple(paths.get("read_only") or ())
         network = document.get("network") or {}
-        self._hosts = frozenset(
-            host.lower() for host in (network.get("hosts") or ())
-        )
+        self._hosts = frozenset(host.lower() for host in (network.get("hosts") or ()))
 
     @classmethod
     def load(cls, path: str | Path) -> SeatPolicy:

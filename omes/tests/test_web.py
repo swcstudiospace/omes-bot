@@ -23,8 +23,20 @@ class FakeVercel:
 
     def deployments(self, project, limit):
         self.calls.append(("deployments", project, limit))
-        return {"body": {"deployments": [{"uid": "d-1", "state": "READY", "target": "production",
-                                          "url": "acme.vercel.app", "created": 1, "meta": {}}]}}
+        return {
+            "body": {
+                "deployments": [
+                    {
+                        "uid": "d-1",
+                        "state": "READY",
+                        "target": "production",
+                        "url": "acme.vercel.app",
+                        "created": 1,
+                        "meta": {},
+                    }
+                ]
+            }
+        }
 
     def deployment(self, deployment_id):
         self.calls.append(("deployment", deployment_id))
@@ -40,7 +52,12 @@ class FakeVercel:
 
 
 def _fetch_ok(url, timeout):
-    return {"status": 200, "headers": {"content-type": "text/html"}, "body": b"<h1>hi</h1>", "ms": 12.5}
+    return {
+        "status": 200,
+        "headers": {"content-type": "text/html"},
+        "body": b"<h1>hi</h1>",
+        "ms": 12.5,
+    }
 
 
 class FakePage:
@@ -88,9 +105,16 @@ class FakeVision:
 
 
 def _ctx(tmp_path, **overrides):
-    base = dict(root=tmp_path, vercel=FakeVercel(), fetch=_fetch_ok,
-                browser_factory=lambda: PlaywrightBrowser(launch=lambda: FakeBrowserPeer(tmp_path)),
-                vision=FakeVision(), artifacts_dir=tmp_path / "shots")
+    base = dict(
+        root=tmp_path,
+        vercel=FakeVercel(),
+        fetch=_fetch_ok,
+        browser_factory=lambda: PlaywrightBrowser(
+            launch=lambda: FakeBrowserPeer(tmp_path)
+        ),
+        vision=FakeVision(),
+        artifacts_dir=tmp_path / "shots",
+    )
     base.update(overrides)
     return WebContext(**base)
 
@@ -99,9 +123,18 @@ def test_vercel_allowlist_and_shapes(tmp_path):
     client = WebClient(_ctx(tmp_path))
     listed = client.vercel_deployments("acme")
     assert listed["deployments"][0]["uid"] == "d-1"
-    assert client.vercel_deployments("acme", deployment_id="d-9")["deployment"]["uid"] == "d-9"
-    assert client.vercel_promote("acme", "d-1") == {"ok": True, "result": {"aliased": True}}
-    assert client.vercel_rollback("acme", "d-1") == {"ok": True, "result": {"aliased": True}}
+    assert (
+        client.vercel_deployments("acme", deployment_id="d-9")["deployment"]["uid"]
+        == "d-9"
+    )
+    assert client.vercel_promote("acme", "d-1") == {
+        "ok": True,
+        "result": {"aliased": True},
+    }
+    assert client.vercel_rollback("acme", "d-1") == {
+        "ok": True,
+        "result": {"aliased": True},
+    }
     assert "forbidden" in client.vercel_deployments("evil")["error"]
     assert "forbidden" in client.vercel_promote("evil", "d-1")["error"]
     bare = WebClient(WebContext(root=tmp_path))
@@ -115,7 +148,12 @@ def test_preview_shape_mismatch_and_failure(tmp_path):
     assert ok["host"] == "acme.test" and ok["redirect"] is None
     mismatch = client.preview_check("https://acme.test/", expect_status=201)
     assert mismatch["matches"] is False
-    failing = WebClient(_ctx(tmp_path, fetch=lambda url, timeout: {"error": "upstream_error: fetch failed"}))
+    failing = WebClient(
+        _ctx(
+            tmp_path,
+            fetch=lambda url, timeout: {"error": "upstream_error: fetch failed"},
+        )
+    )
     assert "fetch failed" in failing.preview_check("https://x/")["error"]
     with pytest.raises(ValueError, match="non-empty string"):
         client.preview_check("")
@@ -129,7 +167,9 @@ def test_preview_shape_mismatch_and_failure(tmp_path):
 
 
 def test_bundle_scan_findings(tmp_path):
-    (tmp_path / "app.js").write_text("const key = 'sk-abcdefgh12345678';\n", encoding="utf-8")
+    (tmp_path / "app.js").write_text(
+        "const key = 'sk-abcdefgh12345678';\n", encoding="utf-8"
+    )
     (tmp_path / "clean.js").write_text("console.log(1);\n", encoding="utf-8")
     client = WebClient(_ctx(tmp_path))
     result = client.bundle_secret_scan(["app.js", "clean.js"])
@@ -142,17 +182,31 @@ def test_bundle_scan_findings(tmp_path):
 
 def test_review_page_orchestrates_all_three(tmp_path):
     client = WebClient(_ctx(tmp_path))
-    report = client.review_page("https://acme.test/", "is the hero visible?", name="home")
+    report = client.review_page(
+        "https://acme.test/", "is the hero visible?", name="home"
+    )
     assert report["connectivity"]["status"] == 200
-    assert report["page"] == {"title": "Acme", "url": "https://acme.test/", "status": 200}
+    assert report["page"] == {
+        "title": "Acme",
+        "url": "https://acme.test/",
+        "status": 200,
+    }
     assert report["screenshot"]["path"].endswith("home.png")
     assert Path(report["screenshot"]["path"]).is_file()
     assert "hero visible" in report["vision"]["answer"]
     blind = WebClient(_ctx(tmp_path, vision=None))
-    assert "not configured" in blind.review_page("https://acme.test/", "q")["vision"]["error"]
-    failing = WebClient(_ctx(tmp_path, fetch=lambda url, timeout: {"error": "upstream_error: down"}))
+    assert (
+        "not configured"
+        in blind.review_page("https://acme.test/", "q")["vision"]["error"]
+    )
+    failing = WebClient(
+        _ctx(tmp_path, fetch=lambda url, timeout: {"error": "upstream_error: down"})
+    )
     assert failing.review_page("https://x/", "q")["error"] == "connectivity failed"
-    assert "invalid_name" in client.review_page("https://acme.test/", "q", name="../../evil")["error"]
+    assert (
+        "invalid_name"
+        in client.review_page("https://acme.test/", "q", name="../../evil")["error"]
+    )
 
 
 def test_browser_lifecycle_and_errors(tmp_path):
@@ -178,9 +232,22 @@ def test_approvals_gate_promote_rollback_only(tmp_path):
     log = ApprovalLog()
     registry = ToolRegistry(approval_log=log)
     register_web_tools(registry, WebClient(_ctx(tmp_path)))
-    assert json.loads(registry.dispatch("web_preview_check", {"url": "https://acme.test/"}))["status"] == 200
+    assert (
+        json.loads(
+            registry.dispatch("web_preview_check", {"url": "https://acme.test/"})
+        )["status"]
+        == 200
+    )
     for tool in ("web_vercel_promote", "web_vercel_rollback"):
-        assert json.loads(registry.dispatch(tool, {"project": "acme", "deployment_id": "d-1"})) == {
-            "error": "approval required", "tool": tool}
+        assert json.loads(
+            registry.dispatch(tool, {"project": "acme", "deployment_id": "d-1"})
+        ) == {"error": "approval required", "tool": tool}
     assert log.approve("web_vercel_promote", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("web_vercel_promote", {"project": "acme", "deployment_id": "d-1"}))["ok"] is True
+    assert (
+        json.loads(
+            registry.dispatch(
+                "web_vercel_promote", {"project": "acme", "deployment_id": "d-1"}
+            )
+        )["ok"]
+        is True
+    )

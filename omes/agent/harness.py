@@ -317,7 +317,8 @@ def _parse_args(raw: Any) -> dict:
 
 
 def _parse_call(call: Any) -> tuple[str, dict]:
-    function = call.get("function") if isinstance(call, dict) and isinstance(call.get("function"), dict) else {}
+    raw = call.get("function") if isinstance(call, dict) else None
+    function: dict[str, Any] = raw if isinstance(raw, dict) else {}
     name = str(function.get("name") or "")
     return name, _parse_args(function.get("arguments"))
 
@@ -325,7 +326,12 @@ def _parse_call(call: Any) -> tuple[str, dict]:
 def fingerprint(name: str, args: dict) -> str:
     """Canonical identity of one tool execution (Omp execution fingerprint)."""
     try:
-        return json.dumps({"name": name, "args": args}, sort_keys=True, separators=(",", ":"), default=str)
+        return json.dumps(
+            {"name": name, "args": args},
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        )
     except (TypeError, ValueError):
         return f"{name}\x00{args!r}"
 
@@ -387,8 +393,10 @@ def prepare_speculative(agent: Any, tools: dict, calls: list) -> SpeculativeCach
     if not todo:
         return cache
 
-    def _run(entry: tuple[str, str, Any, dict]) -> tuple[str, tuple[str, bool, bool] | None]:
-        fp, name, fn, args = entry
+    def _run(
+        entry: tuple[str, str, Any, dict],
+    ) -> tuple[str, tuple[str, bool, bool] | None]:
+        fp, _name, fn, args = entry
         gate = getattr(agent, "pause_gate", None)
         if gate is not None:
             gate.wait_until_resumed(getattr(agent, "interrupt", None))
@@ -419,7 +427,9 @@ def prepare_speculative(agent: Any, tools: dict, calls: list) -> SpeculativeCach
     return cache
 
 
-def commit_speculative(agent: Any, name: str, args: dict) -> tuple[str, bool, bool] | None:
+def commit_speculative(
+    agent: Any, name: str, args: dict
+) -> tuple[str, bool, bool] | None:
     """Take the prepared result for ``(name, args)`` or None (discarded)."""
     cache = getattr(agent, "_spec_cache", None)
     if cache is None:

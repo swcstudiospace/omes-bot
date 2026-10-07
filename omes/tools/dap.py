@@ -97,9 +97,7 @@ class DapSession:
         found = body.get("threads", [])
         return list(found) if isinstance(found, list) else []
 
-    def stack_trace(
-        self, thread_id: int, timeout: float | None = None
-    ) -> list:
+    def stack_trace(self, thread_id: int, timeout: float | None = None) -> list:
         """Return the stack frames for ``thread_id``."""
         self._require_started()
         body = self._request("stackTrace", {"threadId": thread_id}, timeout=timeout)
@@ -123,9 +121,7 @@ class DapSession:
         if not self._started:
             raise DapError("session is not started")
 
-    def _request(
-        self, command: str, arguments: Any, timeout: float | None
-    ) -> Any:
+    def _request(self, command: str, arguments: Any, timeout: float | None) -> Any:
         self._seq += 1
         request_seq = self._seq
         message: dict[str, Any] = {

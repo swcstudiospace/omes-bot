@@ -8,6 +8,7 @@ releases it on the way out, including when the turn raises.
 from __future__ import annotations
 
 import threading
+from typing import Literal
 
 
 class SessionLease:
@@ -36,7 +37,7 @@ class SessionLease:
         self.acquire()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> bool:
+    def __exit__(self, exc_type, exc, tb) -> Literal[False]:
         self.release()
         return False
 

@@ -34,7 +34,9 @@ def test_nightly_pass_creates_skills_only_for_earned_turns(tmp_path: Path):
     viewed = json.loads(skill_view("deploy", skills_root=tmp_path / "skills"))
     assert "run ./deploy.sh --prod" in viewed["content"]
 
-    state = json.loads((tmp_path / "state" / "nightly.json").read_text(encoding="utf-8"))
+    state = json.loads(
+        (tmp_path / "state" / "nightly.json").read_text(encoding="utf-8")
+    )
     assert state == {"reviewed": ["t1", "t2"]}
 
 

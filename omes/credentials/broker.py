@@ -10,7 +10,8 @@ then resolves the provider's env vars. Resolved keys are cached for
 from __future__ import annotations
 
 import os
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 from urllib.parse import urlsplit
 
 from omes.credentials.redact import redact_text

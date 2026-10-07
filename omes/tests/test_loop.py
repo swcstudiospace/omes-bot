@@ -153,7 +153,9 @@ def test_pending_steer_is_its_own_user_message():
     result = run_conversation(agent, "do the thing", system_message="sys")
 
     messages = result["messages"]
-    tool_at = next(index for index, message in enumerate(messages) if message.get("role") == "tool")
+    tool_at = next(
+        index for index, message in enumerate(messages) if message.get("role") == "tool"
+    )
     tool_message = messages[tool_at]
     following = messages[tool_at + 1]
     assert tool_message["content"] == tool_body
@@ -177,7 +179,9 @@ def test_only_compress_messages_may_rewrite_history():
         return "from-tool"
 
     agent = Agent(model=model, tools={"echo": echo}, max_iterations=4)
-    result = run_conversation(agent, "work", system_message=sentinel, conversation_history=history)
+    result = run_conversation(
+        agent, "work", system_message=sentinel, conversation_history=history
+    )
 
     assert result["messages"] is history
     assert len(history) >= 4
@@ -191,7 +195,10 @@ def test_only_compress_messages_may_rewrite_history():
     assert history[0]["role"] == "system"
     assert history[0]["content"] is system_before
     assert history[0]["content"].encode("utf-8") == system_before.encode("utf-8")
-    assert any(isinstance(message, dict) and message.get("display_kind") == SUMMARY_KIND for message in history)
+    assert any(
+        isinstance(message, dict) and message.get("display_kind") == SUMMARY_KIND
+        for message in history
+    )
     assert len(history) < length_before
 
 
@@ -208,7 +215,9 @@ def test_interrupt_stops_before_a_second_model_call():
             {"role": "assistant", "content": "should not be requested"},
         ]
     )
-    agent = Agent(model=model, tools={"echo": echo}, max_iterations=5, interrupt=interrupt)
+    agent = Agent(
+        model=model, tools={"echo": echo}, max_iterations=5, interrupt=interrupt
+    )
     result = run_conversation(agent, "go", system_message="sys")
 
     assert model.call_count == 1
@@ -264,6 +273,7 @@ def test_budget_stops_when_remaining_hits_zero():
 
     assert model.call_count == 1
     assert model.remaining == 1
+    assert agent.budget is not None
     assert agent.budget.remaining == 0
     assert result["api_calls"] == 1
     # A caller-supplied budget is a session cap: the next turn must not refill it.
@@ -283,7 +293,9 @@ def test_default_budget_refills_so_each_turn_gets_max_iterations():
     )
     agent = Agent(model=model, tools={}, max_iterations=1)
     history: list = []
-    first = run_conversation(agent, "one", system_message="sys", conversation_history=history)
+    first = run_conversation(
+        agent, "one", system_message="sys", conversation_history=history
+    )
     assert model.call_count == 1
     assert first["final_response"] == "first"
     assert agent.budget is not None
@@ -323,7 +335,9 @@ def test_lease_released_after_turn_and_on_failure():
             held_on_failure.append(failing_lease.held)
             raise RuntimeError("model failed")
 
-    failing_agent = Agent(model=RaisingModel(), tools={}, max_iterations=3, lease=failing_lease)
+    failing_agent = Agent(
+        model=RaisingModel(), tools={}, max_iterations=3, lease=failing_lease
+    )
     with pytest.raises(RuntimeError, match="model failed"):
         run_conversation(failing_agent, "hi", system_message="sys")
 

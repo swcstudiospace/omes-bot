@@ -16,7 +16,7 @@ import queue
 import re
 import subprocess
 import threading
-from typing import Any
+from typing import Any, cast
 
 _HEADER_TERMINATOR = b"\r\n\r\n"
 _CONTENT_LENGTH = re.compile(rb"Content-Length:\s*(\d+)", re.IGNORECASE)
@@ -123,7 +123,7 @@ class RpcConnection:
         while True:
             # read1 returns what is available (at least one byte); read(n)
             # would block for the full n and deadlock a quiet child.
-            chunk = stream.read1(65536)
+            chunk = cast(Any, stream).read1(65536)
             if not chunk:
                 return
             pending += chunk

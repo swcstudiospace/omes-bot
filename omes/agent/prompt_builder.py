@@ -31,7 +31,9 @@ def build_system_prompt(agent: Any = None, system_message: str | None = None) ->
     Every later call returns that same string object. Do not call this to
     refresh the prompt after a tool round.
     """
-    cached = getattr(agent, "_cached_system_prompt", None) if agent is not None else None
+    cached = (
+        getattr(agent, "_cached_system_prompt", None) if agent is not None else None
+    )
     if isinstance(cached, str) and cached:
         return cached
     parts = [_STABLE_PREFIX]

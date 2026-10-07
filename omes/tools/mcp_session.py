@@ -41,12 +41,14 @@ def mcp_session_call(
         return {"error": f"timed out after {timeout} seconds"}
     except OSError as exc:
         return {"error": f"{type(exc).__name__}: {exc}"}
-    except Exception as exc:  # noqa: BLE001 - SDK failures become error dicts
+    except Exception as exc:
         message = str(exc) or type(exc).__name__
         return {"error": f"{type(exc).__name__}: {message}"}
 
 
-def _validate(command: Any, tool: Any, arguments: Any, cwd: Any, timeout: Any) -> str | None:
+def _validate(
+    command: Any, tool: Any, arguments: Any, cwd: Any, timeout: Any
+) -> str | None:
     if isinstance(command, str):
         return "command must be an argv list, not a string"
     if (
@@ -59,7 +61,11 @@ def _validate(command: Any, tool: Any, arguments: Any, cwd: Any, timeout: Any) -
         return "tool must be a non-empty string"
     if not isinstance(arguments, dict):
         return "arguments must be an object"
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or timeout <= 0
+    ):
         return "timeout must be a positive number of seconds"
     if not Path(cwd).is_dir():
         return f"cwd is not a directory: {cwd}"
@@ -73,15 +79,17 @@ async def _call(
         params = StdioServerParameters(
             command=command[0], args=command[1:], cwd=str(cwd)
         )
-        async with stdio_client(params) as (read, write):
-            async with ClientSession(read, write) as session:
-                await session.initialize()
-                result = await session.call_tool(tool, arguments)
+        async with (
+            stdio_client(params) as (read, write),
+            ClientSession(read, write) as session,
+        ):
+            await session.initialize()
+            result = await session.call_tool(tool, arguments)
         return _shape(result)
 
     try:
         return await asyncio.wait_for(_session(), timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         raise TimeoutError from None
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import base64
 import binascii
+from collections.abc import Callable
 from typing import Any
 from urllib.parse import quote
 
@@ -160,7 +161,10 @@ class XClient:
             raise ValueError("mime must look like type/subtype")
         payload = self._post(
             f"{self.upload_url}/1.1/media/upload.json",
-            {"media_data": base64.b64encode(data).decode("ascii"), "media_category": "tweet_image"},
+            {
+                "media_data": base64.b64encode(data).decode("ascii"),
+                "media_category": "tweet_image",
+            },
         )
         media_id = payload.get("media_id_string")
         if not media_id:
@@ -168,10 +172,7 @@ class XClient:
         return {"media_id": str(media_id)}
 
     def _headers(self, url: str) -> dict:
-        if self._credentials is not None:
-            token = self._credentials(url)
-        else:
-            token = self._token
+        token = self._credentials(url) if self._credentials is not None else self._token
         if not isinstance(token, str) or not token:
             raise XError("no X credential: broker refused or token is blank")
         return {"Authorization": f"Bearer {token}"}
@@ -205,9 +206,7 @@ def _check_text(text: Any) -> None:
 def register_x_tools(registry: ToolRegistry, client: XClient) -> list[str]:
     """Register the five X tools. Publishing requires approval."""
 
-    def x_mentions(
-        user_id: str | None = None, max_results: int = 10
-    ) -> dict[str, Any]:
+    def x_mentions(user_id: str | None = None, max_results: int = 10) -> dict[str, Any]:
         try:
             return client.mentions(user_id=user_id, max_results=max_results)
         except (XError, ValueError) as exc:
@@ -247,7 +246,7 @@ def register_x_tools(registry: ToolRegistry, client: XClient) -> list[str]:
         except (XError, ValueError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "x_mentions": x_mentions,
         "x_read_post": x_read_post,
         "x_post": x_post,
@@ -260,7 +259,11 @@ def register_x_tools(registry: ToolRegistry, client: XClient) -> list[str]:
     for name in X_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
         registry.register(
-            name, description, parameters, handlers[name], requires_approval=name in approvals
+            name,
+            description,
+            parameters,
+            handlers[name],
+            requires_approval=name in approvals,
         )
     return list(X_TOOL_NAMES)
 
@@ -280,7 +283,10 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         _object(
             {
                 "user_id": _string("X user id. Defaults to the bot's own id."),
-                "max_results": {"type": "integer", "description": "1-100. Defaults to 10."},
+                "max_results": {
+                    "type": "integer",
+                    "description": "1-100. Defaults to 10.",
+                },
             },
             [],
         ),
@@ -336,8 +342,8 @@ __all__ = [
     "DEFAULT_BASE_URL",
     "DEFAULT_UPLOAD_URL",
     "MAX_MEDIA_BYTES",
+    "X_TOOL_NAMES",
     "XClient",
     "XError",
-    "X_TOOL_NAMES",
     "register_x_tools",
 ]

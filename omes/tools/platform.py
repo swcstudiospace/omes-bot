@@ -6,6 +6,7 @@ over ``browser`` and do not open a socket when it is missing.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -52,7 +53,7 @@ def register_platform_tools(
             return {"error": "browser is not available"}
         return browser.browser_snapshot()
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "execute_code": execute_code,
         "mcp_call": mcp_call,
         "browser_navigate": browser_navigate,
@@ -80,7 +81,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         "Empty code is refused. A timeout kills the process.",
         _object(
             {
-                "code": _string("Python source. Empty source is an error and starts nothing."),
+                "code": _string(
+                    "Python source. Empty source is an error and starts nothing."
+                ),
                 "timeout": {
                     "type": "number",
                     "description": "Seconds before the process is killed. Default is 5.",

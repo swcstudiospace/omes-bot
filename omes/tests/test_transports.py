@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-import json
-import threading
-from pathlib import Path
-
+import contextlib
 import http.client
+import json
 import socket
 import threading
+from pathlib import Path
 
 import pytest
 
@@ -98,10 +97,8 @@ class _Fixture:
         except (OSError, ValueError):
             pass
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 sock.close()
-            except OSError:
-                pass
 
 
 def _payload() -> dict:
@@ -112,7 +109,9 @@ def test_http_transport_retries_a_dropped_first_attempt():
     fixture = _Fixture([503, 200], _payload())
     provider = GrokProvider()
     provider.base_url = "http://fixture.local"
-    transport = HttpTransport(timeout=5, max_retries=2, backoff=0.01, connect=fixture.connect)
+    transport = HttpTransport(
+        timeout=5, max_retries=2, backoff=0.01, connect=fixture.connect
+    )
     model = ProviderModel(provider, "grok-4", transport, api_key="fake-key")
     row = model.complete([{"role": "user", "content": "ping"}])
 
@@ -138,7 +137,9 @@ def test_http_transport_refuses_blocked_hosts_and_gives_up():
         refused.post("http://fixture.local/chat/completions", {}, {"model": "m"})
 
     missing = _Fixture([404], _payload())
-    client = HttpTransport(timeout=5, max_retries=3, backoff=0.01, connect=missing.connect)
+    client = HttpTransport(
+        timeout=5, max_retries=3, backoff=0.01, connect=missing.connect
+    )
     with pytest.raises(ProviderError, match="HTTP 404"):
         client.post("http://fixture.local/chat/completions", {}, {"model": "m"})
     assert len(missing.requests) == 1
@@ -148,14 +149,22 @@ def test_traces_cover_tools_policy_and_model_calls(tmp_path: Path):
     tracer = Tracer("trace-1")
     policy = SeatPolicy({"version": 1, "tools": {"allow": ["read_file"]}})
     registry = ToolRegistry(policy=policy, tracer=tracer)
-    registry.register("read_file", "d", {"type": "object", "properties": {}}, lambda: "ok")
-    registry.register("write_file", "d", {"type": "object", "properties": {}}, lambda: "ok")
+    registry.register(
+        "read_file", "d", {"type": "object", "properties": {}}, lambda: "ok"
+    )
+    registry.register(
+        "write_file", "d", {"type": "object", "properties": {}}, lambda: "ok"
+    )
 
     registry.dispatch("read_file", {})
     registry.dispatch("write_file", {})
 
     kinds = [(span["kind"], span["name"]) for span in tracer.spans()]
-    assert kinds == [("tool", "read_file"), ("tool", "write_file"), ("policy", "write_file")]
+    assert kinds == [
+        ("tool", "read_file"),
+        ("tool", "write_file"),
+        ("policy", "write_file"),
+    ]
     assert tracer.spans()[0]["fields"] == {"verdict": "allowed"}
     assert tracer.spans()[2]["fields"]["verdict"] == "denied"
 
@@ -166,9 +175,13 @@ def test_traces_cover_tools_policy_and_model_calls(tmp_path: Path):
         {"version": 1, "paths": {"read_only": ["prompts/**"]}, "network": {}}
     )
     file_registry = ToolRegistry()
-    register_coding_tools(file_registry, root, policy=file_policy, tracer=workspace_tracer)
+    register_coding_tools(
+        file_registry, root, policy=file_policy, tracer=workspace_tracer
+    )
     file_registry.dispatch("write_file", {"path": "prompts/x.md", "content": "x"})
-    policy_spans = [span for span in workspace_tracer.spans() if span["kind"] == "policy"]
+    policy_spans = [
+        span for span in workspace_tracer.spans() if span["kind"] == "policy"
+    ]
     assert len(policy_spans) == 1
     assert policy_spans[0]["fields"]["verdict"] == "denied"
 
@@ -177,7 +190,10 @@ def test_traces_cover_tools_policy_and_model_calls(tmp_path: Path):
         [_tool_call("echo"), {"role": "assistant", "content": "done"}]
     )
     agent = Agent(
-        model=model, tools={"echo": lambda: "pong"}, max_iterations=4, tracer=turn_tracer
+        model=model,
+        tools={"echo": lambda: "pong"},
+        max_iterations=4,
+        tracer=turn_tracer,
     )
     run_conversation(agent, "ping")
 

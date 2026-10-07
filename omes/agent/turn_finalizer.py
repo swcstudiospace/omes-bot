@@ -38,7 +38,9 @@ def finalize_turn(
     if response is None:
         response = ""
 
-    budget_stop = reason == "budget_exhausted" or reason.startswith("max_iterations_reached")
+    budget_stop = reason == "budget_exhausted" or reason.startswith(
+        "max_iterations_reached"
+    )
     tool_stop = reason == "pending_tool_result"
     completed = (
         bool(response)
@@ -76,7 +78,9 @@ def finalize_turn(
     return result
 
 
-def _stopped_on_tool_row(messages: list, response: str | None, interrupted: bool) -> bool:
+def _stopped_on_tool_row(
+    messages: list, response: str | None, interrupted: bool
+) -> bool:
     if interrupted or response:
         return False
     if not messages or not isinstance(messages[-1], dict):

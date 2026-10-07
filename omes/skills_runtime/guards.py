@@ -22,7 +22,13 @@ def validate_name(name: str) -> str | None:
     """Error text when ``name`` is not one safe path segment, else None."""
     if not isinstance(name, str) or name == "":
         return "Skill name is required."
-    if name != name.strip() or ".." in name or "/" in name or "\\" in name or Path(name).is_absolute():
+    if (
+        name != name.strip()
+        or ".." in name
+        or "/" in name
+        or "\\" in name
+        or Path(name).is_absolute()
+    ):
         return f"Invalid skill name '{name}'."
     if len(name) > MAX_NAME_LENGTH or NAME_RE.fullmatch(name) is None:
         return (
@@ -88,7 +94,9 @@ def validate_frontmatter(content: str, *, new_skill: bool = False) -> str | None
     return None
 
 
-def parse_frontmatter(content: str) -> tuple[dict[str, str] | None, str | None, str | None]:
+def parse_frontmatter(
+    content: str,
+) -> tuple[dict[str, str] | None, str | None, str | None]:
     """Return ``(mapping, body, error)``. Nested YAML is an error."""
     if not isinstance(content, str) or content.strip() == "":
         return None, None, "Content cannot be empty."
@@ -113,13 +121,21 @@ def parse_frontmatter(content: str) -> tuple[dict[str, str] | None, str | None, 
         if key in mapping:
             return None, None, f"Frontmatter key '{key}' is duplicated."
         mapping[key] = _unwrap(raw_value.strip())
-    return None, None, "SKILL.md frontmatter is not closed. Ensure you have a closing '---' line."
+    return (
+        None,
+        None,
+        "SKILL.md frontmatter is not closed. Ensure you have a closing '---' line.",
+    )
 
 
-def skill_directory(skills_root: str | Path, name: str, category: str | None = None) -> Path:
+def skill_directory(
+    skills_root: str | Path, name: str, category: str | None = None
+) -> Path:
     """Lexical skill directory under an already-resolved root."""
     root = Path(skills_root)
-    segment = category.strip() if isinstance(category, str) and category.strip() else None
+    segment = (
+        category.strip() if isinstance(category, str) and category.strip() else None
+    )
     return root / segment / name if segment else root / name
 
 

@@ -28,7 +28,9 @@ def finish_text_response(
     finish_reason: str = "stop",
 ) -> FinalResponseVerdict:
     """Append the assistant text and end the iteration. Do not rewrite earlier rows."""
-    content = assistant_message.get("content") if isinstance(assistant_message, dict) else ""
+    content = (
+        assistant_message.get("content") if isinstance(assistant_message, dict) else ""
+    )
     if content is None:
         content = ""
     elif not isinstance(content, str):

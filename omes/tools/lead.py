@@ -19,10 +19,11 @@ import shutil
 import subprocess
 import tempfile
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
-from typing import Any, Callable
+from typing import Any
 
 from omes.credentials.redact import redact_text, redact_value
 from omes.memory.hindsight import Hindsight
@@ -51,9 +52,15 @@ LEAD_TOOL_NAMES = (
 
 BRIEF_TTL_SEC = 300
 EVENT_PAYLOAD_LIMIT = 4096
-GITHUB_ISSUE = re.compile(r"^https://github\.com/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)/issues/(\d+)$")
+GITHUB_ISSUE = re.compile(
+    r"^https://github\.com/([A-Za-z0-9._-]+/[A-Za-z0-9._-]+)/issues/(\d+)$"
+)
 ACK_STATUSES = ("accepted", "rejected", "in_progress", "done")
-GRAPH_ACTIONS = {"claim": "graph_claim", "release": "graph_release", "complete": "graph_complete"}
+GRAPH_ACTIONS = {
+    "claim": "graph_claim",
+    "release": "graph_release",
+    "complete": "graph_complete",
+}
 
 
 def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
@@ -68,7 +75,9 @@ class IntakeStore:
         self.orders: list[dict] = []
         self._load()
 
-    def submit(self, ask: str, origin: str = "local", links: list | None = None) -> dict:
+    def submit(
+        self, ask: str, origin: str = "local", links: list | None = None
+    ) -> dict:
         """Append one open order and return it."""
         record = {
             "intake_id": "in-" + secrets.token_hex(6),
@@ -84,8 +93,14 @@ class IntakeStore:
         self._save()
         return record
 
-    def next(self, origin: str | None, by: str, *,
-             reclaim_after: float = 3600.0, now: float | None = None) -> dict | None:
+    def next(
+        self,
+        origin: str | None,
+        by: str,
+        *,
+        reclaim_after: float = 3600.0,
+        now: float | None = None,
+    ) -> dict | None:
         """Claim the oldest open order for `by`. None when empty.
 
         Orders stuck `in_progress` past `reclaim_after` seconds are
@@ -117,8 +132,9 @@ class IntakeStore:
         self._save()
         return True
 
-    def reclaim_stale(self, max_age_seconds: float = 3600.0,
-                      now: float | None = None) -> list[str]:
+    def reclaim_stale(
+        self, max_age_seconds: float = 3600.0, now: float | None = None
+    ) -> list[str]:
         """Release `in_progress` orders older than the lease. Returns ids."""
         current = time.time() if now is None else now
         released: list[str] = []
@@ -126,7 +142,10 @@ class IntakeStore:
             if record.get("status") != "in_progress":
                 continue
             claimed = record.get("claimed_at")
-            if isinstance(claimed, (int, float)) and current - claimed <= max_age_seconds:
+            if (
+                isinstance(claimed, (int, float))
+                and current - claimed <= max_age_seconds
+            ):
                 continue
             record["status"] = "open"
             record["by"] = None
@@ -222,7 +241,14 @@ class RosterStore:
 
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        text = json.dumps({"packs": self.packs, "doctor": self.doctor}, ensure_ascii=False, indent=2) + "\n"
+        text = (
+            json.dumps(
+                {"packs": self.packs, "doctor": self.doctor},
+                ensure_ascii=False,
+                indent=2,
+            )
+            + "\n"
+        )
         self.path.write_text(text, encoding="utf-8")
 
 
@@ -240,7 +266,7 @@ class EventStore:
         self._seq += 1
         record = {
             "seq": self._seq,
-            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             **{k: redact_value(v) for k, v in event.items()},
         }
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -287,8 +313,12 @@ class LeadClient:
 
     # -- reads -----------------------------------------------------------
 
-    def brief(self, graph_id: str | None = None, task_id: str | None = None,
-              refresh: bool = False) -> dict[str, Any]:
+    def brief(
+        self,
+        graph_id: str | None = None,
+        task_id: str | None = None,
+        refresh: bool = False,
+    ) -> dict[str, Any]:
         """Seat brief: recall + packs + intake + reminders. Cached 300s."""
         key = f"{graph_id or ''}:{task_id or ''}"
         now = time.time()
@@ -314,47 +344,76 @@ class LeadClient:
         self.ctx._brief_cache[key] = (now, result)
         return result
 
-    def docs_search(self, query: str, limit: int = 8, repo: str | None = None) -> dict[str, Any]:
+    def docs_search(
+        self, query: str, limit: int = 8, repo: str | None = None
+    ) -> dict[str, Any]:
         """Search the docs index. A chunk is not a repo fact until the file is opened."""
         if not isinstance(query, str) or query == "":
             raise ValueError("query must be a non-empty string")
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
             raise ValueError("limit must be a positive integer")
         if self.ctx.docs_index is None:
-            return {"results": [], "error": "not_configured: docs index is not configured"}
+            return {
+                "results": [],
+                "error": "not_configured: docs index is not configured",
+            }
         raw = self.ctx.docs_index(query, limit, repo)
         results = []
         for chunk in raw if isinstance(raw, list) else []:
             if not isinstance(chunk, dict):
                 continue
-            results.append({
-                "content": redact_text(str(chunk.get("content", "")))[:1500],
-                "document": chunk.get("document"),
-                "dataset_id": chunk.get("dataset_id"),
-                "score": chunk.get("score"),
-            })
-        return {"results": results, "note": "a chunk is not a repository fact until the file is opened"}
+            results.append(
+                {
+                    "content": redact_text(str(chunk.get("content", "")))[:1500],
+                    "document": chunk.get("document"),
+                    "dataset_id": chunk.get("dataset_id"),
+                    "score": chunk.get("score"),
+                }
+            )
+        return {
+            "results": results,
+            "note": "a chunk is not a repository fact until the file is opened",
+        }
 
-    def memory_recall(self, query: str, limit: int = 8, include_shared: bool = True,
-                      banks: list[str] | None = None) -> dict[str, Any]:
+    def memory_recall(
+        self,
+        query: str,
+        limit: int = 8,
+        include_shared: bool = True,
+        banks: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Recall Omes memory banks matching `query` (case-insensitive)."""
         if not isinstance(query, str) or query == "":
             raise ValueError("query must be a non-empty string")
         if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
             raise ValueError("limit must be a positive integer")
         if self.ctx.memory is None:
-            return {"banks": [], "results": [], "error": "not_configured: memory store is missing"}
+            return {
+                "banks": [],
+                "results": [],
+                "error": "not_configured: memory store is missing",
+            }
         own = "omes-lead"
-        names = list(banks) if banks else ([own] + (["omes-desk"] if include_shared else []))
+        names = (
+            list(banks)
+            if banks
+            else ([own] + (["omes-desk"] if include_shared else []))
+        )
         results = []
         for bank in names:
             entries = Hindsight(self.ctx.memory, bank).recall(query, limit=limit)
-            results.append({"bank": bank, "entries": [redact_value(e) for e in entries]})
+            results.append(
+                {"bank": bank, "entries": [redact_value(e) for e in entries]}
+            )
         return {"banks": names, "results": results}
 
     def ownership_resolve(self, paths: list[str]) -> dict[str, Any]:
         """Resolve each path's owner from ownership.yaml (last match wins)."""
-        if not isinstance(paths, list) or not paths or any(not isinstance(p, str) for p in paths):
+        if (
+            not isinstance(paths, list)
+            or not paths
+            or any(not isinstance(p, str) for p in paths)
+        ):
             raise ValueError("paths must be a non-empty list of strings")
         manifest = Path(self.ctx.root) / "omes" / "ownership.yaml"
         if not manifest.is_file():
@@ -363,16 +422,23 @@ class LeadClient:
         results = []
         for path in paths:
             owner = _resolve_owner(path, rules)
-            results.append({
-                "path": path,
-                "owner": owner,
-                "mine": owner == self.ctx.bot_id,
-                "unowned": owner is None,
-            })
+            results.append(
+                {
+                    "path": path,
+                    "owner": owner,
+                    "mine": owner == self.ctx.bot_id,
+                    "unowned": owner is None,
+                }
+            )
         return {"results": results}
 
-    def receipt_check(self, receipt: dict | None = None, receipt_path: str | None = None,
-                      bot: str | None = None, strict: bool = True) -> dict[str, Any]:
+    def receipt_check(
+        self,
+        receipt: dict | None = None,
+        receipt_path: str | None = None,
+        bot: str | None = None,
+        strict: bool = True,
+    ) -> dict[str, Any]:
         """Validate a receipt dict (or a JSON file under root). Never raises."""
         _ = strict
         if receipt is None and receipt_path:
@@ -386,11 +452,18 @@ class LeadClient:
         if receipt is None:
             return _error("invalid_args", "receipt or receipt_path is required")
         if redact_text(json.dumps(receipt)) != json.dumps(receipt):
-            return {"ok": False, "problems": ["receipt contains a credential shape (PD-4)"]}
+            return {
+                "ok": False,
+                "problems": ["receipt contains a credential shape (PD-4)"],
+            }
         try:
             validate_receipt(receipt)
         except ReceiptError as exc:
-            return {"ok": False, "problems": str(exc).splitlines() or [str(exc)], "bot": bot or self.ctx.bot_id}
+            return {
+                "ok": False,
+                "problems": str(exc).splitlines() or [str(exc)],
+                "bot": bot or self.ctx.bot_id,
+            }
         return {"ok": True, "bot": bot or self.ctx.bot_id}
 
     def render_prompt(self) -> dict[str, Any]:
@@ -401,8 +474,14 @@ class LeadClient:
             return _error("not_configured", "assemble-prompts.sh is not in this root")
         with tempfile.TemporaryDirectory(prefix="omes-render-") as tmp:
             tree = Path(tmp)
-            for rel in ("omes/prompts", "omes/contracts", "omes/grokbot/rosters",
-                        "omes/scripts", "omes/ownership.yaml", "omes/assemble.py"):
+            for rel in (
+                "omes/prompts",
+                "omes/contracts",
+                "omes/grokbot/rosters",
+                "omes/scripts",
+                "omes/ownership.yaml",
+                "omes/assemble.py",
+            ):
                 src = root / rel
                 dst = tree / rel
                 if not src.exists():
@@ -415,12 +494,17 @@ class LeadClient:
             try:
                 run = subprocess.run(
                     ["bash", str(tree / "omes" / "scripts" / "assemble-prompts.sh")],
-                    cwd=str(tree), capture_output=True, text=True, timeout=60,
+                    cwd=str(tree),
+                    capture_output=True,
+                    text=True,
+                    timeout=60,
                 )
             except (OSError, subprocess.TimeoutExpired) as exc:
                 return _error("upstream_error", f"assembler failed: {exc}")
             if run.returncode != 0:
-                return _error("upstream_error", f"assemble-prompts failed: {run.stderr[-300:]}")
+                return _error(
+                    "upstream_error", f"assemble-prompts failed: {run.stderr[-300:]}"
+                )
             out = tree / "omes" / "prompts-assembled" / "OMES.xml"
             if not out.is_file():
                 return _error("not_found", "assembler produced no prompt for this seat")
@@ -429,7 +513,9 @@ class LeadClient:
             return _error("upstream_error", "assembled prompt still has placeholders")
         return {"prompt": text, "sha256": hashlib.sha256(text.encode()).hexdigest()}
 
-    def bus_wait(self, job_id: str, timeout_sec: int = 180, poll_sec: int = 2) -> dict[str, Any]:
+    def bus_wait(
+        self, job_id: str, timeout_sec: int = 180, poll_sec: int = 2
+    ) -> dict[str, Any]:
         """Wait for one bus job. Passthrough to the injected bus."""
         if not isinstance(job_id, str) or job_id == "":
             raise ValueError("job_id must be a non-empty string")
@@ -437,9 +523,22 @@ class LeadClient:
             return _error("not_configured", "agent bus is not configured")
         result = self.ctx.bus.wait_job(job_id, int(timeout_sec), int(poll_sec))
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", "agent bus unavailable") if isinstance(result, dict) else "agent bus unavailable"
-            return _error(result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error", str(reason))
-        return {"ok": True, "job": result.get("body"), "timed_out": bool(result.get("timed_out"))}
+            reason = (
+                result.get("reason", "agent bus unavailable")
+                if isinstance(result, dict)
+                else "agent bus unavailable"
+            )
+            return _error(
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error",
+                str(reason),
+            )
+        return {
+            "ok": True,
+            "job": result.get("body"),
+            "timed_out": bool(result.get("timed_out")),
+        }
 
     def roster_status(self) -> dict[str, Any]:
         """Registered packs, tool counts, intake queue, completeness."""
@@ -448,32 +547,47 @@ class LeadClient:
         doctor = self.ctx.roster.doctor_results() if self.ctx.roster else {}
         for name in sorted(records):
             entry = records[name] or {}
-            packs.append({
-                "pack": name,
-                "version": entry.get("version"),
-                "tools": entry.get("tools", []),
-                "doctor": doctor.get(name),
-            })
+            packs.append(
+                {
+                    "pack": name,
+                    "version": entry.get("version"),
+                    "tools": entry.get("tools", []),
+                    "doctor": doctor.get(name),
+                }
+            )
         intake = self.ctx.intake.counts() if self.ctx.intake else {}
         return {"packs": packs, "intake_queue": intake, "complete": bool(packs)}
 
     # -- writes (approval-gated at registration) -------------------------
 
-    def memory_retain(self, content: str, receipt_path: str | None = None,
-                      source: str | None = None, tags: list[str] | None = None,
-                      graph_id: str | None = None, task_id: str | None = None) -> dict[str, Any]:
+    def memory_retain(
+        self,
+        content: str,
+        receipt_path: str | None = None,
+        source: str | None = None,
+        tags: list[str] | None = None,
+        graph_id: str | None = None,
+        task_id: str | None = None,
+    ) -> dict[str, Any]:
         """Keep one memory entry. Needs evidence; secrets are refused."""
         if not isinstance(content, str) or content.strip() == "":
             raise ValueError("content must be a non-empty string")
         if not receipt_path and not source:
             return _error("evidence_required", "retain needs receipt_path or source")
         if redact_text(content) != content:
-            return _error("secret_refused", "content contains a credential shape; remove it and retry")
+            return _error(
+                "secret_refused",
+                "content contains a credential shape; remove it and retry",
+            )
         if self.ctx.memory is None:
             return _error("not_configured", "memory store is missing")
         bits = ["[pack:lead]", content.strip()]
-        for label, value in (("receipt_path", receipt_path), ("source", source),
-                             ("graph_id", graph_id), ("task_id", task_id)):
+        for label, value in (
+            ("receipt_path", receipt_path),
+            ("source", source),
+            ("graph_id", graph_id),
+            ("task_id", task_id),
+        ):
             if value:
                 bits.append(f"[{label}:{value}]")
         for tag in tags or []:
@@ -483,33 +597,59 @@ class LeadClient:
             return _error("store_refused", str(kept.get("reason", "store refused")))
         return {"ok": True, "bank": "omes-lead"}
 
-    def event_emit(self, kind: str, payload: dict | None = None,
-                   graph_id: str | None = None, task_id: str | None = None) -> dict[str, Any]:
+    def event_emit(
+        self,
+        kind: str,
+        payload: dict | None = None,
+        graph_id: str | None = None,
+        task_id: str | None = None,
+    ) -> dict[str, Any]:
         """Append one lead event locally; forward to the emitter when set."""
         if not isinstance(kind, str) or kind == "":
             raise ValueError("kind must be a non-empty string")
         body = dict(payload or {})
         if len(json.dumps(body)) > EVENT_PAYLOAD_LIMIT:
             return _error("payload_too_large", "payload exceeds 4 KB")
-        event = {"kind": kind, "graph_id": graph_id, "task_id": task_id,
-                 "payload": body, "actor": "agent"}
+        event = {
+            "kind": kind,
+            "graph_id": graph_id,
+            "task_id": task_id,
+            "payload": body,
+            "actor": "agent",
+        }
         stored = self.ctx.events.append(event) if self.ctx.events else None
         if self.ctx.substrate is None:
             return {"ok": True, "stored": stored, "emitted": False}
         outgoing = stored if isinstance(stored, dict) else redact_value(event)
-        result = self.ctx.substrate.emit({k: v for k, v in outgoing.items() if v is not None})
+        result = self.ctx.substrate.emit(
+            {k: v for k, v in outgoing.items() if v is not None}
+        )
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", "event not accepted") if isinstance(result, dict) else "event not accepted"
-            code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"
+            reason = (
+                result.get("reason", "event not accepted")
+                if isinstance(result, dict)
+                else "event not accepted"
+            )
+            code = (
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error"
+            )
             return _error(str(code), str(reason), local_mirror=True)
         return {"ok": True, "stored": stored, "substrate": result.get("body")}
 
-    def doctor(self, action: str = "check", agent_uuid: str | None = None,
-               prompt_sha256: str | None = None,
-               installed_skills: list[str] | None = None) -> dict[str, Any]:
+    def doctor(
+        self,
+        action: str = "check",
+        agent_uuid: str | None = None,
+        prompt_sha256: str | None = None,
+        installed_skills: list[str] | None = None,
+    ) -> dict[str, Any]:
         """check/register/install_prompt/repair the lead seat integrity."""
         if action not in ("check", "register", "install_prompt", "repair"):
-            raise ValueError("action must be check, register, install_prompt, or repair")
+            raise ValueError(
+                "action must be check, register, install_prompt, or repair"
+            )
         if action == "register":
             if not agent_uuid:
                 return _error("invalid_args", "register needs agent_uuid")
@@ -523,32 +663,61 @@ class LeadClient:
             if rendered.get("error"):
                 return rendered
             if self.ctx.roster is not None:
-                self.ctx.roster.doctor_result("lead", {"expected_prompt_sha256": rendered["sha256"]})
-            return {"ok": True, "sha256": rendered["sha256"], "prompt": rendered["prompt"]}
+                self.ctx.roster.doctor_result(
+                    "lead", {"expected_prompt_sha256": rendered["sha256"]}
+                )
+            return {
+                "ok": True,
+                "sha256": rendered["sha256"],
+                "prompt": rendered["prompt"],
+            }
         checks: dict[str, dict[str, Any]] = {}
-        expected = (self.ctx.roster.doctor_results().get("lead") or {}) if self.ctx.roster else {}
+        expected = (
+            (self.ctx.roster.doctor_results().get("lead") or {})
+            if self.ctx.roster
+            else {}
+        )
         expected_sha = expected.get("expected_prompt_sha256")
-        prompt_ok = bool(expected_sha and prompt_sha256 and expected_sha == prompt_sha256)
-        checks["prompt"] = {"green": prompt_ok,
-                            "detail": "sha256 matches the rendered prompt" if prompt_ok else "run install_prompt, then check with prompt_sha256"}
+        prompt_ok = bool(
+            expected_sha and prompt_sha256 and expected_sha == prompt_sha256
+        )
+        checks["prompt"] = {
+            "green": prompt_ok,
+            "detail": "sha256 matches the rendered prompt"
+            if prompt_ok
+            else "run install_prompt, then check with prompt_sha256",
+        }
         declared = _declared_skills(Path(self.ctx.root) / self.ctx.seat_prompt)
         installed = set(installed_skills or [])
-        missing = sorted(s for s in declared if s not in installed) if installed else declared
-        checks["skills"] = {"green": bool(installed) and not missing, "declared": declared,
-                            "missing": missing}
-        checks["memory"] = {"green": self.ctx.memory is not None,
-                            "detail": "" if self.ctx.memory is not None else "memory store is missing"}
+        missing = (
+            sorted(s for s in declared if s not in installed) if installed else declared
+        )
+        checks["skills"] = {
+            "green": bool(installed) and not missing,
+            "declared": declared,
+            "missing": missing,
+        }
+        checks["memory"] = {
+            "green": self.ctx.memory is not None,
+            "detail": "" if self.ctx.memory is not None else "memory store is missing",
+        }
         live = len(self.ctx.registry.schemas()) if self.ctx.registry is not None else 0
         base = len(LEAD_TOOL_NAMES)
         checks["tools"] = {"green": live >= base, "pack": base, "live": live}
         packs = sorted(self.ctx.roster.packs) if self.ctx.roster else []
         checks["roster"] = {"green": "lead" in packs, "registered": packs}
-        checks["substrate"] = {"green": self.ctx.substrate is not None,
-                               "detail": "" if self.ctx.substrate is not None else "substrate is not configured"}
+        checks["substrate"] = {
+            "green": self.ctx.substrate is not None,
+            "detail": ""
+            if self.ctx.substrate is not None
+            else "substrate is not configured",
+        }
         green = all(c["green"] for c in checks.values())
         if self.ctx.roster is not None:
-            self.ctx.roster.doctor_result("lead", {"green": green,
-                                                  "checks": {k: v["green"] for k, v in checks.items()}})
+            self.ctx.roster.doctor_result(
+                "lead",
+                {"green": green, "checks": {k: v["green"] for k, v in checks.items()}},
+            )
         return {"green": green, "seat": "Omes", "checks": checks}
 
     def intake_next(self, origin: str | None = None) -> dict[str, Any]:
@@ -559,11 +728,20 @@ class LeadClient:
         counts = self.ctx.intake.counts()
         if record is None:
             return {"work_order": None, "queue": counts}
-        return {"work_order": record, "queue": counts,
-                "next": "Stage 1: ORIGINAL is work_order.ask verbatim"}
+        return {
+            "work_order": record,
+            "queue": counts,
+            "next": "Stage 1: ORIGINAL is work_order.ask verbatim",
+        }
 
-    def intake_ack(self, intake_id: str, status: str, graph_id: str | None = None,
-                   message: str | None = None, links: list[str] | None = None) -> dict[str, Any]:
+    def intake_ack(
+        self,
+        intake_id: str,
+        status: str,
+        graph_id: str | None = None,
+        message: str | None = None,
+        links: list[str] | None = None,
+    ) -> dict[str, Any]:
         """Ack one order; notify a GitHub issue link when the origin has one."""
         if not isinstance(intake_id, str) or intake_id == "":
             raise ValueError("intake_id must be a non-empty string")
@@ -583,7 +761,10 @@ class LeadClient:
             ack["links"] = list(links)
         updated = self.ctx.intake.ack(intake_id, ack)
         assert updated is not None
-        notify: dict[str, Any] = {"delivered": False, "reason": "origin has no callback"}
+        notify: dict[str, Any] = {
+            "delivered": False,
+            "reason": "origin has no callback",
+        }
         for link in updated.get("links") or []:
             match = GITHUB_ISSUE.match(link) if isinstance(link, str) else None
             if match and updated.get("origin") == "github":
@@ -597,14 +778,20 @@ class LeadClient:
                 lines.append(f"intake `{intake_id}`")
                 body = "\n\n".join(lines)
                 if self.ctx.notify is None:
-                    notify = {"delivered": False, "reason": "notifier is not configured", "target": link}
+                    notify = {
+                        "delivered": False,
+                        "reason": "notifier is not configured",
+                        "target": link,
+                    }
                 else:
                     delivered = self.ctx.notify(link, body)
                     notify = {"delivered": bool(delivered), "target": link}
                 break
         return {"ok": True, "intake": updated, "notify": notify}
 
-    def graph_register(self, graph_id: str, repo: str, nodes: list[dict] | None = None) -> dict[str, Any]:
+    def graph_register(
+        self, graph_id: str, repo: str, nodes: list[dict] | None = None
+    ) -> dict[str, Any]:
         """Register one planning graph with the substrate plane."""
         if not isinstance(graph_id, str) or graph_id == "":
             raise ValueError("graph_id must be a non-empty string")
@@ -612,53 +799,114 @@ class LeadClient:
             raise ValueError("repo must be a non-empty string")
         if self.ctx.substrate is None:
             return _error("not_configured", "substrate is not configured")
-        payload: dict[str, Any] = {"graph_id": graph_id, "repo": repo, "status": "planning"}
+        payload: dict[str, Any] = {
+            "graph_id": graph_id,
+            "repo": repo,
+            "status": "planning",
+        }
         if nodes:
             payload["nodes"] = [
-                {k: v for k, v in {"node_id": n["node_id"],
-                                   "linear_identifier": n.get("linear_id"),
-                                   "state": "open"}.items() if v is not None}
+                {
+                    k: v
+                    for k, v in {
+                        "node_id": n["node_id"],
+                        "linear_identifier": n.get("linear_id"),
+                        "state": "open",
+                    }.items()
+                    if v is not None
+                }
                 for n in nodes
             ]
         result = self.ctx.substrate.call_tool("graph_register", payload, timeout=10)
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", "graph_register failed") if isinstance(result, dict) else "graph_register failed"
-            code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"
+            reason = (
+                result.get("reason", "graph_register failed")
+                if isinstance(result, dict)
+                else "graph_register failed"
+            )
+            code = (
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error"
+            )
             return _error(str(code), str(reason))
         return {"ok": True, "graph_id": graph_id, "substrate": result.get("content")}
 
-    def graph_state(self, graph_id: str, node_id: str, action: str,
-                    surface: str | None = None, note: str | None = None) -> dict[str, Any]:
+    def graph_state(
+        self,
+        graph_id: str,
+        node_id: str,
+        action: str,
+        surface: str | None = None,
+        note: str | None = None,
+    ) -> dict[str, Any]:
         """Claim, release, or complete one graph node."""
         if action not in GRAPH_ACTIONS:
             raise ValueError("action must be claim, release, or complete")
-        if not isinstance(graph_id, str) or graph_id == "" or not isinstance(node_id, str) or node_id == "":
+        if (
+            not isinstance(graph_id, str)
+            or graph_id == ""
+            or not isinstance(node_id, str)
+            or node_id == ""
+        ):
             raise ValueError("graph_id and node_id must be non-empty strings")
         if self.ctx.substrate is None:
             return _error("not_configured", "substrate is not configured")
         tool = GRAPH_ACTIONS[action]
-        payload: dict[str, Any] = {"graph_id": graph_id, "node_id": node_id,
-                                   "session_id": f"grok-bot:{surface or 'lead'}:{graph_id}"}
+        payload: dict[str, Any] = {
+            "graph_id": graph_id,
+            "node_id": node_id,
+            "session_id": f"grok-bot:{surface or 'lead'}:{graph_id}",
+        }
         if action == "complete":
-            payload["result"] = {"summary": note or "completed via Omes lead pack", "tests_pass": False}
+            payload["result"] = {
+                "summary": note or "completed via Omes lead pack",
+                "tests_pass": False,
+            }
         result = self.ctx.substrate.call_tool(tool, payload, timeout=10)
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", f"{tool} failed") if isinstance(result, dict) else f"{tool} failed"
-            code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"
+            reason = (
+                result.get("reason", f"{tool} failed")
+                if isinstance(result, dict)
+                else f"{tool} failed"
+            )
+            code = (
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error"
+            )
             return _error(str(code), str(reason))
         return {"ok": True, "action": action, "substrate": result.get("content")}
 
-    def bus_start(self, runtime: str, goal: str, provider: str | None = None,
-                  idempotency_key: str | None = None) -> dict[str, Any]:
+    def bus_start(
+        self,
+        runtime: str,
+        goal: str,
+        provider: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict[str, Any]:
         """Start one agent-bus job. Passthrough to the injected bus."""
-        if not isinstance(runtime, str) or runtime == "" or not isinstance(goal, str) or goal == "":
+        if (
+            not isinstance(runtime, str)
+            or runtime == ""
+            or not isinstance(goal, str)
+            or goal == ""
+        ):
             raise ValueError("runtime and goal must be non-empty strings")
         if self.ctx.bus is None:
             return _error("not_configured", "agent bus is not configured")
         result = self.ctx.bus.start_job(runtime, goal, provider, idempotency_key)
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", "agent bus refused the job") if isinstance(result, dict) else "agent bus refused the job"
-            code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"
+            reason = (
+                result.get("reason", "agent bus refused the job")
+                if isinstance(result, dict)
+                else "agent bus refused the job"
+            )
+            code = (
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error"
+            )
             return _error(str(code), str(reason))
         body = result.get("body") or {}
         if isinstance(body, dict):
@@ -705,7 +953,10 @@ def _declared_skills(prompt_path: Path) -> list[str]:
     if not prompt_path.is_file():
         return []
     names = []
-    for path in re.findall(r'<skill path="skills/([^"]+)/SKILL\.md"', prompt_path.read_text(encoding="utf-8")):
+    for path in re.findall(
+        r'<skill path="skills/([^"]+)/SKILL\.md"',
+        prompt_path.read_text(encoding="utf-8"),
+    ):
         name = path.split("/")[-1]
         if name not in names:
             names.append(name)
@@ -721,46 +972,123 @@ def register_lead_tools(registry: ToolRegistry, client: LeadClient) -> list[str]
         except (ValueError, TypeError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "lead_brief": lambda graph_id=None, task_id=None, refresh=False: _wrap(
-            client.brief, graph_id=graph_id, task_id=task_id, refresh=refresh),
+            client.brief, graph_id=graph_id, task_id=task_id, refresh=refresh
+        ),
         "lead_docs_search": lambda query, limit=8, repo=None: _wrap(
-            client.docs_search, query, limit=limit, repo=repo),
-        "lead_memory_retain": lambda content, receipt_path=None, source=None, tags=None, graph_id=None, task_id=None: _wrap(
-            client.memory_retain, content, receipt_path=receipt_path, source=source, tags=tags,
-            graph_id=graph_id, task_id=task_id),
-        "lead_memory_recall": lambda query, limit=8, include_shared=True, banks=None: _wrap(
-            client.memory_recall, query, limit=limit, include_shared=include_shared, banks=banks),
+            client.docs_search, query, limit=limit, repo=repo
+        ),
+        "lead_memory_retain": lambda content, receipt_path=None, source=None, tags=None, graph_id=None, task_id=None: (
+            _wrap(
+                client.memory_retain,
+                content,
+                receipt_path=receipt_path,
+                source=source,
+                tags=tags,
+                graph_id=graph_id,
+                task_id=task_id,
+            )
+        ),
+        "lead_memory_recall": lambda query, limit=8, include_shared=True, banks=None: (
+            _wrap(
+                client.memory_recall,
+                query,
+                limit=limit,
+                include_shared=include_shared,
+                banks=banks,
+            )
+        ),
         "lead_ownership_resolve": lambda paths: _wrap(client.ownership_resolve, paths),
-        "lead_receipt_check": lambda receipt=None, receipt_path=None, bot=None, strict=True: _wrap(
-            client.receipt_check, receipt=receipt, receipt_path=receipt_path, bot=bot, strict=strict),
-        "lead_event_emit": lambda kind, payload=None, graph_id=None, task_id=None: _wrap(
-            client.event_emit, kind, payload=payload, graph_id=graph_id, task_id=task_id),
-        "lead_doctor": lambda action="check", agent_uuid=None, prompt_sha256=None, installed_skills=None: _wrap(
-            client.doctor, action=action, agent_uuid=agent_uuid, prompt_sha256=prompt_sha256,
-            installed_skills=installed_skills),
+        "lead_receipt_check": lambda receipt=None, receipt_path=None, bot=None, strict=True: (
+            _wrap(
+                client.receipt_check,
+                receipt=receipt,
+                receipt_path=receipt_path,
+                bot=bot,
+                strict=strict,
+            )
+        ),
+        "lead_event_emit": lambda kind, payload=None, graph_id=None, task_id=None: (
+            _wrap(
+                client.event_emit,
+                kind,
+                payload=payload,
+                graph_id=graph_id,
+                task_id=task_id,
+            )
+        ),
+        "lead_doctor": lambda action="check", agent_uuid=None, prompt_sha256=None, installed_skills=None: (
+            _wrap(
+                client.doctor,
+                action=action,
+                agent_uuid=agent_uuid,
+                prompt_sha256=prompt_sha256,
+                installed_skills=installed_skills,
+            )
+        ),
         "lead_render_prompt": lambda: _wrap(client.render_prompt),
-        "lead_intake_next": lambda origin=None: _wrap(client.intake_next, origin=origin),
-        "lead_intake_ack": lambda intake_id, status, graph_id=None, message=None, links=None: _wrap(
-            client.intake_ack, intake_id, status, graph_id=graph_id, message=message, links=links),
+        "lead_intake_next": lambda origin=None: _wrap(
+            client.intake_next, origin=origin
+        ),
+        "lead_intake_ack": lambda intake_id, status, graph_id=None, message=None, links=None: (
+            _wrap(
+                client.intake_ack,
+                intake_id,
+                status,
+                graph_id=graph_id,
+                message=message,
+                links=links,
+            )
+        ),
         "lead_graph_register": lambda graph_id, repo, nodes=None: _wrap(
-            client.graph_register, graph_id, repo, nodes=nodes),
-        "lead_graph_state": lambda graph_id, node_id, action, surface=None, note=None: _wrap(
-            client.graph_state, graph_id, node_id, action, surface=surface, note=note),
-        "lead_bus_start": lambda runtime, goal, provider=None, idempotency_key=None: _wrap(
-            client.bus_start, runtime, goal, provider=provider, idempotency_key=idempotency_key),
+            client.graph_register, graph_id, repo, nodes=nodes
+        ),
+        "lead_graph_state": lambda graph_id, node_id, action, surface=None, note=None: (
+            _wrap(
+                client.graph_state,
+                graph_id,
+                node_id,
+                action,
+                surface=surface,
+                note=note,
+            )
+        ),
+        "lead_bus_start": lambda runtime, goal, provider=None, idempotency_key=None: (
+            _wrap(
+                client.bus_start,
+                runtime,
+                goal,
+                provider=provider,
+                idempotency_key=idempotency_key,
+            )
+        ),
         "lead_bus_wait": lambda job_id, timeout_sec=180, poll_sec=2: _wrap(
-            client.bus_wait, job_id, timeout_sec=timeout_sec, poll_sec=poll_sec),
+            client.bus_wait, job_id, timeout_sec=timeout_sec, poll_sec=poll_sec
+        ),
         "lead_roster_status": lambda: _wrap(client.roster_status),
     }
     if set(handlers) != set(LEAD_TOOL_NAMES):
         raise RuntimeError("Lead tool handlers drifted from LEAD_TOOL_NAMES")
-    approvals = {"lead_intake_next", "lead_intake_ack", "lead_graph_register", "lead_graph_state",
-                 "lead_bus_start", "lead_memory_retain", "lead_event_emit", "lead_doctor"}
+    approvals = {
+        "lead_intake_next",
+        "lead_intake_ack",
+        "lead_graph_register",
+        "lead_graph_state",
+        "lead_bus_start",
+        "lead_memory_retain",
+        "lead_event_emit",
+        "lead_doctor",
+    }
     for name in LEAD_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
-        registry.register(name, description, parameters, handlers[name],
-                          requires_approval=(name in approvals))
+        registry.register(
+            name,
+            description,
+            parameters,
+            handlers[name],
+            requires_approval=(name in approvals),
+        )
     return list(LEAD_TOOL_NAMES)
 
 
@@ -773,58 +1101,166 @@ def _string(description: str) -> dict:
 
 
 _SCHEMAS: dict[str, tuple[str, dict]] = {
-    "lead_brief": ("Seat brief: recall, packs, intake, reminders. Read-only.",
-                   _object({"graph_id": _string("Graph id for recall scope."),
-                            "task_id": _string("Task id for recall scope."),
-                            "refresh": {"type": "boolean", "description": "Bypass the cache."}}, [])),
-    "lead_docs_search": ("Search the docs index. Read-only.",
-                         _object({"query": _string("Search text."), "limit": {"type": "integer"},
-                                  "repo": _string("Repo short name.")}, ["query"])),
-    "lead_memory_retain": ("Keep one memory entry. Needs receipt_path or source. Requires approval.",
-                           _object({"content": _string("Entry text."), "receipt_path": _string("Evidence path."),
-                                    "source": _string("Evidence source."), "tags": {"type": "array", "items": {"type": "string"}},
-                                    "graph_id": _string("Graph id."), "task_id": _string("Task id.")}, ["content"])),
-    "lead_memory_recall": ("Recall memory banks matching a query. Read-only.",
-                           _object({"query": _string("Search text."), "limit": {"type": "integer"},
-                                    "include_shared": {"type": "boolean"},
-                                    "banks": {"type": "array", "items": {"type": "string"}}}, ["query"])),
-    "lead_ownership_resolve": ("Resolve path owners from ownership.yaml. Read-only.",
-                               _object({"paths": {"type": "array", "items": {"type": "string"}}}, ["paths"])),
-    "lead_receipt_check": ("Validate a receipt dict or file. Read-only; never raises.",
-                           _object({"receipt": {"type": "object"}, "receipt_path": _string("Path under root."),
-                                    "bot": _string("Bot id."), "strict": {"type": "boolean"}}, [])),
-    "lead_event_emit": ("Append a lead event; forward when configured. Requires approval.",
-                        _object({"kind": _string("Event kind."), "payload": {"type": "object"},
-                                 "graph_id": _string("Graph id."), "task_id": _string("Task id.")}, ["kind"])),
-    "lead_doctor": ("Check, register, or repair seat integrity. Requires approval.",
-                    _object({"action": _string("check, register, install_prompt, or repair."),
-                             "agent_uuid": _string("Seat agent uuid."), "prompt_sha256": _string("Installed prompt sha."),
-                             "installed_skills": {"type": "array", "items": {"type": "string"}}}, [])),
-    "lead_render_prompt": ("Assemble the seat prompt in an exported tree. Read-only.",
-                           _object({}, [])),
-    "lead_intake_next": ("Claim the oldest open work order. Requires approval.",
-                         _object({"origin": _string("Origin filter.")}, [])),
-    "lead_intake_ack": ("Ack one order; notify a GitHub link when present. Requires approval.",
-                        _object({"intake_id": _string("Order id."), "status": _string("accepted, rejected, in_progress, or done."),
-                                 "graph_id": _string("Graph id."), "message": _string("Status note."),
-                                 "links": {"type": "array", "items": {"type": "string"}}}, ["intake_id", "status"])),
-    "lead_graph_register": ("Register a planning graph. Requires approval.",
-                            _object({"graph_id": _string("Graph id."), "repo": _string("Repo."),
-                                     "nodes": {"type": "array", "items": {"type": "object"}}}, ["graph_id", "repo"])),
-    "lead_graph_state": ("Claim, release, or complete a graph node. Requires approval.",
-                         _object({"graph_id": _string("Graph id."), "node_id": _string("Node id."),
-                                  "action": _string("claim, release, or complete."),
-                                  "surface": _string("Surface name."), "note": _string("Completion note.")},
-                                 ["graph_id", "node_id", "action"])),
-    "lead_bus_start": ("Start one agent-bus job. Requires approval.",
-                       _object({"runtime": _string("Runtime name."), "goal": _string("Job goal."),
-                                "provider": _string("Provider."), "idempotency_key": _string("Key.")},
-                               ["runtime", "goal"])),
-    "lead_bus_wait": ("Wait for one bus job. Read-only.",
-                      _object({"job_id": _string("Job id."), "timeout_sec": {"type": "integer"},
-                               "poll_sec": {"type": "integer"}}, ["job_id"])),
-    "lead_roster_status": ("Registered packs, tool counts, intake queue. Read-only.",
-                           _object({}, [])),
+    "lead_brief": (
+        "Seat brief: recall, packs, intake, reminders. Read-only.",
+        _object(
+            {
+                "graph_id": _string("Graph id for recall scope."),
+                "task_id": _string("Task id for recall scope."),
+                "refresh": {"type": "boolean", "description": "Bypass the cache."},
+            },
+            [],
+        ),
+    ),
+    "lead_docs_search": (
+        "Search the docs index. Read-only.",
+        _object(
+            {
+                "query": _string("Search text."),
+                "limit": {"type": "integer"},
+                "repo": _string("Repo short name."),
+            },
+            ["query"],
+        ),
+    ),
+    "lead_memory_retain": (
+        "Keep one memory entry. Needs receipt_path or source. Requires approval.",
+        _object(
+            {
+                "content": _string("Entry text."),
+                "receipt_path": _string("Evidence path."),
+                "source": _string("Evidence source."),
+                "tags": {"type": "array", "items": {"type": "string"}},
+                "graph_id": _string("Graph id."),
+                "task_id": _string("Task id."),
+            },
+            ["content"],
+        ),
+    ),
+    "lead_memory_recall": (
+        "Recall memory banks matching a query. Read-only.",
+        _object(
+            {
+                "query": _string("Search text."),
+                "limit": {"type": "integer"},
+                "include_shared": {"type": "boolean"},
+                "banks": {"type": "array", "items": {"type": "string"}},
+            },
+            ["query"],
+        ),
+    ),
+    "lead_ownership_resolve": (
+        "Resolve path owners from ownership.yaml. Read-only.",
+        _object({"paths": {"type": "array", "items": {"type": "string"}}}, ["paths"]),
+    ),
+    "lead_receipt_check": (
+        "Validate a receipt dict or file. Read-only; never raises.",
+        _object(
+            {
+                "receipt": {"type": "object"},
+                "receipt_path": _string("Path under root."),
+                "bot": _string("Bot id."),
+                "strict": {"type": "boolean"},
+            },
+            [],
+        ),
+    ),
+    "lead_event_emit": (
+        "Append a lead event; forward when configured. Requires approval.",
+        _object(
+            {
+                "kind": _string("Event kind."),
+                "payload": {"type": "object"},
+                "graph_id": _string("Graph id."),
+                "task_id": _string("Task id."),
+            },
+            ["kind"],
+        ),
+    ),
+    "lead_doctor": (
+        "Check, register, or repair seat integrity. Requires approval.",
+        _object(
+            {
+                "action": _string("check, register, install_prompt, or repair."),
+                "agent_uuid": _string("Seat agent uuid."),
+                "prompt_sha256": _string("Installed prompt sha."),
+                "installed_skills": {"type": "array", "items": {"type": "string"}},
+            },
+            [],
+        ),
+    ),
+    "lead_render_prompt": (
+        "Assemble the seat prompt in an exported tree. Read-only.",
+        _object({}, []),
+    ),
+    "lead_intake_next": (
+        "Claim the oldest open work order. Requires approval.",
+        _object({"origin": _string("Origin filter.")}, []),
+    ),
+    "lead_intake_ack": (
+        "Ack one order; notify a GitHub link when present. Requires approval.",
+        _object(
+            {
+                "intake_id": _string("Order id."),
+                "status": _string("accepted, rejected, in_progress, or done."),
+                "graph_id": _string("Graph id."),
+                "message": _string("Status note."),
+                "links": {"type": "array", "items": {"type": "string"}},
+            },
+            ["intake_id", "status"],
+        ),
+    ),
+    "lead_graph_register": (
+        "Register a planning graph. Requires approval.",
+        _object(
+            {
+                "graph_id": _string("Graph id."),
+                "repo": _string("Repo."),
+                "nodes": {"type": "array", "items": {"type": "object"}},
+            },
+            ["graph_id", "repo"],
+        ),
+    ),
+    "lead_graph_state": (
+        "Claim, release, or complete a graph node. Requires approval.",
+        _object(
+            {
+                "graph_id": _string("Graph id."),
+                "node_id": _string("Node id."),
+                "action": _string("claim, release, or complete."),
+                "surface": _string("Surface name."),
+                "note": _string("Completion note."),
+            },
+            ["graph_id", "node_id", "action"],
+        ),
+    ),
+    "lead_bus_start": (
+        "Start one agent-bus job. Requires approval.",
+        _object(
+            {
+                "runtime": _string("Runtime name."),
+                "goal": _string("Job goal."),
+                "provider": _string("Provider."),
+                "idempotency_key": _string("Key."),
+            },
+            ["runtime", "goal"],
+        ),
+    ),
+    "lead_bus_wait": (
+        "Wait for one bus job. Read-only.",
+        _object(
+            {
+                "job_id": _string("Job id."),
+                "timeout_sec": {"type": "integer"},
+                "poll_sec": {"type": "integer"},
+            },
+            ["job_id"],
+        ),
+    ),
+    "lead_roster_status": (
+        "Registered packs, tool counts, intake queue. Read-only.",
+        _object({}, []),
+    ),
 }
 
 
@@ -837,4 +1273,3 @@ __all__ = [
     "RosterStore",
     "register_lead_tools",
 ]
-

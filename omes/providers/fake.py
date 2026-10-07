@@ -13,7 +13,7 @@ class FakeTransport:
     def __init__(self, script: list[dict] | None = None, post_fn: Any = None) -> None:
         self.script = list(script) if script else []
         self.post_fn = post_fn
-        self.calls: list[tuple[str, dict, dict]] = []
+        self.calls: list[tuple[str, str, dict, dict]] = []
 
     def post(self, url: str, headers: dict, body: dict) -> dict:
         self.calls.append(("POST", url, dict(headers), body))

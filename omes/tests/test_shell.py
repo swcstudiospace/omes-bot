@@ -73,9 +73,13 @@ def test_assembled_prompt_points_at_skills_roster_and_prompts():
 
 
 def test_directives_require_receipt_secret_and_approval():
-    text = (ROOT / "prompts" / "_shared" / "core-directives.xml").read_text(encoding="utf-8")
+    text = (ROOT / "prompts" / "_shared" / "core-directives.xml").read_text(
+        encoding="utf-8"
+    )
     root = ET.fromstring(text)
-    found = {node.attrib["id"]: (node.text or "") for node in root.findall(".//directive")}
+    found = {
+        node.attrib["id"]: (node.text or "") for node in root.findall(".//directive")
+    }
     assert "exit code" in found["PD-1"]
     assert "secret" in found["PD-4"].lower()
     assert "approval" in found["PD-5"].lower()
@@ -121,8 +125,12 @@ def test_receipt_with_a_command_passes():
             "task_id": "phase-1",
             "bot": "bot-00-omes",
             "destructive": False,
-            "commands": [{"cmd": "python3 -m pytest omes/tests/test_shell.py", "exit_code": 0}],
-            "claims": [{"claim": "the shell tests passed", "evidence_command_index": 0}],
+            "commands": [
+                {"cmd": "python3 -m pytest omes/tests/test_shell.py", "exit_code": 0}
+            ],
+            "claims": [
+                {"claim": "the shell tests passed", "evidence_command_index": 0}
+            ],
             "unverified": ["live xAI call"],
         }
     )

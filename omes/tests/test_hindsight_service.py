@@ -50,18 +50,24 @@ class _FakeBroker:
         return text
 
 
-def _service(script: list, broker: bool = True) -> tuple[HindsightService, _FakeTransport]:
+def _service(
+    script: list, broker: bool = True
+) -> tuple[HindsightService, _FakeTransport]:
     transport = _FakeTransport(script)
     return (
         HindsightService(
-            "https://hs.local", transport=transport, broker=_FakeBroker() if broker else None
+            "https://hs.local",
+            transport=transport,
+            broker=_FakeBroker() if broker else None,
         ),
         transport,
     )
 
 
 def test_retain_str_body_and_auth() -> None:
-    service, transport = _service([{"success": True, "bank_id": "ultrathink", "items_count": 2}])
+    service, transport = _service(
+        [{"success": True, "bank_id": "ultrathink", "items_count": 2}]
+    )
     result = service.retain(
         ["sky is blue", "grass is green"],
         context="ctx",
@@ -74,8 +80,18 @@ def test_retain_str_body_and_auth() -> None:
     assert request["headers"] == {"Authorization": f"Bearer {TOKEN}"}
     assert request["body"] == {
         "items": [
-            {"content": "sky is blue", "context": "ctx", "document_id": "d1", "tags": ["t1"]},
-            {"content": "grass is green", "context": "ctx", "document_id": "d1", "tags": ["t1"]},
+            {
+                "content": "sky is blue",
+                "context": "ctx",
+                "document_id": "d1",
+                "tags": ["t1"],
+            },
+            {
+                "content": "grass is green",
+                "context": "ctx",
+                "document_id": "d1",
+                "tags": ["t1"],
+            },
         ]
     }
 
@@ -83,7 +99,11 @@ def test_retain_str_body_and_auth() -> None:
 def test_retain_dict_items_and_refusal() -> None:
     service, transport = _service([{"success": True, "bank_id": "u", "items_count": 1}])
     assert service.retain([{"content": "x", "tags": ["k"]}]) == {"ok": True, "count": 1}
-    assert transport.requests[0]["body"] == {"items": [{"content": "x", "tags": ["k"]}, ]}
+    assert transport.requests[0]["body"] == {
+        "items": [
+            {"content": "x", "tags": ["k"]},
+        ]
+    }
     refusing, _ = _service([{"success": False, "bank_id": "u", "items_count": 0}])
     result = refusing.retain(["x"])
     assert result["ok"] is False and "ultrathink" in result["reason"]
@@ -94,7 +114,8 @@ def test_retain_blanks_skipped_without_request() -> None:
     assert service.retain(["", "   "]) == {"ok": True, "count": 0}
     assert transport.requests == []
     with pytest.raises(ValueError):
-        service.retain("nope")
+        # Intentional misuse: a bare string is not a list of items.
+        service.retain("nope")  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         service.retain([{"content": "  "}])
     with pytest.raises(ValueError):
@@ -207,7 +228,8 @@ def test_bridge_falls_back_to_local(tmp_path) -> None:
     bridge, _ = _bridge([ProviderError("down")] * 4, tmp_path)
     assert bridge.retain("local grass fact") == {"ok": True}
     assert bridge.recall("local") == ["local sky fact", "local grass fact"]
-    assert bridge.retain_batch(["a", "", 42, "b"]) == {"ok": True, "count": 2}
+    # Intentional misuse: blanks and non-strings are skipped, not sent.
+    assert bridge.retain_batch(["a", "", 42, "b"]) == {"ok": True, "count": 2}  # type: ignore[list-item]
     assert bridge.reflect("why?") == ""
     assert bridge.search_pages("sky") == []
 
@@ -216,7 +238,17 @@ def test_bridge_batch_service_path_skips_blanks(tmp_path) -> None:
     bridge, transport = _bridge(
         [{"success": True, "bank_id": "u", "items_count": 2}], tmp_path
     )
-    assert bridge.retain_batch(["a", "", "b", 7]) == {"ok": True, "count": 2}
-    assert transport.requests[0]["body"] == {"items": [{"content": "a"}, {"content": "b"}]}
-    assert bridge.retain("  ") == {"ok": False, "reason": "content must be a non-empty string"}
-    assert bridge.retain_batch("nope") == {"ok": False, "reason": "items must be a list of strings"}
+    # Intentional misuse: blanks and non-strings are skipped, not sent.
+    assert bridge.retain_batch(["a", "", "b", 7]) == {"ok": True, "count": 2}  # type: ignore[list-item]
+    assert transport.requests[0]["body"] == {
+        "items": [{"content": "a"}, {"content": "b"}]
+    }
+    assert bridge.retain("  ") == {
+        "ok": False,
+        "reason": "content must be a non-empty string",
+    }
+    # Intentional misuse: a bare string is not a list of items.
+    assert bridge.retain_batch("nope") == {  # type: ignore[arg-type]
+        "ok": False,
+        "reason": "items must be a list of strings",
+    }

@@ -37,7 +37,9 @@ BANNED_IMPORT_TOPS = frozenset(
 )
 
 ENDPOINT_PATTERNS = (
-    re.compile(r"(?i)(greptime|timescale|dragonfly)[a-z0-9.-]*\.(railway\.internal|up\.railway\.app)"),
+    re.compile(
+        r"(?i)(greptime|timescale|dragonfly)[a-z0-9.-]*\.(railway\.internal|up\.railway\.app)"
+    ),
     re.compile(r"(?i)\bredis://"),
     re.compile(r":6379\b"),
     re.compile(r":4000\b"),

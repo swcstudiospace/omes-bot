@@ -13,7 +13,7 @@ from omes.tools.registry import ToolRegistry
 OMES = Path(__file__).resolve().parents[1]
 ROSTER = OMES / "contracts" / "tool-rosters" / "omes.yaml"
 
-_LSP_FIXTURE = '''\
+_LSP_FIXTURE = """\
 import json
 import sys
 
@@ -80,9 +80,9 @@ while True:
         send({"jsonrpc": "2.0", "id": message["id"], "result": None})
     elif method == "exit":
         break
-'''
+"""
 
-_DAP_FIXTURE = '''\
+_DAP_FIXTURE = """\
 import json
 import sys
 
@@ -174,7 +174,7 @@ while True:
     elif command == "disconnect":
         respond(message)
         break
-'''
+"""
 
 
 def _load(payload: str) -> dict:
@@ -203,9 +203,7 @@ def test_lsp_session_returns_a_diagnostic_for_the_known_error(tmp_path: Path):
     command = [sys.executable, str(root / "lsp_server.py")]
 
     found = _load(
-        registry.dispatch(
-            "lsp_diagnostics", {"command": command, "path": "broken.py"}
-        )
+        registry.dispatch("lsp_diagnostics", {"command": command, "path": "broken.py"})
     )
 
     assert "error" not in found

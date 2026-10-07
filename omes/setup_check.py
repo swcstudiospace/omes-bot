@@ -11,12 +11,11 @@ from __future__ import annotations
 import argparse
 import asyncio
 import os
-import sys
 from pathlib import Path
 from typing import Any
 
 from omes.assemble import load_roster, template_gaps
-from omes.mcp_server import build_server, default_registry, roster_names
+from omes.mcp_server import default_registry, roster_names
 
 
 def check_roster(root: Path) -> tuple[bool, str]:
@@ -67,7 +66,7 @@ def check_registry(root: Path) -> tuple[bool, str]:
     home = Path(os.path.expanduser("~"))
     try:
         registry = default_registry(root, home)
-    except Exception as exc:  # noqa: BLE001 - report, don't crash
+    except Exception as exc:
         return False, f"registry build failed: {type(exc).__name__}: {exc}"
     from omes.mcp_server import list_tools_handler
 
@@ -84,7 +83,10 @@ def check_ultrathink(root: Path) -> tuple[bool | None, str]:
     """Ultrathink checkout configured, or clearly skipped."""
     configured = os.environ.get("ULTRATHINK_ROOT", "")
     if not configured:
-        return None, "ultrathink root not set (ULTRATHINK_ROOT) — bridge tools stay unconfigured"
+        return (
+            None,
+            "ultrathink root not set (ULTRATHINK_ROOT) — bridge tools stay unconfigured",
+        )
     if not Path(configured, "bin", "ultrathink-ship").is_file():
         return False, f"ULTRATHINK_ROOT={configured} has no bin/ultrathink-ship"
     return True, f"ultrathink checkout ok ({configured})"
@@ -117,8 +119,11 @@ def check_substrate(root: Path) -> tuple[bool | None, str]:
             return False, f"{name} is not a URL"
         if parts.scheme not in ("http", "https") or not parts.hostname:
             return False, f"{name} is not an http(s) URL"
-    present = [name for name in _SUBSTRATE_URL_VARS + _SUBSTRATE_TOKEN_VARS
-               if os.environ.get(name, "")]
+    present = [
+        name
+        for name in _SUBSTRATE_URL_VARS + _SUBSTRATE_TOKEN_VARS
+        if os.environ.get(name, "")
+    ]
     if not present:
         return None, "substrate env not set — brief/emit stay local"
     return True, f"substrate env set: {', '.join(present)} (values never shown)"
@@ -140,11 +145,13 @@ def run_checks(root: Path) -> dict[str, Any]:
     for name, fn in CHECKS:
         try:
             ok, detail = fn(root)
-        except Exception as exc:  # noqa: BLE001 - one bad check must not hide the rest
+        except Exception as exc:
             ok, detail = False, f"{type(exc).__name__}: {exc}"
         results[name] = {"ok": ok, "detail": detail}
-    results["passed"] = all(item["ok"] is not False for item in
-                            (v for k, v in results.items() if k != "passed"))
+    results["passed"] = all(
+        item["ok"] is not False
+        for item in (v for k, v in results.items() if k != "passed")
+    )
     return results
 
 
@@ -155,7 +162,9 @@ def main(argv: list[str] | None = None) -> int:
     report = run_checks(args.root.resolve())
     for name, _ in CHECKS:
         item = report[name]
-        mark = "ok" if item["ok"] is True else ("skip" if item["ok"] is None else "FAIL")
+        mark = (
+            "ok" if item["ok"] is True else ("skip" if item["ok"] is None else "FAIL")
+        )
         print(f"[{mark}] {name}: {item['detail']}")
     return 0 if report["passed"] else 1
 

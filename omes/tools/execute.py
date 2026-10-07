@@ -7,6 +7,7 @@ the child is killed.
 
 from __future__ import annotations
 
+import contextlib
 import os
 import signal
 import subprocess
@@ -25,7 +26,11 @@ def execute_code(code: str, *, home: str | Path, timeout: float = 5) -> dict[str
     """
     if not isinstance(code, str) or code.strip() == "":
         return {"error": "code must be non-empty Python source"}
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or timeout <= 0
+    ):
         return {"error": "timeout must be a positive number of seconds"}
     root = Path(home)
     if not root.is_dir():
@@ -81,17 +86,13 @@ def _kill(proc: subprocess.Popen[bytes]) -> tuple[bytes, bytes, int]:
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
-            try:
+            with contextlib.suppress(OSError):
                 proc.kill()
-            except OSError:
-                pass
     try:
         stdout, stderr = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:
-        try:
+        with contextlib.suppress(OSError):
             proc.kill()
-        except OSError:
-            pass
         stdout, stderr = proc.communicate(timeout=5)
     code = proc.returncode
     if code in (None, 0):

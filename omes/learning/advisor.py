@@ -41,9 +41,7 @@ def format_advisories(notes: list[dict]) -> str:
         severity = entry.get("severity", "nit")
         _check_severity(severity)
         advisor = entry.get("advisor")
-        if advisor is not None and (
-            not isinstance(advisor, str) or advisor == ""
-        ):
+        if advisor is not None and (not isinstance(advisor, str) or advisor == ""):
             raise ValueError("advisor must be a non-empty string")
         attributes = f' severity="{_escape_attribute(severity)}"'
         if advisor is not None:

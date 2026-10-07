@@ -8,8 +8,6 @@ an expansion.
 
 from __future__ import annotations
 
-from typing import Any
-
 
 def diff_policy(old: dict, new: dict) -> dict:
     """Compare two parsed policy dicts. Missing keys tolerate absence."""

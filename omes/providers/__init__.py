@@ -13,12 +13,12 @@ from omes.providers.openai import OpenAIProvider
 
 __all__ = [
     "AnthropicProvider",
+    "FakeTransport",
     "GeminiProvider",
     "GrokProvider",
+    "HttpTransport",
     "OllamaProvider",
     "OpenAIProvider",
-    "FakeTransport",
-    "HttpTransport",
     "Provider",
     "ProviderError",
     "ProviderModel",

@@ -75,8 +75,8 @@ It must never be committed. Remote state with encryption.
 - CI logs — mask them, and check that the masking works
 
 ```python
-API_KEY = os.environ["API_KEY"]                    # fails loudly if unset
-API_KEY = os.environ.get("API_KEY", "sk-live-...") # committed secret with a fallback
+API_KEY = os.environ["API_KEY"]  # fails loudly if unset
+API_KEY = os.environ.get("API_KEY", "sk-live-...")  # committed secret with a fallback
 ```
 
 Fail loudly on a missing secret. A silent fallback to a default means the application runs with
@@ -132,7 +132,9 @@ The scanner is a net, not a guarantee — a review still looks.
 **False positives:** mark the line and say why.
 
 ```python
-EXAMPLE_KEY = "sk_test_4eC39H..."  # pragma: allowlist secret — Stripe's published test key
+EXAMPLE_KEY = (
+    "sk_test_4eC39H..."  # pragma: allowlist secret — Stripe's published test key
+)
 ```
 
 An allowlist entry with a reason is reviewable. A disabled scanner is not — and PD-3 covers the

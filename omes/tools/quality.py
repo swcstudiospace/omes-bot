@@ -9,10 +9,12 @@ the command runner, and VCS are injected seams; tests use fakes only.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import subprocess
 import time
-from dataclasses import dataclass, field
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -31,21 +33,41 @@ QUALITY_TOOL_NAMES = (
     "qua_secret_scan",
 )
 
-LOCKFILES = ("package-lock.json", "pnpm-lock.yaml", "yarn.lock", "bun.lock", "uv.lock",
-             "poetry.lock", "Cargo.lock", "Package.resolved", "gradle.lockfile",
-             "requirements.txt", "deno.lock")
-MANIFESTS = ("package.json", "pyproject.toml", "Cargo.toml", "Package.swift",
-             "build.gradle.kts", "build.gradle", "deno.json")
+LOCKFILES = (
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock",
+    "uv.lock",
+    "poetry.lock",
+    "Cargo.lock",
+    "Package.resolved",
+    "gradle.lockfile",
+    "requirements.txt",
+    "deno.lock",
+)
+MANIFESTS = (
+    "package.json",
+    "pyproject.toml",
+    "Cargo.toml",
+    "Package.swift",
+    "build.gradle.kts",
+    "build.gradle",
+    "deno.json",
+)
 
 
 def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
 
 
-def _default_run(argv: list[str], timeout: int = 120,
-                 cwd: str | None = None) -> dict[str, Any]:
+def _default_run(
+    argv: list[str], timeout: int = 120, cwd: str | None = None
+) -> dict[str, Any]:
     try:
-        run = subprocess.run(argv, capture_output=True, text=True, timeout=timeout, cwd=cwd)
+        run = subprocess.run(
+            argv, capture_output=True, text=True, timeout=timeout, cwd=cwd
+        )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"exit_code": 127, "stdout": "", "stderr": str(exc)}
     return {"exit_code": run.returncode, "stdout": run.stdout, "stderr": run.stderr}
@@ -53,13 +75,23 @@ def _default_run(argv: list[str], timeout: int = 120,
 
 def _git_vcs(root: str):
     def diff_names(base: str, head: str) -> list[str]:
-        run = subprocess.run(["git", "diff", "--name-only", f"{base}...{head}"], cwd=root,
-                             capture_output=True, text=True, timeout=30)
+        run = subprocess.run(
+            ["git", "diff", "--name-only", f"{base}...{head}"],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
         return run.stdout.splitlines() if run.returncode == 0 else []
 
     def diff(base: str, head: str, paths: list[str]) -> str:
-        run = subprocess.run(["git", "diff", f"{base}...{head}", "--", *paths], cwd=root,
-                             capture_output=True, text=True, timeout=30)
+        run = subprocess.run(
+            ["git", "diff", f"{base}...{head}", "--", *paths],
+            cwd=root,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
         return run.stdout if run.returncode == 0 else ""
 
     return {"diff_names": diff_names, "diff": diff}
@@ -125,22 +157,36 @@ class QualityClient:
         gates = {}
         for name, (argv, timeout) in suites.items():
             try:
-                result = run(argv, timeout, root) if _takes_cwd(run) else run(argv, timeout)
+                result = (
+                    run(argv, timeout, root) if _takes_cwd(run) else run(argv, timeout)
+                )
             except TypeError:
                 result = run(argv, timeout)
             if not isinstance(result, dict):
                 result = {"exit_code": 127, "stdout": "", "stderr": "no object"}
-            gates[name] = {"exit_code": result.get("exit_code", 127),
-                           "output": ((result.get("stdout") or "") + (result.get("stderr") or ""))[-2500:]}
+            gates[name] = {
+                "exit_code": result.get("exit_code", 127),
+                "output": ((result.get("stdout") or "") + (result.get("stderr") or ""))[
+                    -2500:
+                ],
+            }
         return {"ok": all(g["exit_code"] == 0 for g in gates.values()), "gates": gates}
 
-    def greptile_review(self, action: str, pr_number: int | None = None,
-                        review_id: str | None = None, repo: str | None = None) -> dict[str, Any]:
+    def greptile_review(
+        self,
+        action: str,
+        pr_number: int | None = None,
+        review_id: str | None = None,
+        repo: str | None = None,
+    ) -> dict[str, Any]:
         """Trigger, get, or list comments of a Greptile review."""
         if action not in ("trigger", "get", "comments"):
             raise ValueError("action must be trigger, get, or comments")
         if self.ctx.greptile is None:
-            return _error("not_configured", "Greptile is not configured; merge claim stays blocked")
+            return _error(
+                "not_configured",
+                "Greptile is not configured; merge claim stays blocked",
+            )
         target = repo or self.ctx.repo_slug
         if action == "trigger":
             if not isinstance(pr_number, int) or isinstance(pr_number, bool):
@@ -158,12 +204,27 @@ class QualityClient:
             result = self.ctx.greptile.comments(target, pr_number)
             note = "comments with addressed=false block the merge claim"
         if not isinstance(result, dict) or result.get("error"):
-            reason = result.get("reason", "greptile failed") if isinstance(result, dict) else "greptile failed"
-            code = result.get("error", "upstream_error") if isinstance(result, dict) else "upstream_error"
+            reason = (
+                result.get("reason", "greptile failed")
+                if isinstance(result, dict)
+                else "greptile failed"
+            )
+            code = (
+                result.get("error", "upstream_error")
+                if isinstance(result, dict)
+                else "upstream_error"
+            )
             return _error(str(code), str(reason))
-        return {"ok": True, "action": action, "result": result.get("body"), "note": note}
+        return {
+            "ok": True,
+            "action": action,
+            "result": result.get("body"),
+            "note": note,
+        }
 
-    def receipt_approve(self, receipt_path: str, note: str | None = None) -> dict[str, Any]:
+    def receipt_approve(
+        self, receipt_path: str, note: str | None = None
+    ) -> dict[str, Any]:
         """Validate, stamp, and write one receipt. Self-approval refused. No push."""
         if not _repo_relative(receipt_path):
             return _error("invalid_args", "receipt_path must be repo-relative")
@@ -181,56 +242,89 @@ class QualityClient:
         try:
             validate_receipt(receipt)
         except ReceiptError as exc:
-            return _error("gate_failed", "the receipt does not pass before stamping",
-                          problems=str(exc).splitlines())
+            return _error(
+                "gate_failed",
+                "the receipt does not pass before stamping",
+                problems=str(exc).splitlines(),
+            )
         receipt["approved_by"] = self.ctx.bot_id
         receipt["approved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         if note:
             receipt["approval_note"] = redact_text(note)
         target.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
-        return {"ok": True, "receipt_path": receipt_path, "approved_by": self.ctx.bot_id,
-                "pushed": False, "reason": "Omes never pushes; the operator commits this stamp"}
+        return {
+            "ok": True,
+            "receipt_path": receipt_path,
+            "approved_by": self.ctx.bot_id,
+            "pushed": False,
+            "reason": "Omes never pushes; the operator commits this stamp",
+        }
 
-    def waiver_record(self, pr_number: int, comment_ids: list[str], reason: str,
-                      branch: str = "main") -> dict[str, Any]:
+    def waiver_record(
+        self, pr_number: int, comment_ids: list[str], reason: str, branch: str = "main"
+    ) -> dict[str, Any]:
         """Write a Greptile waiver record under root. No push."""
         if isinstance(pr_number, bool) or not isinstance(pr_number, int):
             raise ValueError("pr_number must be an integer")
         if not isinstance(comment_ids, list) or not comment_ids:
             raise ValueError("comment_ids must be a non-empty list")
-        name = f".receipts/quality/greptile-waiver-pr{pr_number}-{int(time.time())}.json"
+        name = (
+            f".receipts/quality/greptile-waiver-pr{pr_number}-{int(time.time())}.json"
+        )
         waiver = {
-            "task_id": f"greptile-waiver-pr{pr_number}", "bot": self.ctx.bot_id,
-            "pr_number": pr_number, "waived_comment_ids": list(comment_ids),
-            "reason": redact_text(reason), "branch": branch,
-            "unverified": ["waiver recorded locally; Greptile status at the branch tip was not re-fetched here"],
+            "task_id": f"greptile-waiver-pr{pr_number}",
+            "bot": self.ctx.bot_id,
+            "pr_number": pr_number,
+            "waived_comment_ids": list(comment_ids),
+            "reason": redact_text(reason),
+            "branch": branch,
+            "unverified": [
+                "waiver recorded locally; Greptile status at the branch tip was not re-fetched here"
+            ],
             "approved_by": "",
         }
         target = Path(self.ctx.root) / name
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(json.dumps(waiver, indent=2) + "\n", encoding="utf-8")
-        return {"ok": True, "receipt_path": name, "pushed": False,
-                "reason": "Omes never pushes; the operator commits this waiver"}
+        return {
+            "ok": True,
+            "receipt_path": name,
+            "pushed": False,
+            "reason": "Omes never pushes; the operator commits this waiver",
+        }
 
     def contract_ack(self, change_id: str, ack: bool, note: str) -> dict[str, Any]:
         """Record one consumer ack. Rejections must name the blocker."""
         if not isinstance(change_id, str) or change_id == "":
             raise ValueError("change_id must be a non-empty string")
         if not ack and len(note or "") < 20:
-            return _error("invalid_args", "a rejection must name the blocker (note of at least 20 characters)")
+            return _error(
+                "invalid_args",
+                "a rejection must name the blocker (note of at least 20 characters)",
+            )
         if self.ctx.acks is None:
             return _error("not_configured", "ack store is missing")
-        entry = self.ctx.acks.record(change_id, self.ctx.bot_id, bool(ack), redact_text(note or ""))
-        return {"ok": True, "change_id": change_id, "acknowledgements": entry["acknowledgements"]}
+        entry = self.ctx.acks.record(
+            change_id, self.ctx.bot_id, bool(ack), redact_text(note or "")
+        )
+        return {
+            "ok": True,
+            "change_id": change_id,
+            "acknowledgements": entry["acknowledgements"],
+        }
 
     def contract_ack_status(self, change_id: str) -> dict[str, Any]:
         """Ack coverage for one change against its required consumers."""
         if not isinstance(change_id, str) or change_id == "":
             raise ValueError("change_id must be a non-empty string")
-        entry = (self.ctx.acks.acks.get(change_id) if self.ctx.acks else None) or {"acknowledgements": []}
+        entry = (self.ctx.acks.acks.get(change_id) if self.ctx.acks else None) or {
+            "acknowledgements": []
+        }
         required: list[str] = []
         for suffix in (".yaml", ".yml", ".json"):
-            proposal = Path(self.ctx.root) / "contracts" / "changes" / f"{change_id}{suffix}"
+            proposal = (
+                Path(self.ctx.root) / "contracts" / "changes" / f"{change_id}{suffix}"
+            )
             if proposal.is_file():
                 try:
                     text = proposal.read_text(encoding="utf-8")
@@ -238,7 +332,9 @@ class QualityClient:
                     break
                 if suffix == ".json":
                     try:
-                        required = list((json.loads(text) or {}).get("consumers_required") or [])
+                        required = list(
+                            (json.loads(text) or {}).get("consumers_required") or []
+                        )
                     except ValueError:
                         required = []
                 else:
@@ -246,9 +342,14 @@ class QualityClient:
                 break
         acked = {a["bot"] for a in entry["acknowledgements"] if a.get("ack")}
         rejected = [a for a in entry["acknowledgements"] if not a.get("ack")]
-        return {"change_id": change_id, "consumers_required": required, "acknowledged": sorted(acked),
-                "missing": sorted(set(required) - acked), "rejected": rejected,
-                "complete": bool(required) and set(required) <= acked and not rejected}
+        return {
+            "change_id": change_id,
+            "consumers_required": required,
+            "acknowledged": sorted(acked),
+            "missing": sorted(set(required) - acked),
+            "rejected": rejected,
+            "complete": bool(required) and set(required) <= acked and not rejected,
+        }
 
     def supply_chain_check(self, base_ref: str, head_ref: str) -> dict[str, Any]:
         """Lockfile/manifest changes with unpinned and git-dependency flags."""
@@ -256,23 +357,45 @@ class QualityClient:
         names = vcs["diff_names"](base_ref, head_ref)
         lockfiles = [n for n in names if n.split("/")[-1] in LOCKFILES]
         manifests = [n for n in names if n.split("/")[-1] in MANIFESTS]
-        diff = vcs["diff"](base_ref, head_ref, lockfiles + manifests) if (lockfiles or manifests) else ""
-        added = [line[1:] for line in diff.splitlines() if line.startswith("+") and not line.startswith("+++")]
-        unpinned = [line.strip() for line in added
-                    if any(tok in line for tok in ('"latest"', "@latest", ": latest", "*"))][:20]
-        git_deps = [line.strip() for line in added if "git+" in line or "github:" in line][:20]
-        return {"lockfiles_changed": lockfiles, "manifests_changed": manifests, "unpinned": unpinned,
-                "git_dependencies": git_deps,
-                "verdict": "review" if (lockfiles or manifests) else "no dependency change",
-                "unverified": ["licence and CVE lookup is not wired; run the supply-chain skill's audit commands"]}
+        diff = (
+            vcs["diff"](base_ref, head_ref, lockfiles + manifests)
+            if (lockfiles or manifests)
+            else ""
+        )
+        added = [
+            line[1:]
+            for line in diff.splitlines()
+            if line.startswith("+") and not line.startswith("+++")
+        ]
+        unpinned = [
+            line.strip()
+            for line in added
+            if any(tok in line for tok in ('"latest"', "@latest", ": latest", "*"))
+        ][:20]
+        git_deps = [
+            line.strip() for line in added if "git+" in line or "github:" in line
+        ][:20]
+        return {
+            "lockfiles_changed": lockfiles,
+            "manifests_changed": manifests,
+            "unpinned": unpinned,
+            "git_dependencies": git_deps,
+            "verdict": "review" if (lockfiles or manifests) else "no dependency change",
+            "unverified": [
+                "licence and CVE lookup is not wired; run the supply-chain skill's audit commands"
+            ],
+        }
 
     def secret_scan(self, paths: list[str] | None = None) -> dict[str, Any]:
         """Secret-shape scan of given files (default: tree minus generated dirs, max 2000)."""
         root = Path(self.ctx.root)
         truncated = False
         if paths is None:
-            candidates = [p for p in sorted(root.rglob("*"))
-                          if p.is_file() and not _generated(p.relative_to(root))]
+            candidates = [
+                p
+                for p in sorted(root.rglob("*"))
+                if p.is_file() and not _generated(p.relative_to(root))
+            ]
             truncated = len(candidates) > 2000
             targets = [str(p.relative_to(root)) for p in candidates[:2000]]
         else:
@@ -292,12 +415,18 @@ class QualityClient:
                         break
             if len(findings) >= 50:
                 break
-        outcome: dict[str, Any] = {"ok": not findings and not truncated, "gate": "G-3",
-                                         "files": len(targets), "findings": findings,
-                                         "truncated": truncated}
+        outcome: dict[str, Any] = {
+            "ok": not findings and not truncated,
+            "gate": "G-3",
+            "files": len(targets),
+            "findings": findings,
+            "truncated": truncated,
+        }
         if truncated:
-            outcome["note"] = ("default scan skips generated dirs and stops at 2000 files; "
-                               "pass paths to cover the rest")
+            outcome["note"] = (
+                "default scan skips generated dirs and stops at 2000 files; "
+                "pass paths to cover the rest"
+            )
         return outcome
 
 
@@ -321,10 +450,8 @@ def _yaml_consumers(text: str) -> list[str]:
             break
         item = stripped[2:].strip()
         if len(item) >= 2 and item.startswith('"') and item.endswith('"'):
-            try:
+            with contextlib.suppress(ValueError):
                 item = json.loads(item)
-            except ValueError:
-                pass
         consumers.append(item)
     return consumers
 
@@ -338,16 +465,31 @@ def _takes_cwd(run: Any) -> bool:
         return False
 
 
-_GENERATED_PARTS = frozenset({
-    ".git", ".hg", ".svn", ".venv", "venv", "node_modules", "__pycache__",
-    ".tox", ".mypy_cache", ".pytest_cache", "dist", "build", ".eggs",
-})
+_GENERATED_PARTS = frozenset(
+    {
+        ".git",
+        ".hg",
+        ".svn",
+        ".venv",
+        "venv",
+        "node_modules",
+        "__pycache__",
+        ".tox",
+        ".mypy_cache",
+        ".pytest_cache",
+        "dist",
+        "build",
+        ".eggs",
+    }
+)
 
 
 def _generated(relative: Path) -> bool:
     """True when a repo-relative path lives under a generated directory."""
-    return any(part in _GENERATED_PARTS or part.endswith(".egg-info")
-               for part in relative.parts)
+    return any(
+        part in _GENERATED_PARTS or part.endswith(".egg-info")
+        for part in relative.parts
+    )
 
 
 def _repo_relative(path: Any) -> bool:
@@ -366,26 +508,51 @@ def register_quality_tools(registry: ToolRegistry, client: QualityClient) -> lis
         except (ValueError, TypeError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "qua_gates_run": lambda: _wrap(client.gates_run),
-        "qua_greptile_review": lambda action, pr_number=None, review_id=None, repo=None: _wrap(
-            client.greptile_review, action, pr_number=pr_number, review_id=review_id, repo=repo),
+        "qua_greptile_review": lambda action, pr_number=None, review_id=None, repo=None: (
+            _wrap(
+                client.greptile_review,
+                action,
+                pr_number=pr_number,
+                review_id=review_id,
+                repo=repo,
+            )
+        ),
         "qua_receipt_approve": lambda receipt_path, note=None: _wrap(
-            client.receipt_approve, receipt_path, note=note),
-        "qua_waiver_record": lambda pr_number, comment_ids, reason, branch="main": _wrap(
-            client.waiver_record, pr_number, comment_ids, reason, branch=branch),
-        "qua_contract_ack": lambda change_id, ack, note: _wrap(client.contract_ack, change_id, ack, note),
-        "qua_contract_ack_status": lambda change_id: _wrap(client.contract_ack_status, change_id),
-        "qua_supply_chain_check": lambda base_ref, head_ref: _wrap(client.supply_chain_check, base_ref, head_ref),
+            client.receipt_approve, receipt_path, note=note
+        ),
+        "qua_waiver_record": lambda pr_number, comment_ids, reason, branch="main": (
+            _wrap(client.waiver_record, pr_number, comment_ids, reason, branch=branch)
+        ),
+        "qua_contract_ack": lambda change_id, ack, note: _wrap(
+            client.contract_ack, change_id, ack, note
+        ),
+        "qua_contract_ack_status": lambda change_id: _wrap(
+            client.contract_ack_status, change_id
+        ),
+        "qua_supply_chain_check": lambda base_ref, head_ref: _wrap(
+            client.supply_chain_check, base_ref, head_ref
+        ),
         "qua_secret_scan": lambda paths=None: _wrap(client.secret_scan, paths),
     }
     if set(handlers) != set(QUALITY_TOOL_NAMES):
         raise RuntimeError("Quality tool handlers drifted from QUALITY_TOOL_NAMES")
-    approvals = {"qua_greptile_review", "qua_receipt_approve", "qua_waiver_record", "qua_contract_ack"}
+    approvals = {
+        "qua_greptile_review",
+        "qua_receipt_approve",
+        "qua_waiver_record",
+        "qua_contract_ack",
+    }
     for name in QUALITY_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
-        registry.register(name, description, parameters, handlers[name],
-                          requires_approval=(name in approvals))
+        registry.register(
+            name,
+            description,
+            parameters,
+            handlers[name],
+            requires_approval=(name in approvals),
+        )
     return list(QUALITY_TOOL_NAMES)
 
 
@@ -399,30 +566,73 @@ def _string(description: str) -> dict:
 
 _SCHEMAS: dict[str, tuple[str, dict]] = {
     "qua_gates_run": ("Run the Omes gates in the tree. Read-only.", _object({}, [])),
-    "qua_greptile_review": ("Trigger, get, or list Greptile review comments. Requires approval.",
-                            _object({"action": _string("trigger, get, or comments."),
-                                     "pr_number": {"type": "integer"}, "review_id": _string("Review id."),
-                                     "repo": _string("Repo slug.")}, ["action"])),
-    "qua_receipt_approve": ("Validate, stamp, and write one receipt. Requires approval.",
-                            _object({"receipt_path": _string("Repo-relative path."), "note": _string("Approval note.")},
-                                    ["receipt_path"])),
-    "qua_waiver_record": ("Write a Greptile waiver record. Requires approval.",
-                          _object({"pr_number": {"type": "integer"},
-                                   "comment_ids": {"type": "array", "items": {"type": "string"}},
-                                   "reason": _string("Waiver reason."), "branch": _string("Branch.")},
-                                  ["pr_number", "comment_ids", "reason"])),
-    "qua_contract_ack": ("Record one consumer ack. Requires approval.",
-                         _object({"change_id": _string("Change id."), "ack": {"type": "boolean"},
-                                  "note": _string("Note (20+ chars when rejecting).")},
-                                 ["change_id", "ack", "note"])),
-    "qua_contract_ack_status": ("Ack coverage for one change. Read-only.",
-                                _object({"change_id": _string("Change id.")}, ["change_id"])),
-    "qua_supply_chain_check": ("Lockfile/manifest change flags. Read-only.",
-                               _object({"base_ref": _string("Base ref."), "head_ref": _string("Head ref.")},
-                                       ["base_ref", "head_ref"])),
-    "qua_secret_scan": ("Secret-shape scan of files. Read-only.",
-                        _object({"paths": {"type": "array", "items": {"type": "string"}}}, [])),
+    "qua_greptile_review": (
+        "Trigger, get, or list Greptile review comments. Requires approval.",
+        _object(
+            {
+                "action": _string("trigger, get, or comments."),
+                "pr_number": {"type": "integer"},
+                "review_id": _string("Review id."),
+                "repo": _string("Repo slug."),
+            },
+            ["action"],
+        ),
+    ),
+    "qua_receipt_approve": (
+        "Validate, stamp, and write one receipt. Requires approval.",
+        _object(
+            {
+                "receipt_path": _string("Repo-relative path."),
+                "note": _string("Approval note."),
+            },
+            ["receipt_path"],
+        ),
+    ),
+    "qua_waiver_record": (
+        "Write a Greptile waiver record. Requires approval.",
+        _object(
+            {
+                "pr_number": {"type": "integer"},
+                "comment_ids": {"type": "array", "items": {"type": "string"}},
+                "reason": _string("Waiver reason."),
+                "branch": _string("Branch."),
+            },
+            ["pr_number", "comment_ids", "reason"],
+        ),
+    ),
+    "qua_contract_ack": (
+        "Record one consumer ack. Requires approval.",
+        _object(
+            {
+                "change_id": _string("Change id."),
+                "ack": {"type": "boolean"},
+                "note": _string("Note (20+ chars when rejecting)."),
+            },
+            ["change_id", "ack", "note"],
+        ),
+    ),
+    "qua_contract_ack_status": (
+        "Ack coverage for one change. Read-only.",
+        _object({"change_id": _string("Change id.")}, ["change_id"]),
+    ),
+    "qua_supply_chain_check": (
+        "Lockfile/manifest change flags. Read-only.",
+        _object(
+            {"base_ref": _string("Base ref."), "head_ref": _string("Head ref.")},
+            ["base_ref", "head_ref"],
+        ),
+    ),
+    "qua_secret_scan": (
+        "Secret-shape scan of files. Read-only.",
+        _object({"paths": {"type": "array", "items": {"type": "string"}}}, []),
+    ),
 }
 
 
-__all__ = ["QUALITY_TOOL_NAMES", "AckStore", "QualityClient", "QualityContext", "register_quality_tools"]
+__all__ = [
+    "QUALITY_TOOL_NAMES",
+    "AckStore",
+    "QualityClient",
+    "QualityContext",
+    "register_quality_tools",
+]

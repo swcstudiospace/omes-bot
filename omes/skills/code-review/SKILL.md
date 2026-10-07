@@ -71,7 +71,7 @@ that tested everything. An Android change with no OS-version caveats deserves a 
 ```python
 def test_rejects_invalid():
     with pytest.raises(ValueError):
-        validate(bad_input)   # also passes if validate() has a typo and raises NameError
+        validate(bad_input)  # also passes if validate() has a typo and raises NameError
 ```
 
 ### §3 Security

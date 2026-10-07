@@ -10,23 +10,23 @@ from pathlib import Path
 from omes.tools.clarify import ClarifyLog, clarify
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES
-from omes.tools.ide import IDE_TOOL_NAMES
-from omes.tools.x import X_TOOL_NAMES
-from omes.tools.telegram import TELEGRAM_TOOL_NAMES
 from omes.tools.discord import DISCORD_TOOL_NAMES
-from omes.tools.lead import LEAD_TOOL_NAMES
-from omes.tools.systems import SYS_TOOL_NAMES
-from omes.tools.webpack import WEB_TOOL_NAMES
-from omes.tools.mobile import MOBILE_TOOL_NAMES
-from omes.tools.infra import INFRA_TOOL_NAMES
-from omes.tools.packs import PACKS_TOOL_NAMES
-from omes.tools.ultrathink import ULT_TOOL_NAMES
-from omes.tools.substrate_tools import SUBSTRATE_TOOL_NAMES
-from omes.tools.quality import QUALITY_TOOL_NAMES
 from omes.tools.growth import GROWTH_TOOL_NAMES
+from omes.tools.ide import IDE_TOOL_NAMES
+from omes.tools.infra import INFRA_TOOL_NAMES
+from omes.tools.lead import LEAD_TOOL_NAMES
+from omes.tools.mobile import MOBILE_TOOL_NAMES
 from omes.tools.offer import offered_schemas
+from omes.tools.packs import PACKS_TOOL_NAMES
 from omes.tools.platform import PLATFORM_TOOL_NAMES
+from omes.tools.quality import QUALITY_TOOL_NAMES
 from omes.tools.registry import ToolRegistry
+from omes.tools.substrate_tools import SUBSTRATE_TOOL_NAMES
+from omes.tools.systems import SYS_TOOL_NAMES
+from omes.tools.telegram import TELEGRAM_TOOL_NAMES
+from omes.tools.ultrathink import ULT_TOOL_NAMES
+from omes.tools.webpack import WEB_TOOL_NAMES
+from omes.tools.x import X_TOOL_NAMES
 
 OMES = Path(__file__).resolve().parents[1]
 ROSTER = OMES / "contracts" / "tool-rosters" / "omes.yaml"
@@ -66,7 +66,9 @@ def test_read_file_returns_bytes_written_by_write_file(tmp_path: Path):
     root.mkdir()
     registry = _registry(root)
     text = "omes-bytes-v1\nsecond line\n"
-    written = _load(registry.dispatch("write_file", {"path": "note.txt", "content": text}))
+    written = _load(
+        registry.dispatch("write_file", {"path": "note.txt", "content": text})
+    )
     assert written["bytes_written"] == len(text.encode("utf-8"))
     assert (root / "note.txt").read_bytes() == text.encode("utf-8")
 
@@ -85,9 +87,13 @@ def test_read_file_returns_bytes_written_by_write_file(tmp_path: Path):
     through_link = _load(registry.dispatch("read_file", {"path": "alias.txt"}))
     assert "error" in through_link
     assert "secret" not in json.dumps(through_link)
-    refused = _load(registry.dispatch("write_file", {"path": str(outside), "content": "pwned"}))
+    refused = _load(
+        registry.dispatch("write_file", {"path": str(outside), "content": "pwned"})
+    )
     assert "error" in refused
-    linked_write = _load(registry.dispatch("write_file", {"path": "alias.txt", "content": "pwned"}))
+    linked_write = _load(
+        registry.dispatch("write_file", {"path": "alias.txt", "content": "pwned"})
+    )
     assert "error" in linked_write
     assert outside.read_text(encoding="utf-8") == "secret"
 
@@ -118,11 +124,15 @@ def test_patch_file_matches_and_leaves_a_mismatch_unchanged(tmp_path: Path):
     desired_lines[1] = "LINE-2\n"
     desired_lines[15] = "LINE-16\n"
     two_hunks = "".join(
-        difflib.unified_diff(original_lines, desired_lines, fromfile="code.txt", tofile="code.txt")
+        difflib.unified_diff(
+            original_lines, desired_lines, fromfile="code.txt", tofile="code.txt"
+        )
     )
     assert two_hunks.count("\n@@") >= 2
     target.write_bytes("".join(original_lines).encode("utf-8"))
-    applied = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": two_hunks}))
+    applied = _load(
+        registry.dispatch("patch_file", {"path": "code.txt", "diff": two_hunks})
+    )
     assert applied.get("applied") is True
     assert target.read_bytes() == "".join(desired_lines).encode("utf-8")
 
@@ -131,14 +141,18 @@ def test_patch_file_matches_and_leaves_a_mismatch_unchanged(tmp_path: Path):
     prepend = "".join(
         difflib.unified_diff([], ["head\n"], fromfile="fresh.txt", tofile="fresh.txt")
     )
-    applied = _load(registry.dispatch("patch_file", {"path": "fresh.txt", "diff": prepend}))
+    applied = _load(
+        registry.dispatch("patch_file", {"path": "fresh.txt", "diff": prepend})
+    )
     assert applied.get("applied") is True
     assert created.read_bytes() == b"head\n"
 
     target.write_bytes(original.encode("utf-8"))
     before = target.read_bytes()
     mismatched = diff.replace(" gamma", " nope", 1)
-    refused = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": mismatched}))
+    refused = _load(
+        registry.dispatch("patch_file", {"path": "code.txt", "diff": mismatched})
+    )
     assert refused["error"] == "hunk context does not match"
     assert target.read_bytes() == before
 
@@ -157,12 +171,16 @@ def test_patch_file_matches_and_leaves_a_mismatch_unchanged(tmp_path: Path):
         "-seven\n"
         "+SEVEN\n"
     )
-    later = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": partial}))
+    later = _load(
+        registry.dispatch("patch_file", {"path": "code.txt", "diff": partial})
+    )
     assert later["error"] == "hunk context does not match"
     assert target.read_bytes() == before
 
 
-def test_patch_file_applies_a_deleted_line_that_looks_like_a_file_header(tmp_path: Path):
+def test_patch_file_applies_a_deleted_line_that_looks_like_a_file_header(
+    tmp_path: Path,
+):
     root = tmp_path / "ws"
     root.mkdir()
     registry = _registry(root)
@@ -186,7 +204,9 @@ def test_patch_file_applies_a_deleted_line_that_looks_like_a_file_header(tmp_pat
 
     before = target.read_bytes()
     mismatched = diff.replace(" keep", " nope", 1)
-    refused = _load(registry.dispatch("patch_file", {"path": "code.txt", "diff": mismatched}))
+    refused = _load(
+        registry.dispatch("patch_file", {"path": "code.txt", "diff": mismatched})
+    )
     assert refused["error"] == "hunk context does not match"
     assert target.read_bytes() == before
 
@@ -215,18 +235,26 @@ def test_search_text_finds_a_fixture_and_not_a_path_outside_the_root(tmp_path: P
     assert "linked.txt" not in found["paths"]
     assert all(not item.startswith("out/") for item in found["paths"])
 
-    escaped = _load(_registry(root).dispatch("search_text", {"query": "find-me", "path": "../outside"}))
+    escaped = _load(
+        _registry(root).dispatch(
+            "search_text", {"query": "find-me", "path": "../outside"}
+        )
+    )
     assert "error" in escaped
     assert "paths" not in escaped or outside.as_posix() not in json.dumps(escaped)
 
 
-def test_run_terminal_reports_exit_code_and_refuses_a_path_outside_the_root(tmp_path: Path):
+def test_run_terminal_reports_exit_code_and_refuses_a_path_outside_the_root(
+    tmp_path: Path,
+):
     root = tmp_path / "ws"
     outside = tmp_path / "outside"
     root.mkdir()
     outside.mkdir()
     registry = _registry(root)
-    ran = _load(registry.dispatch("run_terminal", {"argv": ["python3", "-c", "print(1)"]}))
+    ran = _load(
+        registry.dispatch("run_terminal", {"argv": ["python3", "-c", "print(1)"]})
+    )
     assert ran["exit_code"] == 0
     assert ran["stdout"].strip() == "1"
     assert ran["stderr"] == ""
@@ -269,10 +297,16 @@ def test_todo_round_trip_and_clarify_returns_the_question(tmp_path: Path):
     stored = _load(registry.dispatch("todo_write", {"todos": items}))
     assert stored["todos"] == items
     items[0]["content"] = "mutated after write"
-    assert _load(registry.dispatch("todo_read", {}))["todos"][0]["content"] == "ship the tool"
+    assert (
+        _load(registry.dispatch("todo_read", {}))["todos"][0]["content"]
+        == "ship the tool"
+    )
     items[0]["content"] = "ship the tool"
     replacement = [{"id": "9", "content": "replaced", "status": "completed"}]
-    assert _load(registry.dispatch("todo_write", {"todos": replacement}))["todos"] == replacement
+    assert (
+        _load(registry.dispatch("todo_write", {"todos": replacement}))["todos"]
+        == replacement
+    )
     assert _load(registry.dispatch("todo_read", {}))["todos"] == replacement
 
     question = "which root should the patch touch?"
@@ -283,8 +317,12 @@ def test_todo_round_trip_and_clarify_returns_the_question(tmp_path: Path):
     assert log.questions == [question]
 
 
-def test_web_and_vision_return_the_transport_payload_without_opening_a_socket(tmp_path: Path, monkeypatch):
-    search_payload = {"results": [{"title": "Omes", "url": "https://example.test/omes"}]}
+def test_web_and_vision_return_the_transport_payload_without_opening_a_socket(
+    tmp_path: Path, monkeypatch
+):
+    search_payload = {
+        "results": [{"title": "Omes", "url": "https://example.test/omes"}]
+    }
     extract_payload = {"pages": [{"url": "https://example.test/omes", "text": "local"}]}
     vision_payload = {"analysis": "a diagram of a registry"}
     calls: list[tuple] = []
@@ -310,8 +348,14 @@ def test_web_and_vision_return_the_transport_payload_without_opening_a_socket(tm
     monkeypatch.setattr(socket, "create_connection", refuse_socket)
 
     registry = _registry(tmp_path, web=Web(), vision=Vision())
-    assert _load(registry.dispatch("web_search", {"query": "omes", "limit": 2})) == search_payload
-    assert _load(registry.dispatch("web_extract", {"urls": ["https://example.test/omes"]})) == extract_payload
+    assert (
+        _load(registry.dispatch("web_search", {"query": "omes", "limit": 2}))
+        == search_payload
+    )
+    assert (
+        _load(registry.dispatch("web_extract", {"urls": ["https://example.test/omes"]}))
+        == extract_payload
+    )
     assert (
         _load(
             registry.dispatch(
@@ -329,10 +373,14 @@ def test_web_and_vision_return_the_transport_payload_without_opening_a_socket(tm
 
     bare = _registry(tmp_path)
     assert "error" in _load(bare.dispatch("web_search", {"query": "omes"}))
-    assert "error" in _load(bare.dispatch("vision_analyze", {"image_url": "x", "question": "y"}))
+    assert "error" in _load(
+        bare.dispatch("vision_analyze", {"image_url": "x", "question": "y"})
+    )
 
 
-def test_offered_schemas_omit_a_registered_tool_that_is_not_on_the_roster(tmp_path: Path):
+def test_offered_schemas_omit_a_registered_tool_that_is_not_on_the_roster(
+    tmp_path: Path,
+):
     registry = _registry(tmp_path)
     registry.register(
         "not_on_roster",

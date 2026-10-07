@@ -9,6 +9,8 @@ language server or adapter ships here.
 
 from __future__ import annotations
 
+import contextlib
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -58,10 +60,8 @@ def register_ide_tools(registry: ToolRegistry, root: str | Path) -> list[str]:
         except (TimeoutError, EOFError, ValueError, RuntimeError) as exc:
             return {"error": f"lsp session failed: {exc}"}
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 session.shutdown(timeout=timeout)
-            except Exception:
-                pass
             connection.close()
         return {"path": read["path"], "diagnostics": found}
 
@@ -112,7 +112,7 @@ def register_ide_tools(registry: ToolRegistry, root: str | Path) -> list[str]:
             "breakpoints": breakpoints,
         }
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "lsp_diagnostics": lsp_diagnostics,
         "dap_stop": dap_stop,
     }
@@ -137,7 +137,11 @@ def _check_command(command: Any) -> str | None:
 
 
 def _check_timeout(timeout: Any) -> str | None:
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or timeout <= 0
+    ):
         return "timeout must be a positive number of seconds"
     return None
 
@@ -161,9 +165,14 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
                     "items": {"type": "string"},
                     "description": "Argv that spawns the language server. A string is an error.",
                 },
-                "path": _string("File to open, relative to the workspace root or absolute inside it."),
+                "path": _string(
+                    "File to open, relative to the workspace root or absolute inside it."
+                ),
                 "language_id": _string("LSP language id. Defaults to python."),
-                "timeout": {"type": "number", "description": "Seconds per wait. Defaults to 10."},
+                "timeout": {
+                    "type": "number",
+                    "description": "Seconds per wait. Defaults to 10.",
+                },
             },
             ["command", "path"],
         ),
@@ -179,9 +188,14 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
                     "items": {"type": "string"},
                     "description": "Argv that spawns the debug adapter. A string is an error.",
                 },
-                "path": _string("Program to launch, relative to the workspace root or absolute inside it."),
+                "path": _string(
+                    "Program to launch, relative to the workspace root or absolute inside it."
+                ),
                 "line": {"type": "integer", "description": "1-based breakpoint line."},
-                "timeout": {"type": "number", "description": "Seconds per wait. Defaults to 10."},
+                "timeout": {
+                    "type": "number",
+                    "description": "Seconds per wait. Defaults to 10.",
+                },
             },
             ["command", "path", "line"],
         ),

@@ -21,8 +21,9 @@ import json
 import sys
 import urllib.error
 import urllib.request
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 DEFAULT_MCP_URL = "https://api.greptile.com/mcp"
 PAGE_LIMIT = 100
@@ -44,7 +45,7 @@ class McpHttpClient:
         self,
         base_url: str = DEFAULT_MCP_URL,
         token: str = "",
-        opener: Callable[[Any], Any] | None = None,
+        opener: Callable[..., Any] | None = None,
         timeout: float = 30.0,
     ) -> None:
         if not token:
@@ -62,20 +63,27 @@ class McpHttpClient:
         if not self._ready:
             self._initialize()
         body = self._request(
-            {"method": "tools/call", "params": {"name": name, "arguments": arguments or {}}}
+            {
+                "method": "tools/call",
+                "params": {"name": name, "arguments": arguments or {}},
+            }
         )
         result = body.get("result", {})
         if not isinstance(result, dict):
             raise GreptileError(f"tool {name} returned no result object")
         if result.get("isError"):
             raise GreptileError(f"tool {name} failed: {_content_text(result)[:200]}")
-        if "structuredContent" in result and isinstance(result["structuredContent"], dict):
+        if "structuredContent" in result and isinstance(
+            result["structuredContent"], dict
+        ):
             return result["structuredContent"]
         text = _content_text(result)
         try:
             return json.loads(text)
         except json.JSONDecodeError as exc:
-            raise GreptileError(f"tool {name} returned unparsable content: {exc}") from exc
+            raise GreptileError(
+                f"tool {name} returned unparsable content: {exc}"
+            ) from exc
 
     def _initialize(self) -> None:
         body = self._request(
@@ -144,13 +152,15 @@ def sync(repo: str, out_dir: str | Path, client: McpHttpClient) -> dict:
     if namespace is None:
         return {"status": "unenrolled", "repo": repo}
     paths = _list_all(
-        client, "list_knowledge_base_documents", {"repoNamespaceExternalId": namespace},
+        client,
+        "list_knowledge_base_documents",
+        {"repoNamespaceExternalId": namespace},
         items_key="documentPaths",
     )
     if not paths:
         return {"status": "empty", "repo": repo}
     out = Path(out_dir)
-    fetched_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    fetched_at = datetime.datetime.now(datetime.UTC).isoformat()
     documents = []
     for path in paths:
         _check_doc_path(path)
@@ -164,7 +174,10 @@ def sync(repo: str, out_dir: str | Path, client: McpHttpClient) -> dict:
             raise GreptileError(f"document {path} has no Markdown content")
         target = out / path
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(_stamped(content, path, document.get("versionId"), fetched_at), encoding="utf-8")
+        target.write_text(
+            _stamped(content, path, document.get("versionId"), fetched_at),
+            encoding="utf-8",
+        )
         documents.append(
             {"path": path, "version": document.get("versionId"), "chars": len(content)}
         )
@@ -175,7 +188,9 @@ def sync(repo: str, out_dir: str | Path, client: McpHttpClient) -> dict:
         "documents": documents,
     }
     out.mkdir(parents=True, exist_ok=True)
-    (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    (out / "manifest.json").write_text(
+        json.dumps(manifest, indent=2) + "\n", encoding="utf-8"
+    )
     return {"status": "synced", "repo": repo, "documents": len(documents)}
 
 
@@ -201,7 +216,10 @@ def main(argv: list[str] | None = None, env: Any = None, opener: Any = None) -> 
         print(f"kb-sync: {exc}", file=sys.stderr)
         return 1
     if report["status"] == "unenrolled":
-        print(f"kb-sync: {args.repo} has no readable knowledge base (unenrolled?)", file=sys.stderr)
+        print(
+            f"kb-sync: {args.repo} has no readable knowledge base (unenrolled?)",
+            file=sys.stderr,
+        )
         return 3
     if report["status"] == "empty":
         print(f"kb-sync: {args.repo} has nothing published yet")
@@ -214,10 +232,15 @@ def _find_namespace(client: McpHttpClient, repo: str) -> str | None:
     offset = 0
     wanted = repo.lower()
     while True:
-        payload = client.call_tool("list_knowledge_bases", {"limit": PAGE_LIMIT, "offset": offset})
+        payload = client.call_tool(
+            "list_knowledge_bases", {"limit": PAGE_LIMIT, "offset": offset}
+        )
         repos = payload.get("repositories", []) if isinstance(payload, dict) else []
         for entry in repos:
-            if isinstance(entry, dict) and str(entry.get("repoName", "")).lower() == wanted:
+            if (
+                isinstance(entry, dict)
+                and str(entry.get("repoName", "")).lower() == wanted
+            ):
                 namespace = entry.get("repoNamespaceExternalId")
                 return namespace if isinstance(namespace, str) and namespace else None
         total = payload.get("total", 0) if isinstance(payload, dict) else 0
@@ -226,11 +249,15 @@ def _find_namespace(client: McpHttpClient, repo: str) -> str | None:
             return None
 
 
-def _list_all(client: McpHttpClient, tool: str, base_args: dict, items_key: str) -> list:
+def _list_all(
+    client: McpHttpClient, tool: str, base_args: dict, items_key: str
+) -> list:
     offset = 0
     items: list = []
     while True:
-        payload = client.call_tool(tool, {**base_args, "limit": PAGE_LIMIT, "offset": offset})
+        payload = client.call_tool(
+            tool, {**base_args, "limit": PAGE_LIMIT, "offset": offset}
+        )
         batch = payload.get(items_key, []) if isinstance(payload, dict) else []
         items.extend(item for item in batch if isinstance(item, str))
         total = payload.get("total", 0) if isinstance(payload, dict) else 0
@@ -315,4 +342,11 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-__all__ = ["DEFAULT_MCP_URL", "GreptileError", "McpHttpClient", "NOTICE", "main", "sync"]
+__all__ = [
+    "DEFAULT_MCP_URL",
+    "NOTICE",
+    "GreptileError",
+    "McpHttpClient",
+    "main",
+    "sync",
+]

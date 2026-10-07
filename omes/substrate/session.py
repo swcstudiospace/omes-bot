@@ -10,6 +10,7 @@ the loop — and tool arguments are never sent off-process.
 
 from __future__ import annotations
 
+import contextlib
 from pathlib import Path
 from typing import Any
 from uuid import uuid4
@@ -86,9 +87,7 @@ class SubstrateSession:
         except Exception:
             pass
 
-    def on_tool_call(
-        self, name: str, arguments: Any = None, ok: bool = True
-    ) -> None:
+    def on_tool_call(self, name: str, arguments: Any = None, ok: bool = True) -> None:
         """Emit ``tool.call`` (and ``file.edit`` for edit tools). Never raises."""
         try:
             tool = name if isinstance(name, str) and name else "<unknown tool>"
@@ -102,20 +101,16 @@ class SubstrateSession:
 
     def on_turn_end(self, exit_reason: Any) -> None:
         """Emit the turn-end note. Never raises."""
-        try:
+        with contextlib.suppress(Exception):
             self._emit("note", f"turn ended: {exit_reason}")
-        except Exception:
-            pass
 
     def close(self) -> None:
         """Emit ``session.end``. Idempotent, never raises."""
         if self._closed:
             return
         self._closed = True
-        try:
+        with contextlib.suppress(Exception):
             self._emit("session.end", f"omes session {self._session_id} closed")
-        except Exception:
-            pass
 
     def _emit(self, kind: str, summary: str) -> None:
         fields: dict[str, Any] = {"session_id": self._session_id}

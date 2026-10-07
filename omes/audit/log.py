@@ -9,7 +9,7 @@ leans on that guarantee.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +34,7 @@ class AuditLog:
         self._seq += 1
         record: dict[str, Any] = {
             "seq": self._seq,
-            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "tool": str(tool),
             "verdict": verdict,
         }
@@ -68,7 +68,9 @@ class AuditLog:
 
     def violations(self) -> list[dict[str, Any]]:
         """The `denied` records, in order."""
-        return [record for record in self.records() if record.get("verdict") == "denied"]
+        return [
+            record for record in self.records() if record.get("verdict") == "denied"
+        ]
 
     def _last_seq(self) -> int:
         highest = 0

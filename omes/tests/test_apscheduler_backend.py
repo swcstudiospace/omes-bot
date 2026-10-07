@@ -23,11 +23,19 @@ def _store_for(path: Path) -> JobStore:
     return JobStore(path / "jobs.json")
 
 
+def _recorder(seen: list[str], reply: str):
+    def _run(prompt: str) -> str:
+        seen.append(prompt)
+        return reply
+
+    return _run
+
+
 def test_one_shot_fires_once_and_persists(tmp_path: Path):
     store = _store_for(tmp_path)
     seen: list[str] = []
     job_id = store.schedule("hello", time.time() + 0.2)
-    service = SchedulerService(store, lambda prompt: seen.append(prompt) or "done")
+    service = SchedulerService(store, _recorder(seen, "done"))
     try:
         assert service.start() == []
         assert _wait_until(lambda: seen == ["hello"])
@@ -46,7 +54,7 @@ def test_interval_job_fires_repeatedly(tmp_path: Path):
     seen: list[str] = []
     first_due = time.time() + 0.2
     store.schedule("beat", first_due, interval_seconds=0.2)
-    service = SchedulerService(store, lambda prompt: seen.append(prompt) or "beat-done")
+    service = SchedulerService(store, _recorder(seen, "beat-done"))
     try:
         service.start()
         assert _wait_until(lambda: len(seen) >= 2)
@@ -64,7 +72,7 @@ def test_shared_due_date_runs_each_job_once(tmp_path: Path):
     due = time.time() + 0.2
     store.schedule("one", due)
     store.schedule("two", due)
-    service = SchedulerService(store, lambda prompt: seen.append(prompt) or "ok")
+    service = SchedulerService(store, _recorder(seen, "ok"))
     try:
         service.start()
         assert _wait_until(lambda: sorted(seen) == ["one", "two"])
@@ -79,7 +87,7 @@ def test_restart_resumes_without_duplicates(tmp_path: Path):
     store = _store_for(tmp_path)
     seen: list[str] = []
     store.schedule("beat", time.time() + 0.2, interval_seconds=0.3)
-    first = SchedulerService(store, lambda prompt: seen.append(prompt) or "ok")
+    first = SchedulerService(store, _recorder(seen, "ok"))
     try:
         first.start()
         assert _wait_until(lambda: len(seen) >= 1)
@@ -87,7 +95,7 @@ def test_restart_resumes_without_duplicates(tmp_path: Path):
         first.stop()
     reopened = JobStore(tmp_path / "jobs.json")
     assert len(reopened.jobs[0]["history"]) >= 1
-    second = SchedulerService(reopened, lambda prompt: seen.append(prompt) or "ok")
+    second = SchedulerService(reopened, _recorder(seen, "ok"))
     try:
         second.start()
         count_at_restart = len(seen)

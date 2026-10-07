@@ -86,9 +86,7 @@ class SubstrateClient:
     def health(self) -> dict:
         """GET /healthz. Raises ``SubstrateError`` on any failure."""
         try:
-            return self._transport.get(
-                self._base_url + "/healthz", self._headers(), {}
-            )
+            return self._transport.get(self._base_url + "/healthz", self._headers(), {})
         except Exception as exc:
             reason = self._redact(_reason(exc))
             raise SubstrateError(f"substrate health failed: {reason}") from exc

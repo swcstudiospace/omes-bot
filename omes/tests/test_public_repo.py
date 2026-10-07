@@ -59,6 +59,7 @@ def test_svgs_valid_and_self_contained() -> None:
     for name in ("assets/icon.svg", "assets/banner.svg"):
         raw = (ROOT / name).read_text(encoding="utf-8")
         root = minidom.parseString(raw).documentElement
+        assert root is not None
         assert root.tagName == "svg"
         assert root.getAttribute("width") and root.getAttribute("height")
         assert not root.getElementsByTagName("script")
@@ -74,7 +75,9 @@ def test_packaging_is_public_complete() -> None:
     assert project["readme"] == "README.md"
     assert project["authors"] == [{"name": "SWC Studio"}]
     for key in ("Homepage", "Repository", "Documentation", "Issues", "Changelog"):
-        assert project["urls"][key].startswith("https://github.com/swcstudiospace/omes-bot")
+        assert project["urls"][key].startswith(
+            "https://github.com/swcstudiospace/omes-bot"
+        )
     assert project["dependencies"] and "dependencies" not in project["urls"]
     find = parsed["tool"]["setuptools"]["packages"]["find"]
     assert find["include"] == ["omes*"]
@@ -83,7 +86,7 @@ def test_packaging_is_public_complete() -> None:
 
 
 def test_no_placeholders_in_public_files() -> None:
-    checked = list(REQUIRED_FILES) + ["pyproject.toml", ".gitignore"]
+    checked = [*list(REQUIRED_FILES), "pyproject.toml", ".gitignore"]
     for name in checked:
         text = (ROOT / name).read_text(encoding="utf-8")
         for token in PLACEHOLDERS:

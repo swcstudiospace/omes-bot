@@ -62,7 +62,7 @@ def _render_orchestrate_notice(tools: list[str]) -> str:
         "next phase in the same turn. Stop only when every requested item is verifiably done "
         "or concrete `[blocked]` genuinely requires the user.",
         "2. Before dispatch, enumerate the full surface. Expand referenced audits, plans, "
-        "checklists, phase lists, and file lists into flat items. \"Most\"/\"important\" "
+        'checklists, phase lists, and file lists into flat items. "Most"/"important" '
         "items is failure. Re-read source documents; NEVER work from memory.",
         "3. Parallelize maximally; NEVER dispatch one lonely subtask. Disjoint-scope edits "
         "MUST be one `delegate_task` batch. Divisible work: split and dispatch together, "
@@ -103,9 +103,9 @@ def _render_orchestrate_notice(tools: list[str]) -> str:
         "",
         "<anti-patterns>",
         "- Doing substantial/parallelizable work yourself rather than fanning out.",
-        "- Yielding after phase 1 with \"ready to continue?\".",
+        '- Yielding after phase 1 with "ready to continue?".',
         "- Serial dispatch when a batch would do.",
-        "- Skipping between-phase verification because the change \"looked safe\".",
+        '- Skipping between-phase verification because the change "looked safe".',
         "- Chat progress summaries instead of advancing.",
         "</anti-patterns>",
         "</system-notice>",
@@ -168,7 +168,9 @@ class MagicKeyword:
 
 MAGIC_KEYWORDS: tuple[MagicKeyword, ...] = (
     MagicKeyword("ultrathink", "ultrathink", (), "Ultrathink Keyword"),
-    MagicKeyword("orchestrate", "orchestrate", ("delegate_task",), "Orchestrate Keyword"),
+    MagicKeyword(
+        "orchestrate", "orchestrate", ("delegate_task",), "Orchestrate Keyword"
+    ),
     # Omp gates workflowz on task+eval; Omes batches through delegate_task, so one gate.
     MagicKeyword("workflow", "workflowz", ("delegate_task",), "Workflow Keyword"),
 )
@@ -188,7 +190,10 @@ class MagicKeywordSettings:
 
 
 def _matchers() -> dict[str, re.Pattern]:
-    return {kw.word: re.compile(_LEFT + re.escape(kw.word) + _RIGHT) for kw in MAGIC_KEYWORDS}
+    return {
+        kw.word: re.compile(_LEFT + re.escape(kw.word) + _RIGHT)
+        for kw in MAGIC_KEYWORDS
+    }
 
 
 _MATCHERS = _matchers()
@@ -201,7 +206,9 @@ def _backtick_run_end(text: str, i: int, n: int) -> int:
     return j
 
 
-def _find_backtick_close(text: str, start: int, n: int, run_len: int, masked: bytearray) -> int:
+def _find_backtick_close(
+    text: str, start: int, n: int, run_len: int, masked: bytearray
+) -> int:
     k = start
     while k < n:
         if masked[k]:
@@ -225,7 +232,7 @@ def _find_tag_end(text: str, j: int, n: int) -> int:
         if quote:
             if ch == quote:
                 quote = ""
-        elif ch in ("\"", "'"):
+        elif ch in ('"', "'"):
             quote = ch
         elif ch == ">":
             return k
@@ -235,7 +242,9 @@ def _find_tag_end(text: str, j: int, n: int) -> int:
     return -1
 
 
-def _find_matching_close(text: str, start: int, n: int, name: str, masked: bytearray) -> int:
+def _find_matching_close(
+    text: str, start: int, n: int, name: str, masked: bytearray
+) -> int:
     lname = name.lower()
     depth = 1
     k = start
@@ -316,15 +325,18 @@ def mask_non_prose(text: str) -> str:
         if fence_char:
             for p in range(line_start, nl):
                 masked[p] = 1
-            if (fence and fence.group(2)[0] == fence_char
-                    and len(fence.group(2)) >= fence_len
-                    and line[len(fence.group(1)) + len(fence.group(2)):].strip() == ""):
+            if (
+                fence
+                and fence.group(2)[0] == fence_char
+                and len(fence.group(2)) >= fence_len
+                and line[len(fence.group(1)) + len(fence.group(2)) :].strip() == ""
+            ):
                 fence_char = ""
                 fence_len = 0
         elif fence:
             marker = fence.group(2)
             ch = marker[0]
-            if not (ch == "`" and "`" in line[len(fence.group(1)) + len(marker):]):
+            if not (ch == "`" and "`" in line[len(fence.group(1)) + len(marker) :]):
                 fence_char = ch
                 fence_len = len(marker)
                 for p in range(line_start, nl):
@@ -370,8 +382,11 @@ def contains_magic_keyword(text: str, word: str) -> bool:
     return pattern.search(mask_non_prose(text)) is not None
 
 
-def notices_for_turn(text: str, tools: dict[str, Any] | None,
-                     settings: MagicKeywordSettings | None = None) -> list[dict[str, Any]]:
+def notices_for_turn(
+    text: str,
+    tools: dict[str, Any] | None,
+    settings: MagicKeywordSettings | None = None,
+) -> list[dict[str, Any]]:
     """Notice rows for one turn, in table order. Skips gated-off keywords."""
     active = settings if settings is not None else MagicKeywordSettings()
     names = list((tools or {}).keys())
@@ -389,10 +404,17 @@ def notices_for_turn(text: str, tools: dict[str, Any] | None,
             content = _render_orchestrate_notice(names)
         else:
             content = _render_workflow_notice()
-        rows.append({"role": "user", "content": content,
-                     "display_kind": f"{keyword.id}-notice"})
+        rows.append(
+            {"role": "user", "content": content, "display_kind": f"{keyword.id}-notice"}
+        )
     return rows
 
 
-__all__ = ["MAGIC_KEYWORDS", "MagicKeyword", "MagicKeywordSettings",
-           "contains_magic_keyword", "mask_non_prose", "notices_for_turn"]
+__all__ = [
+    "MAGIC_KEYWORDS",
+    "MagicKeyword",
+    "MagicKeywordSettings",
+    "contains_magic_keyword",
+    "mask_non_prose",
+    "notices_for_turn",
+]

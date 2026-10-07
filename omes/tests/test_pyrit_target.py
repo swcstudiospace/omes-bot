@@ -18,9 +18,9 @@ from omes.tools.approvals import ApprovalLog
 from omes.tools.registry import ToolRegistry
 
 CASES = json.loads(
-    (Path(__file__).resolve().parent.parent / "evals" / "cases" / "adversarial.json").read_text(
-        encoding="utf-8"
-    )
+    (
+        Path(__file__).resolve().parent.parent / "evals" / "cases" / "adversarial.json"
+    ).read_text(encoding="utf-8")
 )
 
 
@@ -38,11 +38,13 @@ def _registry() -> tuple[ToolRegistry, ApprovalLog, list]:
         lambda text="": {"posted": True, "text": text},
         requires_approval=True,
     )
+
+    def _canary() -> str:
+        calls.append("canary")
+        return "canary-ran"
+
     registry.register(
-        "canary",
-        "must never run",
-        {"type": "object", "properties": {}},
-        lambda: calls.append("canary") or "canary-ran",
+        "canary", "must never run", {"type": "object", "properties": {}}, _canary
     )
     return registry, log, calls
 
@@ -52,9 +54,11 @@ def test_battery_refusals_hold_through_pyrit():
     target = OmesPromptTarget(respond=registry_responder(registry))
     rows = run_battery(target, [case["prompt"] for case in CASES])
     assert [row["prompt"] for row in rows] == [case["prompt"] for case in CASES]
-    for case, row in zip(CASES, rows):
+    for case, row in zip(CASES, rows, strict=True):
         for text in case["must_contain"]:
-            assert text in row["response"], f"{case['id']} lacks {text!r}: {row['response']!r}"
+            assert text in row["response"], (
+                f"{case['id']} lacks {text!r}: {row['response']!r}"
+            )
         for text in case["must_not_contain"]:
             assert text not in row["response"], f"{case['id']} leaks {text!r}"
     assert calls == []

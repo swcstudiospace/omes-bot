@@ -11,30 +11,73 @@ from omes.agent.conversation_loop import Agent, run_conversation
 from omes.agent.curator import review_turn
 from omes.agent.model import ScriptedModel
 from omes.memory.manager import MemoryManager
-from omes.memory.provider import BuiltinMemoryProvider, MemoryProvider, is_trivial_prompt
+from omes.memory.provider import (
+    BuiltinMemoryProvider,
+    MemoryProvider,
+    is_trivial_prompt,
+)
 from omes.memory.store import USER_CHAR_LIMIT, MemoryStore
 from omes.providers.fake import FakeTransport
 from omes.session.search import SessionStore, session_search
 from omes.skills_runtime.manager import skill_manage, skill_view
+from omes.substrate.client import SubstrateClient
 from omes.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omes.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
 from omes.tools.discord import DISCORD_TOOL_NAMES, DiscordClient, register_discord_tools
 from omes.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
 from omes.tools.ide import IDE_TOOL_NAMES, register_ide_tools
+from omes.tools.infra import (
+    INFRA_TOOL_NAMES,
+    InfraClient,
+    InfraContext,
+    register_infra_tools,
+)
+from omes.tools.lead import (
+    LEAD_TOOL_NAMES,
+    LeadClient,
+    LeadContext,
+    register_lead_tools,
+)
+from omes.tools.mobile import (
+    MOBILE_TOOL_NAMES,
+    MobileClient,
+    MobileContext,
+    register_mobile_tools,
+)
 from omes.tools.offer import offered_schemas
+from omes.tools.packs import (
+    PACKS_TOOL_NAMES,
+    PacksClient,
+    PacksContext,
+    register_packs_tools,
+)
 from omes.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
+from omes.tools.quality import (
+    QUALITY_TOOL_NAMES,
+    QualityClient,
+    QualityContext,
+    register_quality_tools,
+)
 from omes.tools.registry import ToolRegistry
-from omes.tools.telegram import TELEGRAM_TOOL_NAMES, TelegramClient, register_telegram_tools
-from omes.tools.lead import LEAD_TOOL_NAMES, LeadClient, LeadContext, register_lead_tools
-from omes.tools.systems import SYS_TOOL_NAMES, SystemsClient, SystemsContext, register_systems_tools
-from omes.tools.webpack import WEB_TOOL_NAMES, WebClient, WebContext, register_web_tools
-from omes.tools.mobile import MOBILE_TOOL_NAMES, MobileClient, MobileContext, register_mobile_tools
-from omes.tools.infra import INFRA_TOOL_NAMES, InfraClient, InfraContext, register_infra_tools
-from omes.tools.packs import PACKS_TOOL_NAMES, PacksClient, PacksContext, register_packs_tools
-from omes.tools.quality import QUALITY_TOOL_NAMES, QualityClient, QualityContext, register_quality_tools
-from omes.substrate.client import SubstrateClient
 from omes.tools.substrate_tools import SUBSTRATE_TOOL_NAMES, register_substrate_tools
-from omes.tools.ultrathink import ULT_TOOL_NAMES, UltrathinkClient, UltrathinkContext, register_ultrathink_tools
+from omes.tools.systems import (
+    SYS_TOOL_NAMES,
+    SystemsClient,
+    SystemsContext,
+    register_systems_tools,
+)
+from omes.tools.telegram import (
+    TELEGRAM_TOOL_NAMES,
+    TelegramClient,
+    register_telegram_tools,
+)
+from omes.tools.ultrathink import (
+    ULT_TOOL_NAMES,
+    UltrathinkClient,
+    UltrathinkContext,
+    register_ultrathink_tools,
+)
+from omes.tools.webpack import WEB_TOOL_NAMES, WebClient, WebContext, register_web_tools
 from omes.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -90,7 +133,9 @@ def _tree(root: Path) -> list[tuple[str, bytes]]:
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root).as_posix()
         if path.is_symlink():
-            rows.append((relative, b"link:" + Path(path).readlink().as_posix().encode()))
+            rows.append(
+                (relative, b"link:" + Path(path).readlink().as_posix().encode())
+            )
         elif path.is_file():
             rows.append((relative, path.read_bytes()))
     return rows
@@ -110,17 +155,23 @@ def test_conversation_creates_a_skill_and_skill_view_reads_it_back(tmp_path: Pat
     content = _skill("ship-check", "Use when shipping.", "run the checks\n")
     model = ScriptedModel(
         [
-            _tool_call("skill_manage", {"action": "create", "name": "ship-check", "content": content}),
+            _tool_call(
+                "skill_manage",
+                {"action": "create", "name": "ship-check", "content": content},
+            ),
             {"role": "assistant", "content": "saved"},
         ]
     )
     agent = Agent(model=model, tools={"skill_manage": handler}, max_iterations=4)
+    assert agent.tools is not None
     assert agent.tools["skill_manage"] is registry._tools["skill_manage"].handler
 
     result = run_conversation(agent, "please make a skill", system_message="sys")
     skill_md = skills / "ship-check" / "SKILL.md"
     assert skill_md.read_bytes() == content.encode("utf-8")
-    tool_row = next(message for message in result["messages"] if message.get("role") == "tool")
+    tool_row = next(
+        message for message in result["messages"] if message.get("role") == "tool"
+    )
     assert _load(tool_row["content"])["success"] is True
 
     viewed = _load(skill_view("ship-check", skills_root=skills))
@@ -154,13 +205,17 @@ def test_edit_replaces_and_patch_requires_one_exact_match(tmp_path: Path):
     skills = tmp_path / "skills"
     skills.mkdir()
     original = _skill("ship-check", "Use when shipping.", "alpha beta\n")
-    created = _load(skill_manage("create", "ship-check", content=original, skills_root=skills))
+    created = _load(
+        skill_manage("create", "ship-check", content=original, skills_root=skills)
+    )
     assert created["success"] is True
     skill_md = skills / "ship-check" / "SKILL.md"
     assert skill_md.read_bytes() == original.encode("utf-8")
 
     replacement = _skill("ship-check", "d" * 61, "replaced body\n")
-    edited = _load(skill_manage("edit", "ship-check", content=replacement, skills_root=skills))
+    edited = _load(
+        skill_manage("edit", "ship-check", content=replacement, skills_root=skills)
+    )
     assert edited["success"] is True
     assert skill_md.read_bytes() == replacement.encode("utf-8")
 
@@ -174,16 +229,26 @@ def test_edit_replaces_and_patch_requires_one_exact_match(tmp_path: Path):
         )
     )
     assert patched["success"] is True
-    assert skill_md.read_bytes() == replacement.replace("replaced body", "patched body", 1).encode("utf-8")
+    assert skill_md.read_bytes() == replacement.replace(
+        "replaced body", "patched body", 1
+    ).encode("utf-8")
 
     before = skill_md.read_bytes()
     missed = _load(
-        skill_manage("patch", "ship-check", old_string="not-in-file", new_string="x", skills_root=skills)
+        skill_manage(
+            "patch",
+            "ship-check",
+            old_string="not-in-file",
+            new_string="x",
+            skills_root=skills,
+        )
     )
     assert missed["success"] is False
     assert skill_md.read_bytes() == before
     twice = _load(
-        skill_manage("patch", "ship-check", old_string="d", new_string="e", skills_root=skills)
+        skill_manage(
+            "patch", "ship-check", old_string="d", new_string="e", skills_root=skills
+        )
     )
     assert twice["success"] is False
     assert skill_md.read_bytes() == before
@@ -221,23 +286,34 @@ def test_bad_name_frontmatter_and_long_description_write_nothing(tmp_path: Path)
     valid = _skill("ok-name", "Use when ok.", "body\n")
     before = _tree(skills)
 
-    escaped = _load(skill_manage("create", "../escape", content=valid, skills_root=skills))
+    escaped = _load(
+        skill_manage("create", "../escape", content=valid, skills_root=skills)
+    )
     assert escaped["success"] is False
     assert _tree(skills) == before
     assert not (tmp_path / "escape").exists()
 
     unclosed = "---\nname: ok-name\ndescription: Use when ok.\nbody without a closer\n"
-    opened = _load(skill_manage("create", "ok-name", content=unclosed, skills_root=skills))
+    opened = _load(
+        skill_manage("create", "ok-name", content=unclosed, skills_root=skills)
+    )
     assert opened["success"] is False
     assert _tree(skills) == before
 
     long_description = _skill("ok-name", "x" * 61, "body\n")
-    too_long = _load(skill_manage("create", "ok-name", content=long_description, skills_root=skills))
+    too_long = _load(
+        skill_manage("create", "ok-name", content=long_description, skills_root=skills)
+    )
     assert too_long["success"] is False
     assert _tree(skills) == before
 
     exact = _load(
-        skill_manage("create", "ok-name", content=_skill("ok-name", "y" * 60, "body\n"), skills_root=skills)
+        skill_manage(
+            "create",
+            "ok-name",
+            content=_skill("ok-name", "y" * 60, "body\n"),
+            skills_root=skills,
+        )
     )
     assert exact["success"] is True
     assert (skills / "ok-name" / "SKILL.md").is_file()
@@ -264,8 +340,22 @@ def test_bad_name_frontmatter_and_long_description_write_nothing(tmp_path: Path)
 
 def test_memory_reloads_from_disk_and_skips_a_trivial_prefetch(tmp_path: Path):
     trivial = (
-        "hi", "HI!", "hey.", "hello", "yo", "sup~", "thanks :)", "done???",
-        "ok", "yes.", "k", "", "   ", "/help", "lgtm", "thank you",
+        "hi",
+        "HI!",
+        "hey.",
+        "hello",
+        "yo",
+        "sup~",
+        "thanks :)",
+        "done???",
+        "ok",
+        "yes.",
+        "k",
+        "",
+        "   ",
+        "/help",
+        "lgtm",
+        "thank you",
     )
     for text in trivial:
         assert is_trivial_prompt(text), text
@@ -276,7 +366,9 @@ def test_memory_reloads_from_disk_and_skips_a_trivial_prefetch(tmp_path: Path):
     first = MemoryStore(directory)
     assert first.add("memory", "the ship window is tuesday")["success"] is True
     assert first.add("memory", "beta fact")["success"] is True
-    assert first.add("memory", " the ship window is tuesday ")["message"].startswith("Entry already exists")
+    assert first.add("memory", " the ship window is tuesday ")["message"].startswith(
+        "Entry already exists"
+    )
     assert first.memory_entries.count("the ship window is tuesday") == 1
     user = first.add("user", "u" * USER_CHAR_LIMIT)
     assert user["success"] is True
@@ -356,18 +448,26 @@ def test_memory_reloads_from_disk_and_skips_a_trivial_prefetch(tmp_path: Path):
     assert paired.remove("memory", "the cat sat")["success"] is True
     assert MemoryStore(tmp_path / "pairs").memory_entries == ["dog"]
 
-    added = _load(manager.handle_tool_call("memory", {"action": "add", "content": "from the tool"}))
+    added = _load(
+        manager.handle_tool_call(
+            "memory", {"action": "add", "content": "from the tool"}
+        )
+    )
     assert added["success"] is True
     assert "from the tool" in MemoryStore(directory).memory_entries
 
 
-def test_session_search_finds_a_stored_message_and_rejects_an_empty_query(tmp_path: Path):
+def test_session_search_finds_a_stored_message_and_rejects_an_empty_query(
+    tmp_path: Path,
+):
     path = tmp_path / "sessions.db"
     first = SessionStore(path)
     first.append("s1", "user", "deploy finished cleanly")
     first.append("s1", "assistant", "noted")
     found = _load(session_search("finished", store=SessionStore(path)))
-    assert [message["content"] for message in found["messages"]] == ["deploy finished cleanly"]
+    assert [message["content"] for message in found["messages"]] == [
+        "deploy finished cleanly"
+    ]
     assert all("finished" in message["content"] for message in found["messages"])
     absent = _load(session_search("no-such-token", store=SessionStore(path)))
     assert absent["messages"] == []
@@ -383,7 +483,9 @@ def test_session_search_finds_a_stored_message_and_rejects_an_empty_query(tmp_pa
     assert [message["content"] for message in matched["messages"]] == ["100%"]
 
 
-def test_curator_writes_a_skill_only_when_the_turn_earned_one(tmp_path: Path, monkeypatch):
+def test_curator_writes_a_skill_only_when_the_turn_earned_one(
+    tmp_path: Path, monkeypatch
+):
     skills = tmp_path / "skills"
     skills.mkdir()
     calls: list[tuple] = []
@@ -418,11 +520,7 @@ def test_curator_writes_a_skill_only_when_the_turn_earned_one(tmp_path: Path, mo
     skill_md = skills / "deploy-check" / "SKILL.md"
     assert Path(earned["path"]) == skill_md
     expected = (
-        "---\n"
-        "name: deploy-check\n"
-        f"description: {EARNED_DESCRIPTION}\n"
-        "---\n"
-        "exit 0\n"
+        f"---\nname: deploy-check\ndescription: {EARNED_DESCRIPTION}\n---\nexit 0\n"
     )
     assert skill_md.read_text(encoding="utf-8") == expected
     body = skill_md.read_text(encoding="utf-8").split("---", 2)[2]
@@ -472,7 +570,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_telegram_tools(
         registry, TelegramClient(make_bot=lambda token: None, token="fake")
     )
-    register_discord_tools(registry, DiscordClient(make_client=lambda: None, token="fake"))
+    register_discord_tools(
+        registry, DiscordClient(make_client=lambda: None, token="fake")
+    )
     register_lead_tools(registry, LeadClient(LeadContext(root=tmp_path)))
     register_systems_tools(registry, SystemsClient(SystemsContext(root=tmp_path)))
     register_web_tools(registry, WebClient(WebContext(root=tmp_path)))
@@ -515,6 +615,8 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         assert growth_name in names
     assert "not_on_roster" not in names
     assert _load(registry.dispatch("not_on_roster", {})) == {"ok": True}
-    remembered = _load(registry.dispatch("memory", {"action": "add", "content": "via dispatch"}))
+    remembered = _load(
+        registry.dispatch("memory", {"action": "add", "content": "via dispatch"})
+    )
     assert remembered["success"] is True
     assert "via dispatch" in MemoryStore(tmp_path / "memory").memory_entries

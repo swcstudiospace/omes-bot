@@ -43,44 +43,66 @@ def test_code_and_markup_are_ignored():
     assert not contains_magic_keyword("<note>ultrathink</note> then", "ultrathink")
     assert not contains_magic_keyword("<!-- orchestrate --> go", "orchestrate")
     assert contains_magic_keyword("```\nhidden\n```\nultrathink for real", "ultrathink")
-    assert "`" not in mask_non_prose("run `x` now").replace(" ", "").replace("run", "").replace("now", "")
+    assert "`" not in mask_non_prose("run `x` now").replace(" ", "").replace(
+        "run", ""
+    ).replace("now", "")
     assert len(mask_non_prose("a `b` <c>d</c>")) == len("a `b` <c>d</c>")
 
 
 def test_notices_gate_on_tools_and_switches():
-    rows = notices_for_turn("ultrathink and orchestrate this", {"delegate_task": object()})
-    assert [row["display_kind"] for row in rows] == ["ultrathink-notice", "orchestrate-notice"]
+    rows = notices_for_turn(
+        "ultrathink and orchestrate this", {"delegate_task": object()}
+    )
+    assert [row["display_kind"] for row in rows] == [
+        "ultrathink-notice",
+        "orchestrate-notice",
+    ]
     assert all(row["role"] == "user" for row in rows)
     assert "Multi-step reasoning" in rows[0]["content"]
     assert "delegate_task" in rows[1]["content"]
     gated = notices_for_turn("orchestrate and workflowz this", {})
     assert gated == []
-    assert "delegate_task" in notices_for_turn("workflowz this", {"delegate_task": object()})[0]["content"]
+    assert (
+        "delegate_task"
+        in notices_for_turn("workflowz this", {"delegate_task": object()})[0]["content"]
+    )
     off = notices_for_turn(
-        "ultrathink this", {"delegate_task": object()},
-        MagicKeywordSettings(enabled=False))
+        "ultrathink this",
+        {"delegate_task": object()},
+        MagicKeywordSettings(enabled=False),
+    )
     assert off == []
     per_id = notices_for_turn(
-        "ultrathink and orchestrate this", {"delegate_task": object()},
-        MagicKeywordSettings(per_id={"ultrathink": False}))
+        "ultrathink and orchestrate this",
+        {"delegate_task": object()},
+        MagicKeywordSettings(per_id={"ultrathink": False}),
+    )
     assert [row["display_kind"] for row in per_id] == ["orchestrate-notice"]
 
 
 def test_loop_injects_notices_for_the_turn_only():
     model = ScriptedModel([{"role": "assistant", "content": "done"}])
-    agent = Agent(model=model, tools={"delegate_task": lambda **k: "ok"}, max_iterations=2)
+    agent = Agent(
+        model=model, tools={"delegate_task": lambda **k: "ok"}, max_iterations=2
+    )
     result = run_conversation(agent, "workflowz the tests")
     kinds = [m.get("display_kind") for m in result["messages"]]
     assert "workflow-notice" in kinds
     assert result["messages"][1] == {"role": "user", "content": "workflowz the tests"}
 
-    plain = Agent(model=ScriptedModel([{"role": "assistant", "content": "done"}]),
-                  tools={"delegate_task": lambda **k: "ok"}, max_iterations=2)
+    plain = Agent(
+        model=ScriptedModel([{"role": "assistant", "content": "done"}]),
+        tools={"delegate_task": lambda **k: "ok"},
+        max_iterations=2,
+    )
     followed = run_conversation(plain, "just do it")
     assert all(m.get("display_kind") is None for m in followed["messages"])
 
-    disabled = Agent(model=ScriptedModel([{"role": "assistant", "content": "done"}]),
-                     tools={"delegate_task": lambda **k: "ok"}, max_iterations=2,
-                     magic_keywords=MagicKeywordSettings(enabled=False))
+    disabled = Agent(
+        model=ScriptedModel([{"role": "assistant", "content": "done"}]),
+        tools={"delegate_task": lambda **k: "ok"},
+        max_iterations=2,
+        magic_keywords=MagicKeywordSettings(enabled=False),
+    )
     quiet = run_conversation(disabled, "ultrathink hard")
     assert all(m.get("display_kind") is None for m in quiet["messages"])

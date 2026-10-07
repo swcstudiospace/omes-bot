@@ -64,7 +64,9 @@ def skill_view(name: str, *, skills_root: str | Path) -> str:
     return _ok(name=name, path=str(skill_md), content=text)
 
 
-def _create(name: str, content: str | None, category: str | None, skills_root: str | Path) -> str:
+def _create(
+    name: str, content: str | None, category: str | None, skills_root: str | Path
+) -> str:
     root, error = _root(skills_root)
     if error is not None:
         return error
@@ -149,7 +151,9 @@ def _patch(
             f"old_string matched {count} times. Patch needs one exact match and left the file unchanged."
         )
     updated = text.replace(old_string, new_string, 1)
-    if guard := validate_content_size(updated) or validate_frontmatter(updated, new_skill=False):
+    if guard := validate_content_size(updated) or validate_frontmatter(
+        updated, new_skill=False
+    ):
         return _error(guard)
     if updated.encode("utf-8") != original:
         try:
@@ -159,14 +163,18 @@ def _patch(
     return _ok(message=f"Patched skill '{name}'.", path=str(skill_md), name=name)
 
 
-def _prepare(name: str, category: str | None, content: str | None, *, new_skill: bool) -> str | None:
+def _prepare(
+    name: str, category: str | None, content: str | None, *, new_skill: bool
+) -> str | None:
     if name_error := validate_name(name):
         return _error(name_error)
     if category_error := validate_category(category):
         return _error(category_error)
     if content is None:
         return _error("Content is required.")
-    if guard := validate_content_size(content) or validate_frontmatter(content, new_skill=new_skill):
+    if guard := validate_content_size(content) or validate_frontmatter(
+        content, new_skill=new_skill
+    ):
         return _error(guard)
     return None
 

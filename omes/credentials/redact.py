@@ -20,7 +20,9 @@ _PATTERNS = [
 ]
 
 _BEARER = re.compile(r"(Bearer )([^\s]+)")
-_ASSIGNMENT = re.compile(r"(?i)(api[_-]?key|token|secret)(\s*[:=]\s*)([\"']?)[^\s\"',}]+")
+_ASSIGNMENT = re.compile(
+    r"(?i)(api[_-]?key|token|secret)(\s*[:=]\s*)([\"']?)[^\s\"',}]+"
+)
 
 
 def redact_text(text: Any, extra: tuple[str, ...] = ()) -> Any:

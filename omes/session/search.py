@@ -80,7 +80,9 @@ def session_search(query: str, *, store: SessionStore) -> str:
             {"success": False, "error": "query must be a non-empty string."},
             ensure_ascii=False,
         )
-    return json.dumps({"success": True, "messages": store.matching(query)}, ensure_ascii=False)
+    return json.dumps(
+        {"success": True, "messages": store.matching(query)}, ensure_ascii=False
+    )
 
 
 __all__ = ["SessionStore", "session_search"]

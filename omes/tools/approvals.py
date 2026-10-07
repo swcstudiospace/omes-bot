@@ -27,7 +27,10 @@ class ApprovalLog:
         if not isinstance(tool_name, str) or tool_name == "":
             return {"approved": False, "error": "tool name must be a non-empty string"}
         if not isinstance(approved_by, str) or approved_by.strip() == "":
-            return {"approved": False, "error": "approved_by must be a non-empty string"}
+            return {
+                "approved": False,
+                "error": "approved_by must be a non-empty string",
+            }
         if not isinstance(bot_id, str) or bot_id == "":
             return {"approved": False, "error": "bot_id must be a non-empty string"}
         if approved_by == bot_id:

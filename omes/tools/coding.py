@@ -6,6 +6,7 @@ tools. Web and vision do nothing on the network unless a transport is passed in.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -93,7 +94,7 @@ def register_coding_tools(
     ) -> Any:
         return vision_analyze(vision, image_url, question, region=region)
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "read_file": read_file,
         "write_file": write_file,
         "patch_file": patch_file,
@@ -128,7 +129,11 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         "Read a UTF-8 text file inside the workspace root. "
         "A path that escapes the root is an error. Returns the file contents.",
         _object(
-            {"path": _string("File path, relative to the workspace root or absolute inside it.")},
+            {
+                "path": _string(
+                    "File path, relative to the workspace root or absolute inside it."
+                )
+            },
             ["path"],
         ),
     ),
@@ -137,7 +142,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         "Parent directories are created. A path that escapes the root is an error and writes nothing.",
         _object(
             {
-                "path": _string("File path, relative to the workspace root or absolute inside it."),
+                "path": _string(
+                    "File path, relative to the workspace root or absolute inside it."
+                ),
                 "content": _string("Full new contents of the file."),
             },
             ["path", "content"],
@@ -149,7 +156,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         _object(
             {
                 "path": _string("File the diff applies to."),
-                "diff": _string("Unified diff (---/+++ headers and @@ hunks) for that one file."),
+                "diff": _string(
+                    "Unified diff (---/+++ headers and @@ hunks) for that one file."
+                ),
             },
             ["path", "diff"],
         ),
@@ -162,7 +171,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         _object(
             {
                 "path": _string("File the diff applies to."),
-                "diff": _string("Unified diff (---/+++ headers and @@ hunks) for that one file."),
+                "diff": _string(
+                    "Unified diff (---/+++ headers and @@ hunks) for that one file."
+                ),
             },
             ["path", "diff"],
         ),
@@ -173,7 +184,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         _object(
             {
                 "query": _string("Literal text to find. Not a regular expression."),
-                "path": _string("Directory or file under the root to search. Defaults to the root."),
+                "path": _string(
+                    "Directory or file under the root to search. Defaults to the root."
+                ),
             },
             ["query"],
         ),
@@ -190,7 +203,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
                     "items": {"type": "string"},
                     "description": "Program and arguments. Not a shell command string.",
                 },
-                "cwd": _string("Working directory inside the workspace root. Defaults to the root."),
+                "cwd": _string(
+                    "Working directory inside the workspace root. Defaults to the root."
+                ),
                 "timeout": {
                     "type": "number",
                     "description": "Seconds before the process is stopped.",
@@ -260,7 +275,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         "There is no default network client.",
         _object(
             {
-                "image_url": _string("Image URL, local path, or data URL passed to the transport."),
+                "image_url": _string(
+                    "Image URL, local path, or data URL passed to the transport."
+                ),
                 "question": _string("Question about the image."),
                 "region": {
                     "type": "array",

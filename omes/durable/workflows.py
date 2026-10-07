@@ -9,12 +9,14 @@ atomically under `{directory}/workflows/{workflow_id}.json`.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 _ID = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
 
@@ -27,8 +29,10 @@ def run_workflow(
 ) -> dict:
     """Run unfinished steps from the checkpoint. Return the final state."""
     _check_id(workflow_id)
-    if not isinstance(steps, list) or not steps or any(
-        not callable(step) for step in steps
+    if (
+        not isinstance(steps, list)
+        or not steps
+        or any(not callable(step) for step in steps)
     ):
         raise ValueError("steps must be a non-empty list of callables")
     checkpoint = load_checkpoint(directory, workflow_id)
@@ -91,10 +95,8 @@ def _write(directory: str | Path, workflow_id: str, document: dict) -> None:
             handle.write(body)
         os.replace(tmp_name, target)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_name)
-        except OSError:
-            pass
         raise
 
 

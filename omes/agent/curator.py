@@ -20,7 +20,9 @@ _SAVE_PHRASE = "save as a skill"
 _SLUG = re.compile(r"name:([a-z0-9][a-z0-9._-]*)")
 
 
-def review_turn(*, skills_root: str | Path, user_text: str, tool_results: Any) -> dict[str, Any]:
+def review_turn(
+    *, skills_root: str | Path, user_text: str, tool_results: Any
+) -> dict[str, Any]:
     """Return ``created`` and ``path``. A miss does not call ``skill_manage``."""
     earned = _earned(user_text, tool_results)
     if earned is None:
@@ -79,13 +81,7 @@ def _output(tool_results: Any) -> str | None:
 
 def _skill_text(slug: str, output: str) -> str:
     # The body is the tool output plus one newline. No other procedure text.
-    return (
-        "---\n"
-        f"name: {slug}\n"
-        f"description: {EARNED_DESCRIPTION}\n"
-        "---\n"
-        f"{output}\n"
-    )
+    return f"---\nname: {slug}\ndescription: {EARNED_DESCRIPTION}\n---\n{output}\n"
 
 
 __all__ = ["EARNED_DESCRIPTION", "review_turn"]

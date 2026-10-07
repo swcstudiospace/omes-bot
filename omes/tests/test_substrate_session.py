@@ -5,8 +5,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from omes.agent.conversation_loop import Agent, run_conversation
 from omes.agent.model import ScriptedModel
 from omes.substrate.client import SubstrateError
@@ -22,12 +20,14 @@ class _FakeClient:
     def __init__(
         self,
         brief: str = "# brief\n",
-        docs: dict | None = None,
+        docs: dict | Exception | None = None,
         emit_error: Exception | None = None,
         brief_error: Exception | None = None,
     ) -> None:
         self._brief = brief
-        self._docs = docs if docs is not None else {"ok": True, "status": 200, "body": {}}
+        self._docs = (
+            docs if docs is not None else {"ok": True, "status": 200, "body": {}}
+        )
         self._emit_error = emit_error
         self._brief_error = brief_error
         self.briefs: list[dict] = []
@@ -52,7 +52,9 @@ class _FakeClient:
             raise self._docs
         return self._docs
 
-    def graph_claim(self, graph_id: str, node_id: str, session_id: str, ttl: int = 3600) -> dict:
+    def graph_claim(
+        self, graph_id: str, node_id: str, session_id: str, ttl: int = 3600
+    ) -> dict:
         self.emits.append({"kind": "claim", "graph_id": graph_id, "node_id": node_id})
         return {"ok": True, "token": "lease-tok", "expires": "soon"}
 
@@ -66,7 +68,9 @@ class _FakeClient:
         return {"ok": True, "graph_id": graph_id, "node_id": node_id}
 
 
-def _session(client: _FakeClient, tmp_path: Path | None = None, **kwargs) -> SubstrateSession:
+def _session(
+    client: _FakeClient, tmp_path: Path | None = None, **kwargs
+) -> SubstrateSession:
     if tmp_path is not None and "brief_dir" not in kwargs:
         kwargs["brief_dir"] = tmp_path
     return SubstrateSession(client, session_id="s1", graph_id="ut-1", **kwargs)
@@ -144,7 +148,11 @@ def _tool_call(name: str, arguments: str = "{}", call_id: str = "call-1") -> dic
         "role": "assistant",
         "content": "",
         "tool_calls": [
-            {"id": call_id, "type": "function", "function": {"name": name, "arguments": arguments}}
+            {
+                "id": call_id,
+                "type": "function",
+                "function": {"name": name, "arguments": arguments},
+            }
         ],
     }
 
@@ -198,11 +206,23 @@ def test_docs_tool_retrieval_passthrough() -> None:
 
 
 def test_docs_tool_plane_and_transport_errors() -> None:
-    registry = _registry(_FakeClient(docs={"ok": False, "error": "RAGFLOW_URL missing"}))
-    assert "RAGFLOW_URL" in json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))["error"]
+    registry = _registry(
+        _FakeClient(docs={"ok": False, "error": "RAGFLOW_URL missing"})
+    )
+    assert (
+        "RAGFLOW_URL"
+        in json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))[
+            "error"
+        ]
+    )
     down = _registry(_FakeClient(docs=SubstrateError("down")))
-    assert "unreachable" in json.loads(down.dispatch("substrate_docs_search", {"query": "q"}))["error"]
-    assert "error" in json.loads(registry.dispatch("substrate_docs_search", {"query": ""}))
+    assert (
+        "unreachable"
+        in json.loads(down.dispatch("substrate_docs_search", {"query": "q"}))["error"]
+    )
+    assert "error" in json.loads(
+        registry.dispatch("substrate_docs_search", {"query": ""})
+    )
 
 
 def _approved_registry(client: _FakeClient) -> ToolRegistry:
@@ -243,7 +263,9 @@ def test_graph_tools_dispatch_with_lease() -> None:
     )
     assert beat == {"ok": True, "graph_id": "g", "node_id": "n"}
     bad = json.loads(
-        registry.dispatch("substrate_graph_claim", {"graph_id": "", "node_id": "n", "session_id": "s"})
+        registry.dispatch(
+            "substrate_graph_claim", {"graph_id": "", "node_id": "n", "session_id": "s"}
+        )
     )
     assert "graph_id" in bad["error"]
 

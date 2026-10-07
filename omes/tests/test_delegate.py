@@ -17,7 +17,9 @@ CHILD_MARKER = "child-tool-marker"
 CHILD_FINAL = "child-final-response"
 
 
-def _tool_call(name: str, arguments: dict | None = None, call_id: str = "call-1") -> dict:
+def _tool_call(
+    name: str, arguments: dict | None = None, call_id: str = "call-1"
+) -> dict:
     return {
         "role": "assistant",
         "content": "",
@@ -73,7 +75,9 @@ def test_parent_tool_row_is_the_child_final_response_only():
 
     result = run_conversation(parent, "please delegate", system_message="sys")
 
-    tool_row = next(message for message in result["messages"] if message.get("role") == "tool")
+    tool_row = next(
+        message for message in result["messages"] if message.get("role") == "tool"
+    )
     assert tool_row["name"] == "delegate_task"
     assert _load(tool_row["content"])["summary"] == CHILD_FINAL
     blob = json.dumps(result["messages"])
@@ -108,13 +112,15 @@ def test_child_tool_map_is_a_shallow_copy():
         ]
     )
     parent = Agent(model=parent_model, tools=tools)
+    parent_tools = parent.tools
+    assert parent_tools is not None
     parent.child_model = child_model
-    before_id = id(parent.tools)
-    before = dict(parent.tools)
+    before_id = id(parent_tools)
+    before = dict(parent_tools)
     captured: dict[str, dict] = {}
 
     def hook(child_tools):
-        assert child_tools is not parent.tools
+        assert child_tools is not parent_tools
         captured["tools"] = child_tools
         child_tools.pop("drop_me")
 
@@ -124,10 +130,10 @@ def test_child_tool_map_is_a_shallow_copy():
     assert parsed["summary"] == "after-pop"
     assert calls == []
     assert "drop_me" not in captured["tools"]
-    assert id(parent.tools) == before_id
-    assert dict(parent.tools) == before
-    assert parent.tools["keep"] is keep
-    assert parent.tools["drop_me"] is drop_me
+    assert id(parent_tools) == before_id
+    assert dict(parent_tools) == before
+    assert parent_tools["keep"] is keep
+    assert parent_tools["drop_me"] is drop_me
     assert parent_model.call_count == 0
 
 
@@ -211,7 +217,9 @@ def test_depth_and_batch_limits_run_no_child():
     wide_registry = ToolRegistry()
     register_delegate_tools(wide_registry, wide)
     both = _load(
-        wide_registry.dispatch("delegate_task", {"tasks": [{"goal": "a"}, {"goal": "b"}]})
+        wide_registry.dispatch(
+            "delegate_task", {"tasks": [{"goal": "a"}, {"goal": "b"}]}
+        )
     )
     assert both["summaries"] == ["first-child", "second-child"]
     assert room.call_count == 2
@@ -267,7 +275,9 @@ def test_due_job_tick_runs_through_the_conversation(tmp_path: Path):
     oneshot_id = store.schedule("oneshot prompt", now)
     later_id = store.schedule("later prompt", now + 100)
     interval_id = store.schedule("interval prompt", now, interval_seconds=30)
-    later_before = json.loads(json.dumps(next(job for job in store.jobs if job["id"] == later_id)))
+    later_before = json.loads(
+        json.dumps(next(job for job in store.jobs if job["id"] == later_id))
+    )
 
     ran = run_due_jobs(store, now, model, tools)
 

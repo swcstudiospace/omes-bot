@@ -13,7 +13,8 @@ from __future__ import annotations
 
 import asyncio
 import json
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from pyrit.memory import CentralMemory
 from pyrit.memory.sqlite_memory import SQLiteMemory
@@ -26,9 +27,7 @@ def ensure_memory() -> None:
     try:
         CentralMemory.get_memory_instance()
     except ValueError:
-        CentralMemory.set_memory_instance(
-            SQLiteMemory(db_path=":memory:", silent=True)
-        )
+        CentralMemory.set_memory_instance(SQLiteMemory(db_path=":memory:", silent=True))
 
 
 class OmesPromptTarget(PromptTarget):
@@ -69,7 +68,9 @@ def registry_responder(registry: Any) -> Callable[[str], str]:
 def message_text(message: Message) -> str:
     """Join the converted text of every piece."""
     return " ".join(
-        piece.converted_value for piece in message.message_pieces if piece.converted_value
+        piece.converted_value
+        for piece in message.message_pieces
+        if piece.converted_value
     )
 
 
@@ -83,7 +84,10 @@ def run_battery(target: PromptTarget, prompts: list[str]) -> list[dict[str, str]
                 message=Message.from_prompt(prompt=prompt, role="user")
             )
             rows.append(
-                {"prompt": prompt, "response": " ".join(message_text(a) for a in answers)}
+                {
+                    "prompt": prompt,
+                    "response": " ".join(message_text(a) for a in answers),
+                }
             )
         return rows
 

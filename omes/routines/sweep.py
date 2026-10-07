@@ -8,12 +8,14 @@ a human or an approved job.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 _ID = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*$")
 
@@ -110,10 +112,8 @@ def _write(directory: str | Path, sweep_id: str, state: dict) -> None:
             handle.write(body)
         os.replace(tmp_name, target)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_name)
-        except OSError:
-            pass
         raise
 
 

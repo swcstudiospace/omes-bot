@@ -102,4 +102,9 @@ def _summary_text(older: list) -> str:
     return "\n".join(lines)
 
 
-__all__ = ["SUMMARY_KIND", "USELESS_NOTICE", "compress_messages", "prune_useless_results"]
+__all__ = [
+    "SUMMARY_KIND",
+    "USELESS_NOTICE",
+    "compress_messages",
+    "prune_useless_results",
+]

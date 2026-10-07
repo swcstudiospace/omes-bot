@@ -68,10 +68,15 @@ def _assistant_row(message: dict, tool_calls: list) -> dict:
 
 
 def _split_call(call: dict) -> tuple[str, dict, str | None]:
-    function = call.get("function") if isinstance(call.get("function"), dict) else {}
+    raw = call.get("function")
+    function: dict[str, Any] = raw if isinstance(raw, dict) else {}
     name = str(function.get("name") or "")
     call_id = call.get("id")
-    return name, _arguments(function.get("arguments")), call_id if isinstance(call_id, str) else None
+    return (
+        name,
+        _arguments(function.get("arguments")),
+        call_id if isinstance(call_id, str) else None,
+    )
 
 
 def _arguments(raw: Any) -> dict:

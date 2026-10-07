@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import discord
 import pytest
@@ -27,7 +27,7 @@ class FakeMessage:
         self.channel = FakeChannel(channel_id, [])
         self.content = content
         self.author = FakeAuthor("ada")
-        self.created_at = datetime(2026, 10, 3, tzinfo=timezone.utc)
+        self.created_at = datetime(2026, 10, 3, tzinfo=UTC)
 
 
 class FakeChannel:
@@ -81,7 +81,9 @@ def _client_factory(channels: dict | None = None):
 
 
 def _policy(hosts: list[str]) -> SeatPolicy:
-    return SeatPolicy({"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}})
+    return SeatPolicy(
+        {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}}
+    )
 
 
 def _client(make, token: str = "dc-secret") -> DiscordClient:
@@ -156,19 +158,35 @@ def test_registry_reports_argument_errors_and_gates_sends():
     registry = ToolRegistry(approval_log=log)
     register_discord_tools(registry, _client(make))
 
-    assert len(json.loads(registry.dispatch("discord_read", {"channel_id": 9}))["messages"]) == 2
-    assert "error" in json.loads(registry.dispatch("discord_send", {"channel_id": 9, "text": ""}))
-    assert json.loads(registry.dispatch("discord_send", {"channel_id": 9, "text": "hi"})) == {
+    assert (
+        len(
+            json.loads(registry.dispatch("discord_read", {"channel_id": 9}))["messages"]
+        )
+        == 2
+    )
+    assert "error" in json.loads(
+        registry.dispatch("discord_send", {"channel_id": 9, "text": ""})
+    )
+    assert json.loads(
+        registry.dispatch("discord_send", {"channel_id": 9, "text": "hi"})
+    ) == {
         "error": "approval required",
         "tool": "discord_send",
     }
     assert log.approve("discord_send", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("discord_send", {"channel_id": 9, "text": "hi"}))["content"] == "hi"
+    assert (
+        json.loads(registry.dispatch("discord_send", {"channel_id": 9, "text": "hi"}))[
+            "content"
+        ]
+        == "hi"
+    )
 
 
 def test_brokered_token_flows_and_refused_host_runs_nothing():
     make, made = _client_factory(_channels())
-    broker = CredentialBroker(_policy(["discord.com"]), {"DISCORD_BOT_TOKEN": "dc-live"})
+    broker = CredentialBroker(
+        _policy(["discord.com"]), {"DISCORD_BOT_TOKEN": "dc-live"}
+    )
     client = DiscordClient(make).with_broker(broker)
     assert len(client.read(9)["messages"]) == 2
     assert made[0].calls[0] == ("login", "dc-live")

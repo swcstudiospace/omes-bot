@@ -13,7 +13,6 @@ import argparse
 import sys
 import tempfile
 from pathlib import Path
-from typing import Any
 
 from omes.mcp_server import default_registry, roster_names
 from omes.tools.coding import CODING_TOOL_NAMES
@@ -83,9 +82,13 @@ def render(root: str | Path, home: str | Path) -> str:
         lines.append(f"## {name}")
         lines.append("")
         lines.append(f"- Family: {families.get(name, 'Unregistered')}")
-        lines.append(f"- Approval: {'required' if registry.approval_required(name) else 'not required'}")
+        lines.append(
+            f"- Approval: {'required' if registry.approval_required(name) else 'not required'}"
+        )
         required = (fn.get("parameters") or {}).get("required") or []
-        lines.append(f"- Required params: {', '.join(required) if required else 'none'}")
+        lines.append(
+            f"- Required params: {', '.join(required) if required else 'none'}"
+        )
         lines.append("")
         lines.append(fn.get("description", "Not served by the default registry."))
         lines.append("")

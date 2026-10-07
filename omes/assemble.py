@@ -132,7 +132,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     root = (args.root or package_root()).resolve()
-    roster_path = (args.roster or (root / "grokbot" / "rosters" / "default.json")).resolve()
+    roster_path = (
+        args.roster or (root / "grokbot" / "rosters" / "default.json")
+    ).resolve()
     if not roster_path.is_file():
         raise SystemExit(f"assemble-prompts: missing roster {roster_path}")
 

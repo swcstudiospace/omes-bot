@@ -26,7 +26,10 @@ class OpenAIProvider(Provider):
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        body: dict[str, Any] = {"model": model, "messages": to_openai_messages(messages)}
+        body: dict[str, Any] = {
+            "model": model,
+            "messages": to_openai_messages(messages),
+        }
         wire_tools = to_openai_tools(tools)
         if wire_tools is not None:
             body["tools"] = wire_tools
@@ -62,7 +65,10 @@ def to_openai_messages(messages: list) -> list[dict]:
             continue
         role = row.get("role", "user")
         if role == "tool":
-            item: dict[str, Any] = {"role": "tool", "content": _text(row.get("content"))}
+            item: dict[str, Any] = {
+                "role": "tool",
+                "content": _text(row.get("content")),
+            }
             call_id = row.get("tool_call_id")
             if isinstance(call_id, str) and call_id:
                 item["tool_call_id"] = call_id
@@ -107,9 +113,7 @@ def normalize_tool_call(call: Any) -> dict:
     if not isinstance(function, dict) or not function.get("name"):
         raise ProviderError(f"tool call has no function name: {call!r}")
     arguments = function.get("arguments", {})
-    if isinstance(arguments, dict):
-        arguments = json.dumps(arguments)
-    elif not isinstance(arguments, str):
+    if isinstance(arguments, dict) or not isinstance(arguments, str):
         arguments = json.dumps(arguments)
     return {
         "id": str(call.get("id", "")),
@@ -126,4 +130,9 @@ def _text(value: Any) -> str:
     return str(value)
 
 
-__all__ = ["OpenAIProvider", "normalize_tool_call", "to_openai_messages", "to_openai_tools"]
+__all__ = [
+    "OpenAIProvider",
+    "normalize_tool_call",
+    "to_openai_messages",
+    "to_openai_tools",
+]

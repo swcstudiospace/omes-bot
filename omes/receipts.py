@@ -66,7 +66,10 @@ def validate_receipt(receipt: dict) -> None:
             errors.append("destructive operation without recorded approval")
         else:
             for index, approval in enumerate(approvals):
-                if not isinstance(approval, dict) or not str(approval.get("approved_by", "")).strip():
+                if (
+                    not isinstance(approval, dict)
+                    or not str(approval.get("approved_by", "")).strip()
+                ):
                     errors.append(f"approvals[{index}] missing approved_by")
                 elif str(approval.get("approved_by")) == str(receipt.get("bot", "")):
                     errors.append(f"approvals[{index}] approved_by is the bot itself")

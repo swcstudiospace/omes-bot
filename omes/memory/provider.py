@@ -69,7 +69,9 @@ class MemoryProvider(ABC):
         """OpenAI-style tool schemas this provider handles."""
 
     @abstractmethod
-    def handle_tool_call(self, tool_name: str, args: dict[str, Any], **kwargs: Any) -> str:
+    def handle_tool_call(
+        self, tool_name: str, args: dict[str, Any], **kwargs: Any
+    ) -> str:
         """Handle one tool call. Must return a JSON string."""
 
 
@@ -92,7 +94,9 @@ class BuiltinMemoryProvider(MemoryProvider):
         self.store.load_from_disk()
 
     def prefetch(self, query: str, *, session_id: str = "") -> str:
-        if is_trivial_prompt(query if isinstance(query, str) or query is None else None):
+        if is_trivial_prompt(
+            query if isinstance(query, str) or query is None else None
+        ):
             return ""
         self.store.load_from_disk()
         return redact_text(self.store.render())
@@ -108,7 +112,10 @@ class BuiltinMemoryProvider(MemoryProvider):
                 "parameters": {
                     "type": "object",
                     "properties": {
-                        "action": {"type": "string", "enum": ["add", "replace", "remove"]},
+                        "action": {
+                            "type": "string",
+                            "enum": ["add", "replace", "remove"],
+                        },
                         "target": {"type": "string", "enum": ["memory", "user"]},
                         "content": {"type": "string"},
                         "old_text": {"type": "string"},
@@ -118,10 +125,15 @@ class BuiltinMemoryProvider(MemoryProvider):
             }
         ]
 
-    def handle_tool_call(self, tool_name: str, args: dict[str, Any], **kwargs: Any) -> str:
+    def handle_tool_call(
+        self, tool_name: str, args: dict[str, Any], **kwargs: Any
+    ) -> str:
         if tool_name != "memory":
             return json.dumps(
-                {"success": False, "error": f"Provider builtin does not handle tool '{tool_name}'."},
+                {
+                    "success": False,
+                    "error": f"Provider builtin does not handle tool '{tool_name}'.",
+                },
                 ensure_ascii=False,
             )
         payload = args or {}
@@ -142,7 +154,10 @@ class BuiltinMemoryProvider(MemoryProvider):
         elif action == "remove":
             result = self.store.remove(target, "" if old_text is None else old_text)
         else:
-            result = {"success": False, "error": f"Unknown action '{action}'. Use add, replace, or remove."}
+            result = {
+                "success": False,
+                "error": f"Unknown action '{action}'. Use add, replace, or remove.",
+            }
         return json.dumps(result, ensure_ascii=False)
 
 

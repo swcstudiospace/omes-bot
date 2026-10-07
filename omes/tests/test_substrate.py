@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import http.client
 import json
 import socket
@@ -73,7 +74,9 @@ def _mcp_result(payload: dict) -> dict:
     }
 
 
-def _client(script: list, token: str | None = TOKEN) -> tuple[SubstrateClient, _FakeTransport]:
+def _client(
+    script: list, token: str | None = TOKEN
+) -> tuple[SubstrateClient, _FakeTransport]:
     transport = _FakeTransport(script)
     broker = None if token == "none" else _FakeBroker("" if token is None else token)
     return SubstrateClient(transport=transport, broker=broker), transport
@@ -103,13 +106,15 @@ def test_explicit_token_wins_and_redacts() -> None:
     assert client.brief() == "# brief\n"
     assert transport.requests[0]["headers"] == {"Authorization": "Bearer explicit-abc"}
     failing = SubstrateClient(
-        transport=_FakeTransport([ProviderError("bad explicit-abc")]), token="explicit-abc"
+        transport=_FakeTransport([ProviderError("bad explicit-abc")]),
+        token="explicit-abc",
     )
     with pytest.raises(SubstrateError) as exc:
         failing.health()
     assert "explicit-abc" not in str(exc.value)
     with pytest.raises(ValueError):
-        SubstrateClient(token=42)
+        # Intentional misuse: the token must be a string.
+        SubstrateClient(token=42)  # type: ignore[arg-type]
 
 
 def test_brief_without_broker_sends_no_auth() -> None:
@@ -264,7 +269,11 @@ def test_graph_claim_lease_and_validation() -> None:
 
 def test_graph_release_complete_text_and_heartbeat() -> None:
     client, transport = _client(
-        [_mcp_text("Released g/n."), _mcp_text("Completed g/n."), _mcp_result({"ok": True})]
+        [
+            _mcp_text("Released g/n."),
+            _mcp_text("Completed g/n."),
+            _mcp_result({"ok": True}),
+        ]
     )
     assert client.graph_release("g", "n") == "Released g/n."
     assert client.graph_complete("g", "n") == "Completed g/n."
@@ -344,7 +353,9 @@ class _TextFixture:
                 self.requests.append(
                     {"target": lines[0], "body": json.loads(body or b"{}")}
                 )
-                status = self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
+                status = (
+                    self.statuses.pop(0) if len(self.statuses) > 1 else self.statuses[0]
+                )
             payload = self.body
             sock.sendall(
                 f"HTTP/1.1 {status} X\r\nContent-Length: {len(payload)}"
@@ -352,10 +363,8 @@ class _TextFixture:
                 + payload
             )
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 sock.close()
-            except OSError:
-                pass
 
 
 def test_post_text_round_trip_over_real_bytes() -> None:

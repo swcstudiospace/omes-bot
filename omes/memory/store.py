@@ -49,7 +49,7 @@ class MemoryStore:
                 "target": target,
                 "message": "Entry already exists (no duplicate added).",
             }
-        updated = entries + [cleaned]
+        updated = [*entries, cleaned]
         if _length(updated) > _LIMITS[target]:
             return {
                 "success": False,
@@ -77,7 +77,7 @@ class MemoryStore:
         if locate_error is not None:
             return locate_error
         assert index is not None
-        updated = entries[:index] + [cleaned] + entries[index + 1 :]
+        updated = [*entries[:index], cleaned, *entries[index + 1 :]]
         if _length(updated) > _LIMITS[target]:
             return {
                 "success": False,
@@ -167,18 +167,27 @@ def _clean_entry(content: str) -> tuple[str | None, dict[str, Any] | None]:
     if not isinstance(content, str):
         return None, {"success": False, "error": "Content must be a string."}
     if "§" in content:
-        return None, {"success": False, "error": "Entry contains the delimiter character §."}
+        return None, {
+            "success": False,
+            "error": "Entry contains the delimiter character §.",
+        }
     cleaned = content.strip()
     if cleaned == "":
         return None, {"success": False, "error": "Content cannot be empty."}
     if "§" in cleaned:
-        return None, {"success": False, "error": "Entry contains the delimiter character §."}
+        return None, {
+            "success": False,
+            "error": "Entry contains the delimiter character §.",
+        }
     return cleaned, None
 
 
 def _target_error(target: str) -> dict[str, Any] | None:
     if target not in _FILES:
-        return {"success": False, "error": f"Unknown target '{target}'. Use memory or user."}
+        return {
+            "success": False,
+            "error": f"Unknown target '{target}'. Use memory or user.",
+        }
     return None
 
 
@@ -186,15 +195,24 @@ def _length(entries: list[str]) -> int:
     return len(ENTRY_DELIMITER.join(entries))
 
 
-def _locate(entries: list[str], old_text: str) -> tuple[int | None, dict[str, Any] | None]:
+def _locate(
+    entries: list[str], old_text: str
+) -> tuple[int | None, dict[str, Any] | None]:
     if not isinstance(old_text, str) or old_text.strip() == "":
         return None, {"success": False, "error": "old_text cannot be empty."}
     needle = old_text.strip()
     exact = [index for index, entry in enumerate(entries) if entry == needle]
-    matches = exact if exact else [index for index, entry in enumerate(entries) if needle in entry]
+    matches = (
+        exact
+        if exact
+        else [index for index, entry in enumerate(entries) if needle in entry]
+    )
     distinct = {entries[index] for index in matches}
     if len(distinct) > 1:
-        return None, {"success": False, "error": f"Multiple entries matched '{needle}'."}
+        return None, {
+            "success": False,
+            "error": f"Multiple entries matched '{needle}'.",
+        }
     if not matches:
         return None, {"success": False, "error": f"No entry matched '{needle}'."}
     return matches[0], None

@@ -6,13 +6,15 @@ does not send those paths. ``dispatch`` returns the JSON strings the functions r
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
 from omes.memory.manager import MemoryManager
 from omes.memory.provider import BuiltinMemoryProvider
 from omes.memory.store import MemoryStore
-from omes.session.search import SessionStore, session_search as search_sessions
+from omes.session.search import SessionStore
+from omes.session.search import session_search as search_sessions
 from omes.skills_runtime.manager import skill_manage as manage_skill
 from omes.skills_runtime.manager import skill_view as view_skill
 from omes.tools.registry import ToolRegistry
@@ -80,7 +82,7 @@ def register_growth_tools(
     def session_search(query: str = "") -> str:
         return search_sessions(query, store=sessions)
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "skill_manage": skill_manage,
         "skill_view": skill_view,
         "memory": memory,
@@ -113,7 +115,9 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
                 "name": _string("Skill directory name. One safe path segment."),
                 "content": _string("Full SKILL.md text for create or edit."),
                 "category": _string("Optional single directory under the skills root."),
-                "old_string": _string("Exact text to replace for patch. Must match once."),
+                "old_string": _string(
+                    "Exact text to replace for patch. Must match once."
+                ),
                 "new_string": _string("Replacement text for patch."),
             },
             ["action", "name"],

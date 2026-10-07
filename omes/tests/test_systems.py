@@ -9,7 +9,7 @@ from omes.tools.approvals import ApprovalLog
 from omes.tools.registry import ToolRegistry
 from omes.tools.systems import SystemsClient, SystemsContext, register_systems_tools
 
-LSP_FIXTURE = r'''
+LSP_FIXTURE = r"""
 import json
 import sys
 
@@ -56,7 +56,7 @@ while True:
         send({"jsonrpc": "2.0", "id": message["id"], "result": None})
     elif method == "exit":
         break
-'''
+"""
 
 
 def _ctx(tmp_path, **overrides):
@@ -72,10 +72,18 @@ def _ctx(tmp_path, **overrides):
 
 def test_sql_queries_pass_through_and_fail_open(tmp_path):
     client = SystemsClient(_ctx(tmp_path))
-    assert client.index_query("select 1", limit=5) == {"rows": [{"sql": "select 1", "limit": 5}]}
+    assert client.index_query("select 1", limit=5) == {
+        "rows": [{"sql": "select 1", "limit": 5}]
+    }
     assert client.events_query("select 2") == {"rows": []}
-    failing = SystemsClient(_ctx(tmp_path, timescale=lambda sql, limit: {"error": "db_down", "reason": "x"}))
-    assert failing.index_query("select 1") == {"rows": [], "error": "db_down", "reason": "x"}
+    failing = SystemsClient(
+        _ctx(tmp_path, timescale=lambda sql, limit: {"error": "db_down", "reason": "x"})
+    )
+    assert failing.index_query("select 1") == {
+        "rows": [],
+        "error": "db_down",
+        "reason": "x",
+    }
     bare = SystemsClient(SystemsContext(root=tmp_path))
     assert bare.index_query("select 1")["error"].startswith("not_configured")
     assert bare.events_query("select 1")["error"].startswith("not_configured")
@@ -87,9 +95,15 @@ def test_sql_queries_stay_read_only(tmp_path):
     client = SystemsClient(_ctx(tmp_path))
     assert client.index_query("WITH recent AS (SELECT 1) SELECT * FROM recent;")["rows"]
     assert client.events_query("-- nightly\nselect 2") == {"rows": []}
-    for bad in ("DELETE FROM events", "update rows set x = 1", "DROP TABLE t",
-                "select 1; delete from t", "/* x */ insert into t values (1)",
-                "EXPLAIN DELETE FROM t", ""):
+    for bad in (
+        "DELETE FROM events",
+        "update rows set x = 1",
+        "DROP TABLE t",
+        "select 1; delete from t",
+        "/* x */ insert into t values (1)",
+        "EXPLAIN DELETE FROM t",
+        "",
+    ):
         with pytest.raises(ValueError):
             client.index_query(bad)
     assert client.index_query("EXPLAIN SELECT 1")["rows"]
@@ -114,28 +128,59 @@ def test_lsp_tier1_gating_and_session(tmp_path):
     ok = client.lsp_diagnostics([sys.executable, str(server)], "a.py")
     assert ok["path"] == "a.py"
     assert ok["diagnostics"] == [{"message": "fixture: unused import", "severity": 2}]
-    assert "language_not_tier1" in client.lsp_diagnostics([sys.executable], "a.rs")["error"]
-    assert "language_not_tier1" in client.lsp_diagnostics([sys.executable], "a.txt")["error"]
-    assert "repo-relative" in client.lsp_diagnostics([sys.executable], "/abs.py")["error"]
+    assert (
+        "language_not_tier1"
+        in client.lsp_diagnostics([sys.executable], "a.rs")["error"]
+    )
+    assert (
+        "language_not_tier1"
+        in client.lsp_diagnostics([sys.executable], "a.txt")["error"]
+    )
+    assert (
+        "repo-relative" in client.lsp_diagnostics([sys.executable], "/abs.py")["error"]
+    )
     assert "argv list" in client.lsp_diagnostics("python3", "a.py")["error"]
-    assert "missing" in client.lsp_diagnostics([sys.executable, str(server)], "missing.py")["error"]
+    assert (
+        "missing"
+        in client.lsp_diagnostics([sys.executable, str(server)], "missing.py")["error"]
+    )
 
 
 def test_contract_propose_bundle_shape_and_refusals(tmp_path):
     client = SystemsClient(_ctx(tmp_path))
-    bundle = client.contract_propose("contracts/api.json", '{"v": 1}', "1.2.0", "add field",
-                                     False, ["web"], change_id="ct-1", migration_note="none")
+    bundle = client.contract_propose(
+        "contracts/api.json",
+        '{"v": 1}',
+        "1.2.0",
+        "add field",
+        False,
+        ["web"],
+        change_id="ct-1",
+        migration_note="none",
+    )
     assert bundle["ok"] is True and bundle["pushed"] is False
     assert bundle["branch"] == "bot-00-omes/contract-ct-1"
     assert bundle["bundle"]["pr_title"] == "contract: ct-1 (additive)"
     record = bundle["bundle"]["files"]["contracts/changes/ct-1.yaml"]
-    assert "change_id: ct-1" in record and "- web" in record and "acknowledgements: []" in record
+    assert (
+        "change_id: ct-1" in record
+        and "- web" in record
+        and "acknowledgements: []" in record
+    )
     assert "operator commits" in bundle["reason"]
-    assert "secret_refused" in client.contract_propose("s", "token=x", "1", "s", False, ["w"])["error"]
+    assert (
+        "secret_refused"
+        in client.contract_propose("s", "token=x", "1", "s", False, ["w"])["error"]
+    )
 
 
 def test_design_artifact_truncates_and_misses(tmp_path):
-    client = SystemsClient(_ctx(tmp_path, vcs_show=lambda ref, path: "z" * 70000 if path == "big.md" else None))
+    client = SystemsClient(
+        _ctx(
+            tmp_path,
+            vcs_show=lambda ref, path: "z" * 70000 if path == "big.md" else None,
+        )
+    )
     big = client.design_artifact_get("big.md")
     assert big["truncated"] is True and len(big["content"]) == 60000
     assert "not_found" in client.design_artifact_get("gone.md")["error"]
@@ -146,11 +191,32 @@ def test_approvals_gate_writes_only(tmp_path):
     log = ApprovalLog()
     registry = ToolRegistry(approval_log=log)
     register_systems_tools(registry, SystemsClient(_ctx(tmp_path)))
-    assert json.loads(registry.dispatch("sys_index_query", {"sql": "select 1"}))["rows"] != []
-    for tool, args in (("sys_cache", {"action": "get", "key": "k"}),
-                       ("sys_contract_propose", {"surface": "s", "body": "b", "version": "v",
-                                                 "summary": "s", "breaking": False,
-                                                 "consumers_required": ["w"]})):
-        assert json.loads(registry.dispatch(tool, args)) == {"error": "approval required", "tool": tool}
+    assert (
+        json.loads(registry.dispatch("sys_index_query", {"sql": "select 1"}))["rows"]
+        != []
+    )
+    for tool, args in (
+        ("sys_cache", {"action": "get", "key": "k"}),
+        (
+            "sys_contract_propose",
+            {
+                "surface": "s",
+                "body": "b",
+                "version": "v",
+                "summary": "s",
+                "breaking": False,
+                "consumers_required": ["w"],
+            },
+        ),
+    ):
+        assert json.loads(registry.dispatch(tool, args)) == {
+            "error": "approval required",
+            "tool": tool,
+        }
     assert log.approve("sys_cache", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("sys_cache", {"action": "get", "key": "k"}))["value"] is None
+    assert (
+        json.loads(registry.dispatch("sys_cache", {"action": "get", "key": "k"}))[
+            "value"
+        ]
+        is None
+    )

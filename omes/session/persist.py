@@ -9,6 +9,7 @@ what earlier handles saved.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -40,8 +41,12 @@ def save_session(
         directory,
         "sessions",
         session_id,
-        {"schema": SCHEMA_VERSION, "id": session_id, "messages": messages,
-         "metadata": metadata or {}},
+        {
+            "schema": SCHEMA_VERSION,
+            "id": session_id,
+            "messages": messages,
+            "metadata": metadata or {},
+        },
     )
 
 
@@ -107,10 +112,8 @@ def _write(directory: str | Path, kind: str, item_id: str, document: dict) -> st
             handle.write(body)
         os.replace(tmp_name, target)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_name)
-        except OSError:
-            pass
         raise
     return str(target)
 

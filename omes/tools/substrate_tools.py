@@ -60,7 +60,11 @@ def register_substrate_tools(registry: Any, client: Any) -> list[str]:
     for name in SUBSTRATE_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
         registry.register(
-            name, description, parameters, handlers[name], requires_approval=name in APPROVALS
+            name,
+            description,
+            parameters,
+            handlers[name],
+            requires_approval=name in APPROVALS,
         )
     return list(SUBSTRATE_TOOL_NAMES)
 

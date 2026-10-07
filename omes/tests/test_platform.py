@@ -66,7 +66,9 @@ class _Page:
         return self.page
 
 
-def test_execute_code_runs_python_and_refuses_empty_code(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_execute_code_runs_python_and_refuses_empty_code(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     home = tmp_path / "home"
     home.mkdir()
     registry = ToolRegistry()
@@ -84,10 +86,14 @@ def test_execute_code_runs_python_and_refuses_empty_code(tmp_path: Path, monkeyp
     ran = _load(registry.dispatch("execute_code", {"code": "print(1)"}))
     assert ran["stdout"].strip() == "1"
     assert ran["exit_code"] == 0
-    where = _load(registry.dispatch("execute_code", {"code": "import os; print(os.getcwd())"}))
+    where = _load(
+        registry.dispatch("execute_code", {"code": "import os; print(os.getcwd())"})
+    )
     assert where["exit_code"] == 0
     assert Path(where["stdout"].strip()).resolve() == home.resolve()
-    failed = _load(registry.dispatch("execute_code", {"code": "import sys; sys.exit(3)"}))
+    failed = _load(
+        registry.dispatch("execute_code", {"code": "import sys; sys.exit(3)"})
+    )
     assert failed["exit_code"] == 3
     assert "error" not in failed
 
@@ -133,7 +139,7 @@ def test_mcp_call_reads_one_json_line_and_refuses_a_string_command(
         "if not ok:\n"
         "    sys.stderr.write('bad request\\n')\n"
         "    sys.exit(2)\n"
-        "sys.stdout.write('{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"text\":\"ping\"}}\\n')\n",
+        'sys.stdout.write(\'{"jsonrpc":"2.0","id":1,"result":{"text":"ping"}}\\n\')\n',
         encoding="utf-8",
     )
     registry = ToolRegistry()
@@ -147,7 +153,11 @@ def test_mcp_call_reads_one_json_line_and_refuses_a_string_command(
         refused = _load(
             registry.dispatch(
                 "mcp_call",
-                {"command": sys.executable, "tool": "echo", "arguments": {"text": "ping"}},
+                {
+                    "command": sys.executable,
+                    "tool": "echo",
+                    "arguments": {"text": "ping"},
+                },
             )
         )
     assert "error" in refused
@@ -202,14 +212,18 @@ def test_browser_navigate_and_snapshot_use_the_injected_transport(
     page = _Page()
     registry = ToolRegistry()
     register_platform_tools(registry, home=tmp_path, browser=BrowserSession(page))
-    navigated = _load(registry.dispatch("browser_navigate", {"url": "https://example.test/omes"}))
+    navigated = _load(
+        registry.dispatch("browser_navigate", {"url": "https://example.test/omes"})
+    )
     assert navigated == {"url": "https://example.test/omes", "page": page.page}
     assert page.urls == ["https://example.test/omes"]
     assert _load(registry.dispatch("browser_snapshot", {})) == {"page": page.page}
 
     closed = ToolRegistry()
     register_platform_tools(closed, home=tmp_path, browser=None)
-    assert "error" in _load(closed.dispatch("browser_navigate", {"url": "https://example.test"}))
+    assert "error" in _load(
+        closed.dispatch("browser_navigate", {"url": "https://example.test"})
+    )
     assert "error" in _load(closed.dispatch("browser_snapshot", {}))
     assert page.urls == ["https://example.test/omes"]
     missing = BrowserSession(None)
@@ -226,7 +240,9 @@ def test_approval_gate_blocks_until_a_person_approves():
 
     log = ApprovalLog()
     registry = ToolRegistry(approval_log=log)
-    registry.register("danger", "Needs a person.", _SCHEMA, handler, requires_approval=True)
+    registry.register(
+        "danger", "Needs a person.", _SCHEMA, handler, requires_approval=True
+    )
     blocked = _load(registry.dispatch("danger", {}))
     assert blocked == {"error": "approval required", "tool": "danger"}
     assert calls == []
@@ -249,8 +265,13 @@ def test_approval_gate_blocks_until_a_person_approves():
         return {"ok": True}
 
     bare = ToolRegistry()
-    bare.register("danger", "Needs a person.", _SCHEMA, bare_handler, requires_approval=True)
-    assert _load(bare.dispatch("danger", {})) == {"error": "approval required", "tool": "danger"}
+    bare.register(
+        "danger", "Needs a person.", _SCHEMA, bare_handler, requires_approval=True
+    )
+    assert _load(bare.dispatch("danger", {})) == {
+        "error": "approval required",
+        "tool": "danger",
+    }
     assert bare_calls == []
 
 
@@ -314,7 +335,9 @@ def test_offered_schemas_include_platform_names_and_omit_an_extra_tool(tmp_path:
     registry = ToolRegistry()
     registered = register_platform_tools(registry, home=tmp_path)
     assert registered == list(PLATFORM_TOOL_NAMES)
-    registry.register("not_on_roster", "Registered but not offered.", _SCHEMA, lambda: {"ok": True})
+    registry.register(
+        "not_on_roster", "Registered but not offered.", _SCHEMA, lambda: {"ok": True}
+    )
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     start = len(CODING_TOOL_NAMES) + len(GROWTH_TOOL_NAMES) + len(DELEG_TOOL_NAMES)
     assert roster[start : start + len(PLATFORM_TOOL_NAMES)] == list(PLATFORM_TOOL_NAMES)

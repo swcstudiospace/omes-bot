@@ -121,7 +121,12 @@ def to_anthropic_messages(messages: list) -> tuple[str, list[dict]]:
                             "input": _arguments(function.get("arguments")),
                         }
                     )
-            wire.append({"role": "assistant", "content": blocks or [{"type": "text", "text": ""}]})
+            wire.append(
+                {
+                    "role": "assistant",
+                    "content": blocks or [{"type": "text", "text": ""}],
+                }
+            )
             continue
         wire.append({"role": "user", "content": _text(row.get("content"))})
     return "\n".join(system_parts), wire
@@ -164,4 +169,9 @@ def _text(value: Any) -> str:
     return str(value)
 
 
-__all__ = ["ANTHROPIC_VERSION", "AnthropicProvider", "to_anthropic_messages", "to_anthropic_tools"]
+__all__ = [
+    "ANTHROPIC_VERSION",
+    "AnthropicProvider",
+    "to_anthropic_messages",
+    "to_anthropic_tools",
+]

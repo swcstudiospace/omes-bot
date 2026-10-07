@@ -71,7 +71,9 @@ class ToolRegistry:
 
     def schemas(self) -> list[dict]:
         """OpenAI-style function schemas, in registration order."""
-        return [_schema(self._tools[name]) for name in self._order if name in self._tools]
+        return [
+            _schema(self._tools[name]) for name in self._order if name in self._tools
+        ]
 
     def approval_required(self, name: str) -> bool:
         """Whether ``name`` is registered and flagged as requiring approval."""
@@ -125,7 +127,9 @@ class ToolRegistry:
             self._tracer.span("tool", tool, fields)
             if verdict == "denied" and reason == "policy forbids":
                 self._tracer.span(
-                    "policy", tool, {"verdict": "denied", "reason": f"policy forbids {tool}"}
+                    "policy",
+                    tool,
+                    {"verdict": "denied", "reason": f"policy forbids {tool}"},
                 )
 
 
@@ -200,7 +204,9 @@ def _call(handler: Callable[..., Any], arguments: dict) -> Any:
     missing = [
         name
         for name, item in parameters.items()
-        if name in accepted and item.default is inspect.Parameter.empty and name not in arguments
+        if name in accepted
+        and item.default is inspect.Parameter.empty
+        and name not in arguments
     ]
     if missing:
         raise TypeError("missing required arguments: " + ", ".join(missing))

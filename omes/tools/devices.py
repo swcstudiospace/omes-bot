@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import re
 import subprocess
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 
 class DeviceError(RuntimeError):
@@ -47,16 +48,23 @@ class AdbDevice:
             for part in parts[2:]:
                 if part.startswith("model:"):
                     model = part.split(":", 1)[1]
-            devices.append({"id": parts[0], "platform": "android",
-                            "name": model or parts[0], "state": parts[1]})
+            devices.append(
+                {
+                    "id": parts[0],
+                    "platform": "android",
+                    "name": model or parts[0],
+                    "state": parts[1],
+                }
+            )
         return devices
 
     def screenshot(self, device_id: str, path: str | Path) -> dict[str, Any]:
         """Capture `exec-out screencap -p` to `path`."""
         target = Path(path)
         try:
-            run = self._run(["adb", "-s", device_id, "exec-out", "screencap", "-p"],
-                            timeout=30)
+            run = self._run(
+                ["adb", "-s", device_id, "exec-out", "screencap", "-p"], timeout=30
+            )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise DeviceError(f"adb screenshot: {exc}") from exc
         if run.returncode != 0 or not run.stdout.startswith(b"\x89PNG"):
@@ -78,17 +86,27 @@ class SimctlDevice:
     def list_devices(self) -> list[dict[str, str]]:
         """Parse `simctl list devices available` into rows."""
         try:
-            run = self._run(["xcrun", "simctl", "list", "devices", "available"], timeout=30)
+            run = self._run(
+                ["xcrun", "simctl", "list", "devices", "available"], timeout=30
+            )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise DeviceError(f"simctl list_devices: {exc}") from exc
         if run.returncode != 0:
             raise DeviceError(f"simctl list_devices: exit {run.returncode}")
         devices = []
         for line in run.stdout.decode("utf-8", "replace").splitlines():
-            match = re.match(r"\s+(.+?) \(([0-9A-F-]{36})\) \((Booted|Shutdown)\)", line)
+            match = re.match(
+                r"\s+(.+?) \(([0-9A-F-]{36})\) \((Booted|Shutdown)\)", line
+            )
             if match:
-                devices.append({"id": match.group(2), "platform": "ios",
-                                "name": match.group(1), "state": match.group(3).lower()})
+                devices.append(
+                    {
+                        "id": match.group(2),
+                        "platform": "ios",
+                        "name": match.group(1),
+                        "state": match.group(3).lower(),
+                    }
+                )
         return devices
 
     def screenshot(self, device_id: str, path: str | Path) -> dict[str, Any]:
@@ -96,8 +114,10 @@ class SimctlDevice:
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
         try:
-            run = self._run(["xcrun", "simctl", "io", device_id, "screenshot", str(target)],
-                            timeout=30)
+            run = self._run(
+                ["xcrun", "simctl", "io", device_id, "screenshot", str(target)],
+                timeout=30,
+            )
         except (OSError, subprocess.TimeoutExpired) as exc:
             raise DeviceError(f"simctl screenshot: {exc}") from exc
         if run.returncode != 0 or not target.is_file():
@@ -111,8 +131,11 @@ class AppiumDevice:
     name = "appium"
     platform = "any"
 
-    def __init__(self, server: str = "http://127.0.0.1:4723",
-                 connect: Callable[..., Any] | None = None) -> None:
+    def __init__(
+        self,
+        server: str = "http://127.0.0.1:4723",
+        connect: Callable[..., Any] | None = None,
+    ) -> None:
         self.server = server
         self._connect = connect or self._default_connect
 
@@ -128,11 +151,18 @@ class AppiumDevice:
 
     def list_devices(self) -> list[dict[str, str]]:
         """Appium has no device enumeration; report the server endpoint."""
-        return [{"id": self.server, "platform": "any",
-                 "name": f"appium@{self.server}", "state": "unknown"}]
+        return [
+            {
+                "id": self.server,
+                "platform": "any",
+                "name": f"appium@{self.server}",
+                "state": "unknown",
+            }
+        ]
 
-    def screenshot(self, device_id: str, path: str | Path,
-                   capabilities: dict | None = None) -> dict[str, Any]:
+    def screenshot(
+        self, device_id: str, path: str | Path, capabilities: dict | None = None
+    ) -> dict[str, Any]:
         """Open a session, save the screenshot, quit the session."""
         del device_id
         target = Path(path)
@@ -149,7 +179,9 @@ class AppiumDevice:
             raise DeviceError("appium screenshot: no file produced")
         return {"path": str(target), "bytes": target.stat().st_size}
 
-    def act(self, device_id: str, action: dict, capabilities: dict | None = None) -> dict[str, Any]:
+    def act(
+        self, device_id: str, action: dict, capabilities: dict | None = None
+    ) -> dict[str, Any]:
         """One tap/type/back on a fresh session. `action` names `kind` + args."""
         del device_id
         kind = action.get("kind")

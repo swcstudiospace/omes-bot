@@ -22,7 +22,9 @@ def _load(payload: str) -> dict:
 
 
 def _policy(hosts: list[str]) -> SeatPolicy:
-    return SeatPolicy({"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}})
+    return SeatPolicy(
+        {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}}
+    )
 
 
 def _client(transport: FakeTransport) -> XClient:
@@ -87,16 +89,16 @@ def test_publishing_requires_approval_and_threads_chain():
     assert log.approve("x_post", "ada")["approved"] is True
     assert log.approve("x_post_thread", "ada")["approved"] is True
 
-    posted = _load(
-        registry.dispatch("x_post", {"text": "hello", "reply_to": "m1"})
-    )
+    posted = _load(registry.dispatch("x_post", {"text": "hello", "reply_to": "m1"}))
     assert posted == {"id": "p1", "text": "hello"}
     assert transport.calls[0][3] == {
         "text": "hello",
         "reply": {"in_reply_to_tweet_id": "m1"},
     }
 
-    threaded = _load(registry.dispatch("x_post_thread", {"texts": ["one", "two", "three"]}))
+    threaded = _load(
+        registry.dispatch("x_post_thread", {"texts": ["one", "two", "three"]})
+    )
     assert [post["id"] for post in threaded["posts"]] == ["t1", "t2", "t3"]
     bodies = [call[3] for call in transport.calls[1:]]
     assert bodies[0] == {"text": "one"}
@@ -110,7 +112,8 @@ def test_media_upload_stages_bytes_and_rejects_bad_base64():
 
     staged = _load(
         registry.dispatch(
-            "x_upload_media", {"data_b64": base64.b64encode(b"png-bytes").decode("ascii")}
+            "x_upload_media",
+            {"data_b64": base64.b64encode(b"png-bytes").decode("ascii")},
         )
     )
     assert staged == {"media_id": "mid-1"}
@@ -134,7 +137,7 @@ def test_api_errors_surface_and_unapproved_hosts_get_no_credential():
     transport = FakeTransport()
     broker = CredentialBroker(_policy(["api.x.com"]), {"X_API_TOKEN": "x-secret"})
     client = XClient(transport).with_broker(broker)
-    with pytest.raises(ProviderError, match="upload.twitter.com"):
+    with pytest.raises(ProviderError, match=r"upload\.twitter\.com"):
         client.upload_media(b"bytes")
     assert transport.calls == []
 

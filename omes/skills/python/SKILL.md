@@ -43,8 +43,9 @@ Type hints on every public function, every dataclass, every module-level constan
 obvious.
 
 ```python
-def fetch_account(account_id: AccountId, *, include_closed: bool = False) -> Account | None:
-    ...
+def fetch_account(
+    account_id: AccountId, *, include_closed: bool = False
+) -> Account | None: ...
 ```
 
 - `X | None`, not bare `Optional` imports in new code (3.10+).
@@ -118,8 +119,8 @@ except ValueError:
 ```python
 def test_rejects_negative():
     with pytest.raises(ValueError):
-        validate(-1)        # passes if validate raises ValueError for ANY reason,
-                            # including a typo in the function name
+        validate(-1)  # passes if validate raises ValueError for ANY reason,
+        # including a typo in the function name
 ```
 
 ### §6 Performance

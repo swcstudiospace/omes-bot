@@ -75,7 +75,9 @@ def test_registry_refuses_a_disallowed_tool_before_execution(tmp_path: Path):
 
     open_registry = ToolRegistry()
     register_coding_tools(open_registry, root)
-    wrote = _load(open_registry.dispatch("write_file", {"path": "ok.txt", "content": "z"}))
+    wrote = _load(
+        open_registry.dispatch("write_file", {"path": "ok.txt", "content": "z"})
+    )
     assert "error" not in wrote
 
 
@@ -97,11 +99,15 @@ def test_writes_to_read_only_paths_leave_files_unchanged(tmp_path: Path):
 
     diff = "@@ -1 +1 @@\n-<seat/>\n+<seat changed/>\n"
     for tool in ("patch_file", "edit_file"):
-        outcome = _load(registry.dispatch(tool, {"path": "prompts/seat.xml", "diff": diff}))
+        outcome = _load(
+            registry.dispatch(tool, {"path": "prompts/seat.xml", "diff": diff})
+        )
         assert outcome["error"] == "policy forbids writing prompts/seat.xml"
     assert target.read_bytes() == before
 
-    allowed = _load(registry.dispatch("write_file", {"path": "src/a.py", "content": "1"}))
+    allowed = _load(
+        registry.dispatch("write_file", {"path": "src/a.py", "content": "1"})
+    )
     assert "error" not in allowed
 
 
@@ -129,16 +135,22 @@ def test_advisor_flags_expansions_and_ignores_narrowing():
         "read-only protection removed: contracts/**",
     ]
 
-    narrowed = diff_policy({"version": 1}, {"version": 1, "tools": {"allow": ["read_file"]}})
+    narrowed = diff_policy(
+        {"version": 1}, {"version": 1, "tools": {"allow": ["read_file"]}}
+    )
     assert narrowed["expansions"] == []
-    widened = diff_policy({"version": 1, "tools": {"allow": ["read_file"]}}, {"version": 1})
+    widened = diff_policy(
+        {"version": 1, "tools": {"allow": ["read_file"]}}, {"version": 1}
+    )
     assert widened["expansions"] == ["tools widened to allow-all"]
 
 
 def test_audit_log_records_every_dispatch(tmp_path: Path):
     log = AuditLog(tmp_path / "audit.ndjson")
     registry = ToolRegistry(audit=log)
-    registry.register("ok", "d", {"type": "object", "properties": {}}, lambda: {"fine": True})
+    registry.register(
+        "ok", "d", {"type": "object", "properties": {}}, lambda: {"fine": True}
+    )
 
     def boom():
         raise RuntimeError("kaput")
@@ -164,7 +176,9 @@ def test_audit_log_records_every_dispatch(tmp_path: Path):
         policy=SeatPolicy({"version": 1, "tools": {"allow": []}}),
         audit=denied_log,
     )
-    denied_registry.register("ok", "d", {"type": "object", "properties": {}}, lambda: True)
+    denied_registry.register(
+        "ok", "d", {"type": "object", "properties": {}}, lambda: True
+    )
     denied_registry.dispatch("ok", {})
     assert [record["verdict"] for record in denied_log.violations()] == ["denied"]
 

@@ -30,17 +30,27 @@ class MemoryManager:
                 parts.append(block)
         return "\n\n".join(parts)
 
-    def handle_tool_call(self, tool_name: str, args: dict[str, Any], **kwargs: Any) -> str:
+    def handle_tool_call(
+        self, tool_name: str, args: dict[str, Any], **kwargs: Any
+    ) -> str:
         """Dispatch ``memory`` to the builtin provider. Other names are an error."""
         if tool_name != "memory":
             return json.dumps(
-                {"success": False, "error": f"No memory provider handles tool '{tool_name}'."},
+                {
+                    "success": False,
+                    "error": f"No memory provider handles tool '{tool_name}'.",
+                },
                 ensure_ascii=False,
             )
-        provider = next((item for item in self._providers if item.name == "builtin"), None)
+        provider = next(
+            (item for item in self._providers if item.name == "builtin"), None
+        )
         if provider is None:
             return json.dumps(
-                {"success": False, "error": "No memory provider handles tool 'memory'."},
+                {
+                    "success": False,
+                    "error": "No memory provider handles tool 'memory'.",
+                },
                 ensure_ascii=False,
             )
         return provider.handle_tool_call(tool_name, args or {}, **kwargs)

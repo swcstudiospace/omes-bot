@@ -14,7 +14,9 @@ from omes.tools.x import XClient
 def _mentions_script(ids: list[str]) -> list[dict]:
     return [
         {
-            "data": [{"id": mention_id, "text": f"hello {mention_id}"} for mention_id in ids],
+            "data": [
+                {"id": mention_id, "text": f"hello {mention_id}"} for mention_id in ids
+            ],
             "meta": {"result_count": len(ids)},
         }
     ]
@@ -57,22 +59,29 @@ def test_sweep_resumes_without_duplicating_drafts(tmp_path: Path):
 
     with pytest.raises(RuntimeError, match="crash"):
         sweep_mentions(
-            XClient(first, token="fake"), flaky, directory=tmp_path, sweep_id="s1",
+            XClient(first, token="fake"),
+            flaky,
+            directory=tmp_path,
+            sweep_id="s1",
             user_id="bot-9",
         )
     assert attempts == ["m1", "m2"]
-    assert load_sweep(tmp_path, "s1")["drafted"] == ["m1"]
+    first_state = load_sweep(tmp_path, "s1")
+    assert first_state is not None and first_state["drafted"] == ["m1"]
 
     second = FakeTransport(script=_mentions_script(["m1", "m2", "m3"]))
     result = sweep_mentions(
         XClient(second, token="fake"),
         lambda mention: f"reply to {mention['id']}",
-        directory=tmp_path, sweep_id="s1", user_id="bot-9",
+        directory=tmp_path,
+        sweep_id="s1",
+        user_id="bot-9",
     )
 
     assert [draft["mention_id"] for draft in result["drafts"]] == ["m2", "m3"]
     assert result["total"] == 3
-    assert load_sweep(tmp_path, "s1")["drafted"] == ["m1", "m2", "m3"]
+    final_state = load_sweep(tmp_path, "s1")
+    assert final_state is not None and final_state["drafted"] == ["m1", "m2", "m3"]
 
 
 def test_sweep_skips_blank_drafts_once(tmp_path: Path):
@@ -80,7 +89,9 @@ def test_sweep_skips_blank_drafts_once(tmp_path: Path):
     result = sweep_mentions(
         XClient(transport, token="fake"),
         lambda mention: "" if mention["id"] == "m1" else "thanks!",
-        directory=tmp_path, sweep_id="s2", user_id="bot-9",
+        directory=tmp_path,
+        sweep_id="s2",
+        user_id="bot-9",
     )
 
     assert result["skipped"] == ["m1"]
@@ -88,8 +99,11 @@ def test_sweep_skips_blank_drafts_once(tmp_path: Path):
 
     again = FakeTransport(script=_mentions_script(["m1", "m2"]))
     rerun = sweep_mentions(
-        XClient(again, token="fake"), lambda mention: "thanks!",
-        directory=tmp_path, sweep_id="s2", user_id="bot-9",
+        XClient(again, token="fake"),
+        lambda mention: "thanks!",
+        directory=tmp_path,
+        sweep_id="s2",
+        user_id="bot-9",
     )
     assert rerun["drafts"] == []
     assert rerun["skipped"] == []

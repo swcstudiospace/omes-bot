@@ -94,9 +94,7 @@ class JobControl:
         assert exit_code is not None
         return self._reap(job_id, child, exit_code)
 
-    def _reap(
-        self, job_id: str, child: subprocess.Popen, exit_code: int
-    ) -> dict:
+    def _reap(self, job_id: str, child: subprocess.Popen, exit_code: int) -> dict:
         stdout, stderr = child.communicate()
         result = {
             "running": False,

@@ -81,12 +81,17 @@ class HindsightService:
                 {"items": payload_items},
             )
         except Exception as exc:
-            raise HindsightError(f"hindsight retain failed: {self._redact(_reason(exc))}") from exc
+            raise HindsightError(
+                f"hindsight retain failed: {self._redact(_reason(exc))}"
+            ) from exc
         if not isinstance(response, dict):
             raise HindsightError("hindsight retain returned no result object")
         if response.get("success") is True:
             count = response.get("items_count", len(payload_items))
-            return {"ok": True, "count": count if isinstance(count, int) else len(payload_items)}
+            return {
+                "ok": True,
+                "count": count if isinstance(count, int) else len(payload_items),
+            }
         return {"ok": False, "reason": f"bank {self._bank} refused retain"}
 
     def recall(
@@ -105,20 +110,33 @@ class HindsightService:
         for entry in wanted:
             if entry not in _RECALL_TYPES:
                 raise ValueError(f"unknown recall type {entry!r}")
-        body = {"query": query, "types": wanted, "budget": "low", "max_tokens": max_tokens}
+        body = {
+            "query": query,
+            "types": wanted,
+            "budget": "low",
+            "max_tokens": max_tokens,
+        }
         try:
             response = self._transport.post(
                 self._bank_url + "/memories/recall", self._headers(), body
             )
         except Exception as exc:
-            raise HindsightError(f"hindsight recall failed: {self._redact(_reason(exc))}") from exc
+            raise HindsightError(
+                f"hindsight recall failed: {self._redact(_reason(exc))}"
+            ) from exc
         results = response.get("results", []) if isinstance(response, dict) else []
         if not isinstance(results, list):
             raise HindsightError("hindsight recall returned no results list")
-        texts = [item["text"] for item in results if isinstance(item, dict) and isinstance(item.get("text"), str)]
+        texts = [
+            item["text"]
+            for item in results
+            if isinstance(item, dict) and isinstance(item.get("text"), str)
+        ]
         return texts[:limit]
 
-    def reflect(self, query: str, *, budget: str = "low", max_tokens: int = 4096) -> str:
+    def reflect(
+        self, query: str, *, budget: str = "low", max_tokens: int = 4096
+    ) -> str:
         """Deep synthesis over the bank for ``query``."""
         if budget not in _BUDGETS:
             raise ValueError(f"unknown reflect budget {budget!r}")
@@ -131,7 +149,9 @@ class HindsightService:
                 {"query": query, "budget": budget, "max_tokens": max_tokens},
             )
         except Exception as exc:
-            raise HindsightError(f"hindsight reflect failed: {self._redact(_reason(exc))}") from exc
+            raise HindsightError(
+                f"hindsight reflect failed: {self._redact(_reason(exc))}"
+            ) from exc
         if not isinstance(response, dict) or not isinstance(response.get("text"), str):
             raise HindsightError("hindsight reflect returned no synthesis text")
         return response["text"]
@@ -199,7 +219,9 @@ def _retain_items(
         elif isinstance(item, dict):
             content = item.get("content")
             if not isinstance(content, str) or content.strip() == "":
-                raise ValueError("retain dict items must carry non-empty string content")
+                raise ValueError(
+                    "retain dict items must carry non-empty string content"
+                )
             payload.append(dict(item))
         else:
             raise ValueError("items must be a list of strings or dicts")

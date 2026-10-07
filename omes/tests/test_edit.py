@@ -45,7 +45,9 @@ def test_edit_file_applies_a_well_formed_diff(tmp_path: Path):
     target.write_bytes(original.encode("utf-8"))
 
     applied = _load(
-        registry.dispatch("edit_file", {"path": "code.txt", "diff": _diff(original, desired)})
+        registry.dispatch(
+            "edit_file", {"path": "code.txt", "diff": _diff(original, desired)}
+        )
     )
 
     assert applied["applied"] is True
@@ -149,7 +151,9 @@ def test_edit_file_applies_a_second_hunk_that_needs_repair(tmp_path: Path):
     assert len(headers) == 2
     skewed = diff.replace(headers[1], "@@ -12,7 +12,7 @@\n", 1)
 
-    applied = _load(registry.dispatch("edit_file", {"path": "code.txt", "diff": skewed}))
+    applied = _load(
+        registry.dispatch("edit_file", {"path": "code.txt", "diff": skewed})
+    )
 
     assert applied["applied"] is True
     assert applied["method"] == "offset"

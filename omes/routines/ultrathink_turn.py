@@ -24,23 +24,34 @@ def _candidates(env: dict[str, str]) -> list[Path]:
     if env.get("ULTRATHINK_STATE_DIR"):
         ordered.append(str(Path(env["ULTRATHINK_STATE_DIR"]) / "last-plan.json"))
     if env.get("GROK_PLUGIN_DATA"):
-        ordered.append(str(Path(env["GROK_PLUGIN_DATA"]) / "ultrathink" / "last-plan.json"))
-    ordered.extend([
-        str(Path(grok_home) / "plugin-data" / "ultrathink" / "last-plan.json"),
-        str(Path(hermes_home) / "ultrathink" / "last-plan.json"),
-        str(Path(xdg) / "muse" / "ultrathink" / "last-plan.json"),
-    ])
+        ordered.append(
+            str(Path(env["GROK_PLUGIN_DATA"]) / "ultrathink" / "last-plan.json")
+        )
+    ordered.extend(
+        [
+            str(Path(grok_home) / "plugin-data" / "ultrathink" / "last-plan.json"),
+            str(Path(hermes_home) / "ultrathink" / "last-plan.json"),
+            str(Path(xdg) / "muse" / "ultrathink" / "last-plan.json"),
+        ]
+    )
     if env.get("PI_CODING_AGENT_DIR"):
-        ordered.append(str(Path(env["PI_CODING_AGENT_DIR"]) / "ultrathink" / "last-plan.json"))
+        ordered.append(
+            str(Path(env["PI_CODING_AGENT_DIR"]) / "ultrathink" / "last-plan.json")
+        )
     else:
-        ordered.append(str(Path(home) / ".omp" / "agent" / "ultrathink" / "last-plan.json"))
+        ordered.append(
+            str(Path(home) / ".omp" / "agent" / "ultrathink" / "last-plan.json")
+        )
     ordered.append(str(Path(home) / ".claude" / "ultrathink" / "last-plan.json"))
     return [Path(p) for p in ordered]
 
 
-def resolve_turn_plan(*, state_dirs: list[str | Path] | None = None,
-                      env: dict[str, str] | None = None,
-                      max_age_hours: float = 24.0) -> dict[str, Any]:
+def resolve_turn_plan(
+    *,
+    state_dirs: list[str | Path] | None = None,
+    env: dict[str, str] | None = None,
+    max_age_hours: float = 24.0,
+) -> dict[str, Any]:
     """Return `{found, plan_path, spec_path, spec_exists, stale}` for this turn.
 
     A plan older than `max_age_hours` belongs to an earlier request:
@@ -67,11 +78,28 @@ def resolve_turn_plan(*, state_dirs: list[str | Path] | None = None,
         except OSError:
             continue
         if age_hours > max_age_hours:
-            return {"found": False, "plan_path": str(path), "spec_path": None,
-                    "spec_exists": False, "stale": True}
-        spec_path = plan.get("specPath") if isinstance(plan.get("specPath"), str) else None
-        spec_exists = bool(spec_path) and Path(spec_path).is_file()
-        return {"found": True, "plan_path": str(path), "spec_path": spec_path,
-                "spec_exists": spec_exists, "stale": False}
-    return {"found": False, "plan_path": None, "spec_path": None, "spec_exists": False,
-            "stale": False}
+            return {
+                "found": False,
+                "plan_path": str(path),
+                "spec_path": None,
+                "spec_exists": False,
+                "stale": True,
+            }
+        spec_path = (
+            plan.get("specPath") if isinstance(plan.get("specPath"), str) else None
+        )
+        spec_exists = spec_path is not None and Path(spec_path).is_file()
+        return {
+            "found": True,
+            "plan_path": str(path),
+            "spec_path": spec_path,
+            "spec_exists": spec_exists,
+            "stale": False,
+        }
+    return {
+        "found": False,
+        "plan_path": None,
+        "spec_path": None,
+        "spec_exists": False,
+        "stale": False,
+    }

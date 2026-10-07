@@ -8,6 +8,7 @@ the curator's earned-rule decides.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import tempfile
@@ -102,16 +103,16 @@ def _write(directory: str | Path, state: dict) -> None:
     target = _path(directory)
     target.parent.mkdir(parents=True, exist_ok=True)
     body = json.dumps(state, indent=2, sort_keys=True)
-    fd, tmp_name = tempfile.mkstemp(dir=str(target.parent), prefix=".nightly.", suffix=".tmp")
+    fd, tmp_name = tempfile.mkstemp(
+        dir=str(target.parent), prefix=".nightly.", suffix=".tmp"
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as handle:
             handle.write(body)
         os.replace(tmp_name, target)
     except BaseException:
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_name)
-        except OSError:
-            pass
         raise
 
 

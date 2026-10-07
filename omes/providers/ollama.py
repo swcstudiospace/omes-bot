@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from omes.providers.base import Provider, ProviderError
-from omes.providers.openai import normalize_tool_call, to_openai_messages, to_openai_tools
+from omes.providers.openai import (
+    normalize_tool_call,
+    to_openai_messages,
+    to_openai_tools,
+)
 
 
 @dataclass

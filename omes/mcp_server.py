@@ -74,13 +74,20 @@ class _UrllibXTransport:
     """Minimal X transport over urllib. Only built when a token is configured."""
 
     @staticmethod
-    def _request(method: str, url: str, headers: dict, body: Any = None,
-                 params: dict | None = None) -> dict:
+    def _request(
+        method: str,
+        url: str,
+        headers: dict,
+        body: Any = None,
+        params: dict | None = None,
+    ) -> dict:
         import urllib.parse
         import urllib.request
 
         if params:
-            query = urllib.parse.urlencode({k: v for k, v in params.items() if v is not None})
+            query = urllib.parse.urlencode(
+                {k: v for k, v in params.items() if v is not None}
+            )
             url = f"{url}?{query}" if query else url
         data = json.dumps(body).encode("utf-8") if body is not None else None
         merged = dict(headers)
@@ -105,9 +112,14 @@ def _json_env(env: dict, name: str) -> dict:
     return value if isinstance(value, dict) else {}
 
 
-def default_registry(root: str | Path, home: str | Path, *,
-                     policy: Any = None, approval_log: Any = None,
-                     env: dict | None = None) -> ToolRegistry:
+def default_registry(
+    root: str | Path,
+    home: str | Path,
+    *,
+    policy: Any = None,
+    approval_log: Any = None,
+    env: dict | None = None,
+) -> ToolRegistry:
     """Wire every family. Delegate needs a live agent: skipped.
 
     `policy` gates dispatch names and file writes; without it the
@@ -124,32 +136,54 @@ def default_registry(root: str | Path, home: str | Path, *,
     root = Path(root)
     home = Path(home)
     register_coding_tools(registry, root / "omes", policy=policy)
-    register_growth_tools(registry, skills_root=root / "omes" / "skills",
-                          memory_dir=root / "omes" / "memory",
-                          session_db=root / "omes" / "sessions.db")
+    register_growth_tools(
+        registry,
+        skills_root=root / "omes" / "skills",
+        memory_dir=root / "omes" / "memory",
+        session_db=root / "omes" / "sessions.db",
+    )
     register_platform_tools(registry, home=home)
     register_ide_tools(registry, root)
     x_token = env.get("X_API_TOKEN", "")
-    register_x_tools(registry, XClient(transport=_UrllibXTransport() if x_token else None,
-                                      token=x_token))
-    register_telegram_tools(registry, TelegramClient(
-        make_bot=None, token=env.get("TELEGRAM_BOT_TOKEN", "")))
-    register_discord_tools(registry, DiscordClient(
-        make_client=None, token=env.get("DISCORD_BOT_TOKEN", "")))
+    register_x_tools(
+        registry,
+        XClient(transport=_UrllibXTransport() if x_token else None, token=x_token),
+    )
+    register_telegram_tools(
+        registry, TelegramClient(make_bot=None, token=env.get("TELEGRAM_BOT_TOKEN", ""))
+    )
+    register_discord_tools(
+        registry,
+        DiscordClient(make_client=None, token=env.get("DISCORD_BOT_TOKEN", "")),
+    )
     register_lead_tools(registry, LeadClient(LeadContext(root=root)))
     register_systems_tools(registry, SystemsClient(SystemsContext(root=root)))
     register_web_tools(registry, WebClient(WebContext(root=root)))
     register_mobile_tools(registry, MobileClient(MobileContext(root=root)))
     register_infra_tools(registry, InfraClient(InfraContext()))
     register_quality_tools(registry, QualityClient(QualityContext(root=root)))
-    register_packs_tools(registry, PacksClient(PacksContext(
-        packs=_json_env(env, "OMES_PACKS_JSON"),
-        api_bases=_json_env(env, "OMES_PACK_API_BASES_JSON"))))
-    register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext(
-        root=env.get("ULTRATHINK_ROOT", ""))))
-    register_substrate_tools(registry, SubstrateClient(
-        env.get("SUBSTRATE_URL", "") or SUBSTRATE_DEFAULT_URL,
-        token=env.get("SUBSTRATE_TOKEN", "") or env.get("SUBSTRATE_TOKEN_GROK_BOT", "") or None))
+    register_packs_tools(
+        registry,
+        PacksClient(
+            PacksContext(
+                packs=_json_env(env, "OMES_PACKS_JSON"),
+                api_bases=_json_env(env, "OMES_PACK_API_BASES_JSON"),
+            )
+        ),
+    )
+    register_ultrathink_tools(
+        registry,
+        UltrathinkClient(UltrathinkContext(root=env.get("ULTRATHINK_ROOT", ""))),
+    )
+    register_substrate_tools(
+        registry,
+        SubstrateClient(
+            env.get("SUBSTRATE_URL", "") or SUBSTRATE_DEFAULT_URL,
+            token=env.get("SUBSTRATE_TOKEN", "")
+            or env.get("SUBSTRATE_TOKEN_GROK_BOT", "")
+            or None,
+        ),
+    )
     return registry
 
 
@@ -161,8 +195,13 @@ def _mcp_tools(registry: ToolRegistry, roster: list[str] | None) -> list[Tool]:
         name = fn.get("name", "")
         if allowed is not None and name not in allowed:
             continue
-        out.append(Tool(name=name, description=fn.get("description", ""),
-                        inputSchema=fn.get("parameters", {"type": "object"})))
+        out.append(
+            Tool(
+                name=name,
+                description=fn.get("description", ""),
+                input_schema=fn.get("parameters", {"type": "object"}),
+            )
+        )
     return out
 
 
@@ -187,8 +226,9 @@ def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
         from mcp.types import CallToolResult
 
         if allowed is not None and params.name not in allowed:
-            payload = json.dumps({"error": f"policy forbids {params.name}",
-                                  "tool": params.name})
+            payload = json.dumps(
+                {"error": f"policy forbids {params.name}", "tool": params.name}
+            )
         else:
             payload = registry.dispatch(params.name, params.arguments or {})
         try:
@@ -196,17 +236,21 @@ def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
         except ValueError:
             decoded = {"output": payload}
         is_error = isinstance(decoded, dict) and "error" in decoded
-        return CallToolResult(content=[TextContent(type="text", text=payload)],
-                              isError=is_error)
+        return CallToolResult(
+            content=[TextContent(type="text", text=payload)], is_error=is_error
+        )
 
     return _call_tool
 
 
 def build_server(registry: ToolRegistry, roster: list[str] | None = None) -> Server:
     """Serve `registry` over MCP. `roster` limits listing and calling."""
-    return Server(SERVER_NAME, version=SERVER_VERSION,
-                  on_list_tools=list_tools_handler(registry, roster),
-                  on_call_tool=call_tool_handler(registry, roster))
+    return Server(
+        SERVER_NAME,
+        version=SERVER_VERSION,
+        on_list_tools=list_tools_handler(registry, roster),
+        on_call_tool=call_tool_handler(registry, roster),
+    )
 
 
 async def _serve(server: Server) -> None:
@@ -218,10 +262,18 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="omes-mcp-server")
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--home", type=Path, default=Path.home())
-    parser.add_argument("--no-roster", action="store_true",
-                        help="serve every registered tool, not just the roster")
-    parser.add_argument("--approve", action="append", default=[], metavar="TOOL:APPROVER",
-                        help="pre-approve one gated tool (repeatable)")
+    parser.add_argument(
+        "--no-roster",
+        action="store_true",
+        help="serve every registered tool, not just the roster",
+    )
+    parser.add_argument(
+        "--approve",
+        action="append",
+        default=[],
+        metavar="TOOL:APPROVER",
+        help="pre-approve one gated tool (repeatable)",
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
@@ -231,7 +283,10 @@ def main(argv: list[str] | None = None) -> int:
         try:
             roster = roster_names(roster_path.read_text(encoding="utf-8"))
         except OSError as exc:
-            print(f"omes-mcp-server: cannot read roster {roster_path}: {exc}", file=sys.stderr)
+            print(
+                f"omes-mcp-server: cannot read roster {roster_path}: {exc}",
+                file=sys.stderr,
+            )
             return 2
     try:
         policy = SeatPolicy.load(root / "omes" / "contracts" / "policies" / "omes.json")
@@ -242,16 +297,21 @@ def main(argv: list[str] | None = None) -> int:
     for item in args.approve:
         tool, _, approver = item.partition(":")
         if not tool or not approver:
-            print(f"omes-mcp-server: bad --approve {item!r}, want TOOL:APPROVER",
-                  file=sys.stderr)
+            print(
+                f"omes-mcp-server: bad --approve {item!r}, want TOOL:APPROVER",
+                file=sys.stderr,
+            )
             return 2
         outcome = log.approve(tool, approver)
         if not outcome.get("approved"):
-            print(f"omes-mcp-server: cannot pre-approve {tool}: {outcome.get('error')}",
-                  file=sys.stderr)
+            print(
+                f"omes-mcp-server: cannot pre-approve {tool}: {outcome.get('error')}",
+                file=sys.stderr,
+            )
             return 2
-    registry = default_registry(root, args.home, policy=policy, approval_log=log,
-                                env=dict(os.environ))
+    registry = default_registry(
+        root, args.home, policy=policy, approval_log=log, env=dict(os.environ)
+    )
     asyncio.run(_serve(build_server(registry, roster)))
     return 0
 

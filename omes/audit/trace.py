@@ -9,7 +9,7 @@ String field values are stored redacted. Nothing attached, nothing recorded.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 from omes.credentials.redact import redact_text
@@ -36,7 +36,7 @@ class Tracer:
         }
         entry: dict[str, Any] = {
             "seq": len(self._spans) + 1,
-            "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "kind": str(kind),
             "name": str(name),
             "fields": cleaned,

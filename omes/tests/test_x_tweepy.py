@@ -82,9 +82,7 @@ def test_me_and_reads_map_to_v2_calls():
 
 
 def test_mentions_passes_pagination_token():
-    client, made = _made_client(
-        [_response([{"id": "m3"}], {"result_count": 1})]
-    )
+    client, made = _made_client([_response([{"id": "m3"}], {"result_count": 1})])
     result = client.mentions(user_id="u-1", pagination_token="page-2")
     assert [post["id"] for post in result["posts"]] == ["m3"]
     assert made[0].calls == [
@@ -120,7 +118,11 @@ def test_post_and_thread_map_reply_and_media():
     )
     assert calls[1][1]["text"] == "one"
     assert "in_reply_to_tweet_id" not in calls[1][1]
-    assert calls[2][1] == {"text": "two", "in_reply_to_tweet_id": "t1", "user_auth": False}
+    assert calls[2][1] == {
+        "text": "two",
+        "in_reply_to_tweet_id": "t1",
+        "user_auth": False,
+    }
 
 
 class _Fallback:
@@ -167,7 +169,11 @@ def test_tweepy_errors_become_x_errors_naming_the_endpoint():
 def test_unknown_paths_need_a_fallback():
     transport = TweepyTransport(make_client=lambda token: StubClient(token, []))
     with pytest.raises(XError, match="unsupported"):
-        transport.get("https://api.x.com/2/users/search", {"Authorization": "Bearer [REDACTED]"}, {})
+        transport.get(
+            "https://api.x.com/2/users/search",
+            {"Authorization": "Bearer [REDACTED]"},
+            {},
+        )
 
 
 def test_blank_token_is_refused_before_any_client_call():

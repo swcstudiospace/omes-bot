@@ -9,7 +9,8 @@ the report consolidates it. Invalid receipts are listed, never dropped.
 
 from __future__ import annotations
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from omes.receipts import ReceiptError, validate_receipt
 from omes.tools.lead import IntakeStore
@@ -73,7 +74,9 @@ def run_lead_pass(
         except ReceiptError as exc:
             ticket["status"] = "blocked"
             ticket["reason"] = f"invalid receipt: {exc}"
-            invalid.append({"ticket_id": ticket["ticket_id"], "problems": str(exc).splitlines()})
+            invalid.append(
+                {"ticket_id": ticket["ticket_id"], "problems": str(exc).splitlines()}
+            )
             intake.ack(record["intake_id"], {"status": "open", "by": by})
             tickets.append(ticket)
             continue
@@ -85,10 +88,13 @@ def run_lead_pass(
         )
         tickets.append(ticket)
     if todos is not None:
-        todo_write(todos, [
-            {"content": f"{t['ticket_id']}: {t['ask']}", "status": t["status"]}
-            for t in tickets
-        ])
+        todo_write(
+            todos,
+            [
+                {"content": f"{t['ticket_id']}: {t['ask']}", "status": t["status"]}
+                for t in tickets
+            ],
+        )
     done = sum(1 for t in tickets if t["status"] == "done")
     blocked = [t["ticket_id"] for t in tickets if t["status"] == "blocked"]
     lines = [f"{done}/{len(tickets)} tickets done."]
@@ -96,8 +102,12 @@ def run_lead_pass(
         lines.append(f"- {row['ticket_id']}: receipt holds.")
     for ticket_id in blocked:
         lines.append(f"- {ticket_id}: blocked.")
-    return {"tickets": tickets, "receipts": receipts, "invalid": invalid,
-            "report": "\n".join(lines)}
+    return {
+        "tickets": tickets,
+        "receipts": receipts,
+        "invalid": invalid,
+        "report": "\n".join(lines),
+    }
 
 
 __all__ = ["run_lead_pass"]

@@ -9,8 +9,9 @@ from __future__ import annotations
 
 import json
 import uuid
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from omes.agent.conversation_loop import Agent, run_conversation
 from omes.agent.model import Model
@@ -51,11 +52,11 @@ class JobStore:
         self._save()
         return job_id
 
-    def tick(self, now: int | float, runner: Callable[[str], str]) -> list[dict]:
+    def tick(self, now: int | float, runner: Callable[[str], Any]) -> list[dict]:
         """Run each due job that is not complete. Leave a later job unchanged.
 
         ``runner(prompt)`` is called once per due job. ``last_result`` becomes
-        that string and ``last_ran_at`` becomes ``now``. An interval moves
+        that value and ``last_ran_at`` becomes ``now``. An interval moves
         ``due_at`` to ``now + interval_seconds``. A one-shot job completes.
         Each execution is recorded in the job's bounded history, and a job
         already claimed or completed for ``now`` is not re-run.

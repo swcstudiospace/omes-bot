@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from omes.agent.conversation_loop import Agent, run_conversation
-from omes.agent.harness import emit
+from omes.agent.harness import emit, events_of
 from omes.audit.log import AuditLog
 from omes.credentials.broker import CredentialBroker
 from omes.credentials.redact import REDACTED, redact_text
@@ -21,11 +21,15 @@ from omes.providers.grok import GrokProvider
 
 
 def _policy(hosts: list[str]) -> SeatPolicy:
-    return SeatPolicy({"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}})
+    return SeatPolicy(
+        {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}}
+    )
 
 
 def test_broker_injects_the_key_the_agent_never_handles():
-    broker = CredentialBroker(_policy(["api.x.ai"]), {"XAI_API_KEY": "xai-secret-value"})
+    broker = CredentialBroker(
+        _policy(["api.x.ai"]), {"XAI_API_KEY": "xai-secret-value"}
+    )
     transport = FakeTransport(
         script=[{"choices": [{"message": {"content": "hi"}, "finish_reason": "stop"}]}]
     )
@@ -34,7 +38,7 @@ def test_broker_injects_the_key_the_agent_never_handles():
     result = run_conversation(agent, "ping")
 
     assert result["final_response"] == "hi"
-    method, url, headers, _body = transport.calls[0]
+    _method, url, headers, _body = transport.calls[0]
     assert url == "https://api.x.ai/v1/chat/completions"
     assert headers["Authorization"] == "Bearer xai-secret-value"
     assert model.api_key == ""
@@ -56,9 +60,11 @@ def test_broker_refuses_without_a_key_and_without_a_transport_call():
 
 
 def test_broker_withholds_credentials_from_unapproved_hosts():
-    broker = CredentialBroker(_policy(["api.x.ai"]), {"XAI_API_KEY": "xai-secret-value"})
+    broker = CredentialBroker(
+        _policy(["api.x.ai"]), {"XAI_API_KEY": "xai-secret-value"}
+    )
 
-    with pytest.raises(ProviderError, match="evil.example"):
+    with pytest.raises(ProviderError, match=r"evil\.example"):
         broker.key_for(GrokProvider(), "https://evil.example/v1/chat/completions")
     assert broker.key_for(GrokProvider(), "https://API.X.AI/v1/chat/completions") == (
         "xai-secret-value"
@@ -85,7 +91,10 @@ def test_redact_text_covers_keys_tokens_and_assignments():
     assert redact_text("nothing secret here") == "nothing secret here"
     assert redact_text(None) is None
     assert redact_text(42) == 42
-    assert redact_text("see hunter2-abcdef!", extra=("hunter2-abcdef",)) == f"see {REDACTED}!"
+    assert (
+        redact_text("see hunter2-abcdef!", extra=("hunter2-abcdef",))
+        == f"see {REDACTED}!"
+    )
 
 
 def test_audit_events_and_recall_store_redacted(tmp_path: Path):
@@ -93,14 +102,16 @@ def test_audit_events_and_recall_store_redacted(tmp_path: Path):
     log.append("read_file", "error", "boom sk-testkey123")
     record = log.records()[0]
     assert record["reason"] == f"boom {REDACTED}"
-    assert "sk-testkey123" not in (tmp_path / "audit.ndjson").read_text(encoding="utf-8")
+    assert "sk-testkey123" not in (tmp_path / "audit.ndjson").read_text(
+        encoding="utf-8"
+    )
 
     class Bag:
         pass
 
     bag = Bag()
     emit(bag, "note", detail="token ghp_abcdefgh1234")
-    assert bag.events[0]["detail"] == f"token {REDACTED}"
+    assert events_of(bag)[0]["detail"] == f"token {REDACTED}"
 
     store = MemoryStore(tmp_path / "mem")
     store.add("memory", "deploy with sk-testkey123")

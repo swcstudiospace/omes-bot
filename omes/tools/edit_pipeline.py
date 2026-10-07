@@ -80,11 +80,11 @@ def _apply_with_search(original: str, hunks: list[_Hunk], *, fuzzy: bool) -> str
     return "".join(file_lines)
 
 
-def _locate(
-    file_lines: list[str], hunk: _Hunk, shift: int, *, fuzzy: bool
-) -> int:
+def _locate(file_lines: list[str], hunk: _Hunk, shift: int, *, fuzzy: bool) -> int:
     """Return where ``hunk`` goes: stated position, else its unique match."""
-    stated = hunk.old_start + shift if hunk.old_count == 0 else hunk.old_start - 1 + shift
+    stated = (
+        hunk.old_start + shift if hunk.old_count == 0 else hunk.old_start - 1 + shift
+    )
     if _matches_at(file_lines, stated, hunk, fuzzy=fuzzy):
         return stated
     candidates = [
@@ -97,9 +97,7 @@ def _locate(
     return candidates[0]
 
 
-def _matches_at(
-    file_lines: list[str], idx: int, hunk: _Hunk, *, fuzzy: bool
-) -> bool:
+def _matches_at(file_lines: list[str], idx: int, hunk: _Hunk, *, fuzzy: bool) -> bool:
     """True when the hunk's context and removed lines match at ``idx``."""
     if idx < 0 or idx > len(file_lines):
         return False

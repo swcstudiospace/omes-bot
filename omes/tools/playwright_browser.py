@@ -8,8 +8,9 @@ once on the operator machine.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 
 def _default_launch() -> Any:

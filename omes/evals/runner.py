@@ -59,7 +59,11 @@ def run_suite(cases_dir: str | Path, workdir: str | Path) -> dict:
             cases = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
             results.append(
-                {"id": name, "passed": False, "failures": [f"cannot load {name}: {exc}"]}
+                {
+                    "id": name,
+                    "passed": False,
+                    "failures": [f"cannot load {name}: {exc}"],
+                }
             )
             continue
         if not isinstance(cases, list):
@@ -151,7 +155,9 @@ def _stub(name: str, canned: Any, calls: list[str]) -> Any:
 
 def _check(expectation: Any, outcome: dict) -> str | None:
     """Return a failure string, or None when the expectation holds."""
-    if not isinstance(expectation, dict) or not isinstance(expectation.get("type"), str):
+    if not isinstance(expectation, dict) or not isinstance(
+        expectation.get("type"), str
+    ):
         raise ValueError("expectation needs a string type")
     kind = expectation["type"]
     result = outcome.get("result", {})
@@ -161,27 +167,56 @@ def _check(expectation: Any, outcome: dict) -> str | None:
     payload = outcome.get("payload", {})
 
     if kind == "final_contains":
-        return None if expectation["text"] in final else f"final lacks {expectation['text']!r}"
+        return (
+            None
+            if expectation["text"] in final
+            else f"final lacks {expectation['text']!r}"
+        )
     if kind == "final_not_contains":
-        return None if expectation["text"] not in final else f"final leaks {expectation['text']!r}"
+        return (
+            None
+            if expectation["text"] not in final
+            else f"final leaks {expectation['text']!r}"
+        )
     if kind == "exit_reason":
         reason = result.get("turn_exit_reason")
-        return None if reason == expectation["reason"] else f"exit {reason!r} != {expectation['reason']!r}"
+        return (
+            None
+            if reason == expectation["reason"]
+            else f"exit {reason!r} != {expectation['reason']!r}"
+        )
     if kind == "tool_called":
-        return None if expectation["name"] in calls else f"{expectation['name']} was not called"
+        return (
+            None
+            if expectation["name"] in calls
+            else f"{expectation['name']} was not called"
+        )
     if kind == "tool_not_called":
-        return None if expectation["name"] not in calls else f"{expectation['name']} was called"
+        return (
+            None
+            if expectation["name"] not in calls
+            else f"{expectation['name']} was called"
+        )
     if kind == "refusal_contains":
         for row in messages:
-            if isinstance(row, dict) and row.get("role") == "tool":
-                if expectation["text"] in str(row.get("content", "")):
-                    return None
+            if (
+                isinstance(row, dict)
+                and row.get("role") == "tool"
+                and expectation["text"] in str(row.get("content", ""))
+            ):
+                return None
         if expectation["text"] in str(payload.get("error", "")):
             return None
         return f"no refusal mentions {expectation['text']!r}"
     if kind == "tool_rows":
-        count = sum(1 for row in messages if isinstance(row, dict) and row.get("role") == "tool")
-        return None if count == expectation["count"] else f"{count} tool rows != {expectation['count']}"
+        count = sum(
+            1 for row in messages if isinstance(row, dict) and row.get("role") == "tool"
+        )
+        return (
+            None
+            if count == expectation["count"]
+            else f"{count} tool rows != {expectation['count']}"
+        )
     raise ValueError(f"unknown expectation type: {kind}")
 
 

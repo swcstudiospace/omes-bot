@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import urllib.error
+from email.message import Message
 from pathlib import Path
 
 import pytest
@@ -48,15 +49,24 @@ class _Peer:
 
 
 def _rpc(payload: dict, rpc_id: int = 0) -> bytes:
-    return json.dumps({"jsonrpc": "2.0", "id": rpc_id or payload.pop("_id", 1), **payload}).encode()
+    return json.dumps(
+        {"jsonrpc": "2.0", "id": rpc_id or payload.pop("_id", 1), **payload}
+    ).encode()
 
 
 def _tool(payload: dict) -> bytes:
-    return _rpc({"result": {"content": [{"type": "text", "text": json.dumps(payload)}]}})
+    return _rpc(
+        {"result": {"content": [{"type": "text", "text": json.dumps(payload)}]}}
+    )
 
 
 def _init_script(extra: list | None = None) -> list:
-    script: list = [(_rpc({"result": {"protocolVersion": "2025-06-18"}}, 1), {"mcp-session-id": "s1"})]
+    script: list = [
+        (
+            _rpc({"result": {"protocolVersion": "2025-06-18"}}, 1),
+            {"mcp-session-id": "s1"},
+        )
+    ]
     script.append((b"", {}))
     return script + (extra or [])
 
@@ -125,7 +135,11 @@ def test_full_sync_json_variant(tmp_path: Path) -> None:
     assert TOKEN not in json.dumps(manifest)
     calls = [r["envelope"].get("method") for r in peer.requests]
     assert calls[0] == "initialize"
-    tools = [r["envelope"]["params"]["name"] for r in peer.requests if r["envelope"].get("method") == "tools/call"]
+    tools = [
+        r["envelope"]["params"]["name"]
+        for r in peer.requests
+        if r["envelope"].get("method") == "tools/call"
+    ]
     assert tools == [
         "list_knowledge_bases",
         "list_knowledge_base_documents",
@@ -141,7 +155,9 @@ def test_sse_responses_and_pagination(tmp_path: Path) -> None:
         + b'data: {"jsonrpc":"2.0","id":3,"result":{"content":[{"type":"text","text":"'
         + json.dumps(
             {
-                "repositories": [{"repoNamespaceExternalId": "ns-9", "repoName": "o/n"}],
+                "repositories": [
+                    {"repoNamespaceExternalId": "ns-9", "repoName": "o/n"}
+                ],
                 "total": 1,
                 "returned": 1,
             }
@@ -154,24 +170,57 @@ def test_sse_responses_and_pagination(tmp_path: Path) -> None:
         _init_script(
             [
                 (sse, {"content-type": "text/event-stream"}),
-                (_tool({"documentPaths": [], "sectionVersions": {"docs": None}, "total": 0, "returned": 0}), {}),
+                (
+                    _tool(
+                        {
+                            "documentPaths": [],
+                            "sectionVersions": {"docs": None},
+                            "total": 0,
+                            "returned": 0,
+                        }
+                    ),
+                    {},
+                ),
             ]
         )
     )
-    report = sync("o/n", tmp_path / "kb", McpHttpClient("https://mcp.local", TOKEN, opener=peer))
+    report = sync(
+        "o/n", tmp_path / "kb", McpHttpClient("https://mcp.local", TOKEN, opener=peer)
+    )
     assert report["status"] == "empty"
     assert not (tmp_path / "kb").exists()
 
 
 def test_skip_paths_and_unsafe_path(tmp_path: Path) -> None:
     assert main(["--repo", "o/n"], {}, _Peer([])) == 2
-    peer = _Peer(_init_script([(_tool({"repositories": [], "total": 0, "returned": 0}), {})]))
-    assert main(["--repo", "o/n", "--out", str(tmp_path)], {"GREPTILE_API_KEY": TOKEN}, peer) == 3
+    peer = _Peer(
+        _init_script([(_tool({"repositories": [], "total": 0, "returned": 0}), {})])
+    )
+    assert (
+        main(
+            ["--repo", "o/n", "--out", str(tmp_path)], {"GREPTILE_API_KEY": TOKEN}, peer
+        )
+        == 3
+    )
     evil = _Peer(
         _init_script(
             [
-                (_tool({"repositories": [{"repoNamespaceExternalId": "n", "repoName": "o/n"}], "total": 1, "returned": 1}), {}),
-                (_tool({"documentPaths": ["../evil.md"], "total": 1, "returned": 1}), {}),
+                (
+                    _tool(
+                        {
+                            "repositories": [
+                                {"repoNamespaceExternalId": "n", "repoName": "o/n"}
+                            ],
+                            "total": 1,
+                            "returned": 1,
+                        }
+                    ),
+                    {},
+                ),
+                (
+                    _tool({"documentPaths": ["../evil.md"], "total": 1, "returned": 1}),
+                    {},
+                ),
             ]
         )
     )
@@ -181,7 +230,9 @@ def test_skip_paths_and_unsafe_path(tmp_path: Path) -> None:
 
 def test_refresh_workflow_is_scheduled_and_secret_gated() -> None:
     root = Path(__file__).resolve().parents[2]
-    text = (root / ".github" / "workflows" / "kb-refresh.yml").read_text(encoding="utf-8")
+    text = (root / ".github" / "workflows" / "kb-refresh.yml").read_text(
+        encoding="utf-8"
+    )
     assert "schedule" in text and "workflow_dispatch" in text
     assert "secrets.GREPTILE_API_KEY" in text
     assert "gh pr create" in text
@@ -191,7 +242,7 @@ def test_refresh_workflow_is_scheduled_and_secret_gated() -> None:
 
 def test_auth_failure_is_secret_free() -> None:
     def denied(request, timeout=None):
-        raise urllib.error.HTTPError(request.full_url, 401, "x", {}, None)
+        raise urllib.error.HTTPError(request.full_url, 401, "x", Message(), None)
 
     client = McpHttpClient("https://mcp.local", TOKEN, opener=denied)
     with pytest.raises(GreptileError) as exc:

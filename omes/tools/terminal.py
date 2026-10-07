@@ -28,11 +28,19 @@ def run_terminal(
     """
     if isinstance(argv, str):
         return {"error": "argv must be a list of arguments, not a shell string"}
-    if not isinstance(argv, list) or not argv or any(not isinstance(part, str) for part in argv):
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or any(not isinstance(part, str) for part in argv)
+    ):
         return {"error": "argv must be a non-empty list of strings"}
     if argv[0] == "":
         return {"error": "argv[0] must be the program to run"}
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or timeout <= 0
+    ):
         return {"error": "timeout must be a positive number of seconds"}
     try:
         base = require_directory(root)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import aiogram
 import pytest
@@ -27,7 +27,7 @@ class FakeMessage:
         self.message_id = message_id
         self.chat = FakeChat(chat_id)
         self.text = text
-        self.date = datetime(2026, 10, 3, tzinfo=timezone.utc)
+        self.date = datetime(2026, 10, 3, tzinfo=UTC)
 
 
 class FakeUpdate:
@@ -60,7 +60,9 @@ class FakeBot:
         self.calls.append(("send_message", kwargs))
         self._next_id += 1
         chat = kwargs["chat_id"]
-        return FakeMessage(self._next_id, chat if isinstance(chat, int) else 7, kwargs["text"])
+        return FakeMessage(
+            self._next_id, chat if isinstance(chat, int) else 7, kwargs["text"]
+        )
 
 
 def _bot_factory(updates: list | None = None):
@@ -75,7 +77,9 @@ def _bot_factory(updates: list | None = None):
 
 
 def _policy(hosts: list[str]) -> SeatPolicy:
-    return SeatPolicy({"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}})
+    return SeatPolicy(
+        {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": hosts}}
+    )
 
 
 def _client(make, token: str = "tg-secret") -> TelegramClient:
@@ -125,13 +129,15 @@ def test_bad_arguments_are_value_errors():
     with pytest.raises(ValueError, match="limit must be between 1 and 100"):
         client.updates(limit=0)
     with pytest.raises(ValueError, match="offset must be an integer"):
-        client.updates(offset="10")
+        # Intentional misuse: offset must be an integer.
+        client.updates(offset="10")  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="text must be a non-empty string"):
         client.send(5, "  ")
     with pytest.raises(ValueError, match="chat_id must be a chat id"):
         client.send("", "hi")
     with pytest.raises(ValueError, match="reply_to must be a message id integer"):
-        client.send(5, "hi", reply_to="3")
+        # Intentional misuse: reply_to must be an integer.
+        client.send(5, "hi", reply_to="3")  # type: ignore[arg-type]
 
 
 def test_registry_reports_argument_errors_and_gates_sends():
@@ -140,19 +146,33 @@ def test_registry_reports_argument_errors_and_gates_sends():
     registry = ToolRegistry(approval_log=log)
     register_telegram_tools(registry, _client(make))
 
-    assert json.loads(registry.dispatch("telegram_updates", {}))["updates"][0]["update_id"] == 11
-    assert "error" in json.loads(registry.dispatch("telegram_send", {"chat_id": 5, "text": "  "}))
-    assert json.loads(registry.dispatch("telegram_send", {"chat_id": 5, "text": "hi"})) == {
+    assert (
+        json.loads(registry.dispatch("telegram_updates", {}))["updates"][0]["update_id"]
+        == 11
+    )
+    assert "error" in json.loads(
+        registry.dispatch("telegram_send", {"chat_id": 5, "text": "  "})
+    )
+    assert json.loads(
+        registry.dispatch("telegram_send", {"chat_id": 5, "text": "hi"})
+    ) == {
         "error": "approval required",
         "tool": "telegram_send",
     }
     assert log.approve("telegram_send", "ada").get("approved") is True
-    assert json.loads(registry.dispatch("telegram_send", {"chat_id": 5, "text": "hi"}))["text"] == "hi"
+    assert (
+        json.loads(registry.dispatch("telegram_send", {"chat_id": 5, "text": "hi"}))[
+            "text"
+        ]
+        == "hi"
+    )
 
 
 def test_brokered_token_flows_and_refused_host_runs_nothing():
     make, made = _bot_factory([FakeUpdate(11, FakeMessage(1, 5, "hi"))])
-    broker = CredentialBroker(_policy(["api.telegram.org"]), {"TELEGRAM_BOT_TOKEN": "tg-live"})
+    broker = CredentialBroker(
+        _policy(["api.telegram.org"]), {"TELEGRAM_BOT_TOKEN": "tg-live"}
+    )
     client = TelegramClient(make).with_broker(broker)
     assert client.updates()["updates"][0]["update_id"] == 11
     assert made[0].token == "tg-live"
@@ -176,7 +196,8 @@ def test_library_failures_name_the_operation():
     class ExplodingBot(FakeBot):
         async def get_updates(self, **kwargs):
             raise aiogram.exceptions.TelegramAPIError(
-                method=None, message="boom"  # type: ignore[arg-type]
+                method=None,  # type: ignore[arg-type]
+                message="boom",
             )
 
     def make(token: str) -> FakeBot:

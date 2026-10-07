@@ -14,7 +14,9 @@ from omes.memory.provider import BuiltinMemoryProvider
 from omes.memory.store import MemoryStore
 
 
-def _hermes_add(provider: BuiltinMemoryProvider, content: str, target: str = "memory") -> dict:
+def _hermes_add(
+    provider: BuiltinMemoryProvider, content: str, target: str = "memory"
+) -> dict:
     return json.loads(
         provider.handle_tool_call(
             "memory", {"action": "add", "target": target, "content": content}
@@ -54,7 +56,10 @@ def test_omp_recall_covers_both_targets_and_honors_limits(tmp_path: Path):
     assert omp.recall("alpha", limit=2) == ["memory alpha one", "memory alpha two"]
     assert omp.recall("ALPHA", limit=1) == ["memory alpha one"]
     assert omp.recall("") == []
-    assert omp.retain("   ") == {"ok": False, "reason": "content must be a non-empty string"}
+    assert omp.retain("   ") == {
+        "ok": False,
+        "reason": "content must be a non-empty string",
+    }
     with pytest.raises(ValueError):
         omp.recall("alpha", limit=0)
 

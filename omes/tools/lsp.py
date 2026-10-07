@@ -54,9 +54,7 @@ class LspSession:
             }
         )
         result = self._await_response(self._next_id, "initialize", timeout=timeout)
-        self._connection.send(
-            {"jsonrpc": "2.0", "method": "initialized", "params": {}}
-        )
+        self._connection.send({"jsonrpc": "2.0", "method": "initialized", "params": {}})
         self._started = True
         return result if isinstance(result, dict) else {}
 

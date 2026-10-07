@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -27,8 +28,15 @@ ULT_TOOL_NAMES = (
     "ult_ship_merge",
 )
 
-APPROVAL_TOOLS = frozenset({"ult_track_complete", "ult_session_mark", "ult_ship_pr",
-                               "ult_ship_review", "ult_ship_merge"})
+APPROVAL_TOOLS = frozenset(
+    {
+        "ult_track_complete",
+        "ult_session_mark",
+        "ult_ship_pr",
+        "ult_ship_review",
+        "ult_ship_merge",
+    }
+)
 _MARKS = ("kicked-off", "synced")
 OUTPUT_TAIL = 2000
 
@@ -69,15 +77,22 @@ class UltrathinkClient:
     def _call(self, binary: str, args: list[str]) -> dict[str, Any]:
         exe = self._bin(binary)
         if exe is None:
-            return _error("not_configured", "ultrathink checkout root is not configured")
+            return _error(
+                "not_configured", "ultrathink checkout root is not configured"
+            )
         run = self.ctx.run if self.ctx.run is not None else _default_run
         result = run([exe, *args], self.ctx.timeout)
         if not isinstance(result, dict):
             return _error("upstream_error", "runner returned no result")
         if result.get("exit_code") != 0:
-            tail = str(result.get("stderr") or result.get("stdout") or "")[-OUTPUT_TAIL:]
-            return _error("upstream_error", f"{binary} exited {result.get('exit_code')}",
-                          output_tail=tail)
+            tail = str(result.get("stderr") or result.get("stdout") or "")[
+                -OUTPUT_TAIL:
+            ]
+            return _error(
+                "upstream_error",
+                f"{binary} exited {result.get('exit_code')}",
+                output_tail=tail,
+            )
         stdout = str(result.get("stdout") or "")
         try:
             return {"ok": True, "result": json.loads(stdout)}
@@ -127,7 +142,9 @@ class UltrathinkClient:
         return self._call("ultrathink-ship", ["merge", "--state", state])
 
 
-def register_ultrathink_tools(registry: ToolRegistry, client: UltrathinkClient) -> list[str]:
+def register_ultrathink_tools(
+    registry: ToolRegistry, client: UltrathinkClient
+) -> list[str]:
     """Register the 7 ultrathink bridge tools. Writes need approval."""
 
     def _wrap(fn, *args, **kwargs):
@@ -136,7 +153,7 @@ def register_ultrathink_tools(registry: ToolRegistry, client: UltrathinkClient) 
         except (ValueError, TypeError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "ult_status": lambda: _wrap(client.status),
         "ult_track_complete": lambda state: _wrap(client.track_complete, state),
         "ult_session_mark": lambda state, mark: _wrap(client.session_mark, state, mark),
@@ -149,8 +166,13 @@ def register_ultrathink_tools(registry: ToolRegistry, client: UltrathinkClient) 
         raise RuntimeError("Ultrathink tool handlers drifted from ULT_TOOL_NAMES")
     for name in ULT_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
-        registry.register(name, description, parameters, handlers[name],
-                          requires_approval=(name in APPROVAL_TOOLS))
+        registry.register(
+            name,
+            description,
+            parameters,
+            handlers[name],
+            requires_approval=(name in APPROVAL_TOOLS),
+        )
     return list(ULT_TOOL_NAMES)
 
 
@@ -165,20 +187,39 @@ def _string(description: str) -> dict:
 _STATE = _string("Session state file path.")
 _SCHEMAS: dict[str, tuple[str, dict]] = {
     "ult_status": ("Ultrathink planner status. Read-only.", _object({}, [])),
-    "ult_track_complete": ("Finish tracker rows for one session. Requires approval.",
-                           _object({"state": _STATE}, ["state"])),
-    "ult_session_mark": ("Mark one session kicked-off or synced. Requires approval.",
-                         _object({"state": _STATE, "mark": _string("kicked-off or synced.")},
-                                ["state", "mark"])),
-    "ult_ship_assess": ("Assess ship readiness for one session. Read-only.",
-                        _object({"state": _STATE}, ["state"])),
-    "ult_ship_pr": ("Push and open (or reuse) the ship PR. Requires approval.",
-                    _object({"state": _STATE}, ["state"])),
-    "ult_ship_review": ("Run/resume the Greptile review. Requires approval.",
-                        _object({"state": _STATE}, ["state"])),
-    "ult_ship_merge": ("Merge the reviewed PR when policy allows. Requires approval.",
-                       _object({"state": _STATE}, ["state"])),
+    "ult_track_complete": (
+        "Finish tracker rows for one session. Requires approval.",
+        _object({"state": _STATE}, ["state"]),
+    ),
+    "ult_session_mark": (
+        "Mark one session kicked-off or synced. Requires approval.",
+        _object(
+            {"state": _STATE, "mark": _string("kicked-off or synced.")},
+            ["state", "mark"],
+        ),
+    ),
+    "ult_ship_assess": (
+        "Assess ship readiness for one session. Read-only.",
+        _object({"state": _STATE}, ["state"]),
+    ),
+    "ult_ship_pr": (
+        "Push and open (or reuse) the ship PR. Requires approval.",
+        _object({"state": _STATE}, ["state"]),
+    ),
+    "ult_ship_review": (
+        "Run/resume the Greptile review. Requires approval.",
+        _object({"state": _STATE}, ["state"]),
+    ),
+    "ult_ship_merge": (
+        "Merge the reviewed PR when policy allows. Requires approval.",
+        _object({"state": _STATE}, ["state"]),
+    ),
 }
 
 
-__all__ = ["ULT_TOOL_NAMES", "UltrathinkClient", "UltrathinkContext", "register_ultrathink_tools"]
+__all__ = [
+    "ULT_TOOL_NAMES",
+    "UltrathinkClient",
+    "UltrathinkContext",
+    "register_ultrathink_tools",
+]

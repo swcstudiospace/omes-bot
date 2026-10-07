@@ -78,9 +78,7 @@ class ProviderModel:
                 self.model, list(messages), tools, ""
             )
             key = self.broker.key_for(self.provider, probe_url)
-        if self.provider.requires_key and (
-            not isinstance(key, str) or key == ""
-        ):
+        if self.provider.requires_key and (not isinstance(key, str) or key == ""):
             raise ProviderError(f"{self.provider.name} needs an API key")
         url, headers, body = self.provider.build_request(
             self.model, list(messages), tools, key
@@ -90,7 +88,9 @@ class ProviderModel:
         except ProviderError:
             raise
         except Exception as exc:
-            raise ProviderError(f"{self.provider.name} transport failed: {exc}") from exc
+            raise ProviderError(
+                f"{self.provider.name} transport failed: {exc}"
+            ) from exc
         if not isinstance(payload, dict):
             raise ProviderError(f"{self.provider.name} returned no JSON object")
         try:

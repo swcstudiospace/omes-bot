@@ -36,7 +36,9 @@ class FileWorkspace:
     policy span for each refusal.
     """
 
-    def __init__(self, root: str | Path, *, policy: Any = None, tracer: Any = None) -> None:
+    def __init__(
+        self, root: str | Path, *, policy: Any = None, tracer: Any = None
+    ) -> None:
         self.root = require_directory(root)
         self._policy = policy
         self._tracer = tracer
@@ -205,7 +207,11 @@ def apply_unified_diff(original: str, diff: str) -> str:
     file_lines = _split_keep(original)
     shift = 0
     for hunk in _parse_hunks(diff):
-        idx = hunk.old_start + shift if hunk.old_count == 0 else hunk.old_start - 1 + shift
+        idx = (
+            hunk.old_start + shift
+            if hunk.old_count == 0
+            else hunk.old_start - 1 + shift
+        )
         if idx < 0 or idx > len(file_lines):
             raise PatchMismatch("hunk context does not match")
         out: list[str] = []

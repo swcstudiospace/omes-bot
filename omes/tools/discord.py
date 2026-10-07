@@ -10,7 +10,8 @@ per API host. Tests run behind fake peers; no live Discord calls.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import discord
 
@@ -117,7 +118,9 @@ class DiscordClient:
         else:
             token = self._token
         if not isinstance(token, str) or not token:
-            raise DiscordError("no Discord credential: broker refused or token is blank")
+            raise DiscordError(
+                "no Discord credential: broker refused or token is blank"
+            )
         return token
 
 
@@ -128,7 +131,11 @@ def _serialize_message(message: Any) -> dict[str, Any]:
         "id": str(message.id),
         "content": message.content,
         "author": str(getattr(author, "name", author)),
-        "created_at": created.isoformat() if hasattr(created, "isoformat") else created,
+        "created_at": (
+            created.isoformat()
+            if created is not None and hasattr(created, "isoformat")
+            else created
+        ),
     }
 
 
@@ -169,7 +176,7 @@ def register_discord_tools(registry: ToolRegistry, client: DiscordClient) -> lis
         except (DiscordError, ValueError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "discord_read": discord_read,
         "discord_send": discord_send,
     }
@@ -193,7 +200,10 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         {
             "type": "object",
             "properties": {
-                "channel_id": {"type": ["integer", "string"], "description": "Channel id."},
+                "channel_id": {
+                    "type": ["integer", "string"],
+                    "description": "Channel id.",
+                },
                 "limit": {"type": "integer", "description": "1-100. Defaults to 10."},
             },
             "required": ["channel_id"],
@@ -204,7 +214,10 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         {
             "type": "object",
             "properties": {
-                "channel_id": {"type": ["integer", "string"], "description": "Channel id."},
+                "channel_id": {
+                    "type": ["integer", "string"],
+                    "description": "Channel id.",
+                },
                 "text": {"type": "string", "description": "Message text."},
             },
             "required": ["channel_id", "text"],

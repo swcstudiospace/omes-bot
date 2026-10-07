@@ -70,7 +70,9 @@ def test_failing_and_malformed_cases_report_without_raising(tmp_path: Path):
 
 
 def test_ci_workflow_runs_suite_evals_and_assemble():
-    text = (OMES.parent / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    text = (OMES.parent / ".github" / "workflows" / "ci.yml").read_text(
+        encoding="utf-8"
+    )
 
     assert "python3 -m pytest omes/tests -q" in text
     assert "python3 -m omes.evals.runner omes/evals/cases" in text

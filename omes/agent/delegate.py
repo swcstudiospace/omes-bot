@@ -38,7 +38,9 @@ def delegate_task(
     if depth >= max_depth:
         return _error(f"delegate depth {depth} reached max_depth {max_depth}")
     if len(goals) > max_children:
-        return _error(f"batch of {len(goals)} tasks exceeds max_children {max_children}")
+        return _error(
+            f"batch of {len(goals)} tasks exceeds max_children {max_children}"
+        )
     if getattr(parent, "child_model", None) is None:
         return _error("parent.child_model is required")
     if background:
@@ -68,14 +70,22 @@ def join_delegate(handle: str) -> str:
         return _error(f"unknown delegate handle {handle}")
     if job["ran"]:
         return job["summary"]
-    summaries = _run_goals(job["parent"], job["goals"], job["max_depth"], job["max_children"])
-    summary = summaries[0] if len(summaries) == 1 else json.dumps(summaries, ensure_ascii=False)
+    summaries = _run_goals(
+        job["parent"], job["goals"], job["max_depth"], job["max_children"]
+    )
+    summary = (
+        summaries[0]
+        if len(summaries) == 1
+        else json.dumps(summaries, ensure_ascii=False)
+    )
     job["summary"] = summary
     job["ran"] = True
     return summary
 
 
-def _run_goals(parent: Any, goals: list[str], max_depth: int, max_children: int) -> list[str]:
+def _run_goals(
+    parent: Any, goals: list[str], max_depth: int, max_children: int
+) -> list[str]:
     return [_run_child(parent, goal, max_depth, max_children) for goal in goals]
 
 
@@ -105,7 +115,9 @@ def _run_child(parent: Any, goal: str, max_depth: int, max_children: int) -> str
 def _bind_delegate(holder: dict[str, Any], max_depth: int, max_children: int):
     """A ``delegate_task`` callable bound to the child, not the parent."""
 
-    def delegate_task_tool(goal: Any = None, tasks: Any = None, background: bool = False) -> str:
+    def delegate_task_tool(
+        goal: Any = None, tasks: Any = None, background: bool = False
+    ) -> str:
         agent = holder["child"]
         return delegate_task(
             agent,

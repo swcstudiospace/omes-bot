@@ -9,7 +9,8 @@ behind a fake bot; no live Telegram calls.
 from __future__ import annotations
 
 import asyncio
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import aiogram
 
@@ -61,12 +62,12 @@ class TelegramClient:
             credentials=lambda url: broker.key_for(_TelegramProvider(), url),
         )
 
-    def updates(
-        self, offset: int | None = None, limit: int = 10
-    ) -> dict[str, Any]:
+    def updates(self, offset: int | None = None, limit: int = 10) -> dict[str, Any]:
         """Recent updates. Returns `{"updates": [...]}`."""
         _check_limit(limit)
-        if offset is not None and (isinstance(offset, bool) or not isinstance(offset, int)):
+        if offset is not None and (
+            isinstance(offset, bool) or not isinstance(offset, int)
+        ):
             raise ValueError("offset must be an integer")
 
         async def _fetch(bot: Any) -> Any:
@@ -128,7 +129,9 @@ class TelegramClient:
         else:
             token = self._token
         if not isinstance(token, str) or not token:
-            raise TelegramError("no Telegram credential: broker refused or token is blank")
+            raise TelegramError(
+                "no Telegram credential: broker refused or token is blank"
+            )
         return token
 
 
@@ -144,7 +147,11 @@ def _serialize_update(update: Any) -> dict[str, Any]:
             "message_id": message.message_id,
             "chat_id": message.chat.id,
             "text": message.text,
-            "date": date.isoformat() if hasattr(date, "isoformat") else date,
+            "date": (
+                date.isoformat()
+                if date is not None and hasattr(date, "isoformat")
+                else date
+            ),
         },
     }
 
@@ -171,7 +178,9 @@ def _check_text(text: Any) -> None:
         raise ValueError("text must be a non-empty string")
 
 
-def register_telegram_tools(registry: ToolRegistry, client: TelegramClient) -> list[str]:
+def register_telegram_tools(
+    registry: ToolRegistry, client: TelegramClient
+) -> list[str]:
     """Register the two Telegram tools. Sending requires approval."""
 
     def telegram_updates(offset: int | None = None, limit: int = 10) -> dict[str, Any]:
@@ -188,7 +197,7 @@ def register_telegram_tools(registry: ToolRegistry, client: TelegramClient) -> l
         except (TelegramError, ValueError) as exc:
             return {"error": str(exc)}
 
-    handlers = {
+    handlers: dict[str, Callable[..., Any]] = {
         "telegram_updates": telegram_updates,
         "telegram_send": telegram_send,
     }
@@ -212,7 +221,10 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         {
             "type": "object",
             "properties": {
-                "offset": {"type": "integer", "description": "Update offset to resume from."},
+                "offset": {
+                    "type": "integer",
+                    "description": "Update offset to resume from.",
+                },
                 "limit": {"type": "integer", "description": "1-100. Defaults to 10."},
             },
             "required": [],
@@ -223,9 +235,15 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         {
             "type": "object",
             "properties": {
-                "chat_id": {"type": ["integer", "string"], "description": "Chat id or @channel."},
+                "chat_id": {
+                    "type": ["integer", "string"],
+                    "description": "Chat id or @channel.",
+                },
                 "text": {"type": "string", "description": "Message text."},
-                "reply_to": {"type": "integer", "description": "Message id to reply to."},
+                "reply_to": {
+                    "type": "integer",
+                    "description": "Message id to reply to.",
+                },
             },
             "required": ["chat_id", "text"],
         },

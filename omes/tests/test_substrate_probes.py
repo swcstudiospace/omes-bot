@@ -63,7 +63,10 @@ def test_all_probes_pass_with_shape() -> None:
         "detail": "index=True, greptime=True, eventsWritable=True",
     }
     assert report["probes"]["substrate_brief"]["detail"].startswith("brief received")
-    assert report["probes"]["hindsight_version"] == {"ok": True, "detail": "api_version=0.9.1"}
+    assert report["probes"]["hindsight_version"] == {
+        "ok": True,
+        "detail": "api_version=0.9.1",
+    }
 
 
 def test_every_probe_attempted_despite_failure() -> None:

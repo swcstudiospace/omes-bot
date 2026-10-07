@@ -10,7 +10,6 @@ from pathlib import Path
 
 from omes.tools.mcp_session import mcp_session_call
 
-
 SERVER_SCRIPT = """\
 import json, sys
 
@@ -61,7 +60,10 @@ def _server(tmp_path: Path, canned: dict) -> list[str]:
 
 
 def test_initialize_and_call_return_canned_blocks(tmp_path: Path):
-    command = _server(tmp_path, {"add": {"content": [{"type": "text", "text": "4"}], "isError": False}})
+    command = _server(
+        tmp_path,
+        {"add": {"content": [{"type": "text", "text": "4"}], "isError": False}},
+    )
     outcome = mcp_session_call(
         command, "add", {"a": 2, "b": 2}, cwd=str(tmp_path), timeout=10
     )
@@ -80,7 +82,8 @@ def test_error_results_carry_error_and_result(tmp_path: Path):
 
 def test_error_results_surface_tool_text(tmp_path: Path):
     command = _server(
-        tmp_path, {"bad": {"content": [{"type": "text", "text": "nope"}], "isError": True}}
+        tmp_path,
+        {"bad": {"content": [{"type": "text", "text": "nope"}], "isError": True}},
     )
     outcome = mcp_session_call(command, "bad", {}, cwd=str(tmp_path), timeout=10)
     assert outcome["error"] == "nope"
@@ -89,16 +92,15 @@ def test_error_results_surface_tool_text(tmp_path: Path):
 def test_refusals_spawn_nothing(tmp_path: Path):
     probe = tmp_path / "spawned"
     command = [sys.executable, "-c", f"open({str(probe)!r}, 'w').write('x')"]
-    assert mcp_session_call(
-        " ".join(command), "t", {}, cwd=str(tmp_path)
-    )["error"] == "command must be an argv list, not a string"
+    assert (
+        mcp_session_call(" ".join(command), "t", {}, cwd=str(tmp_path))["error"]
+        == "command must be an argv list, not a string"
+    )
     assert "error" in mcp_session_call([], "t", {}, cwd=str(tmp_path))
     assert "error" in mcp_session_call(command, "", {}, cwd=str(tmp_path))
     assert "error" in mcp_session_call(command, "t", [], cwd=str(tmp_path))
     assert "error" in mcp_session_call(command, "t", {}, cwd=str(tmp_path), timeout=0)
-    assert "error" in mcp_session_call(
-        command, "t", {}, cwd=str(tmp_path / "nope")
-    )
+    assert "error" in mcp_session_call(command, "t", {}, cwd=str(tmp_path / "nope"))
     assert not probe.exists()
 
 

@@ -7,6 +7,7 @@ On timeout the child is killed.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import signal
@@ -41,7 +42,11 @@ def mcp_call(
         return {"error": "tool must be a non-empty string"}
     if not isinstance(arguments, dict):
         return {"error": "arguments must be an object"}
-    if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or timeout <= 0:
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or timeout <= 0
+    ):
         return {"error": "timeout must be a positive number of seconds"}
     root = Path(cwd)
     if not root.is_dir():
@@ -58,7 +63,9 @@ def mcp_call(
         )
     except (TypeError, ValueError):
         return {"error": "arguments are not JSON-serializable"}
-    return _run(command, cwd=root, timeout=timeout, stdin=(payload + "\n").encode("utf-8"))
+    return _run(
+        command, cwd=root, timeout=timeout, stdin=(payload + "\n").encode("utf-8")
+    )
 
 
 def _run(argv: list[str], *, cwd: Path, timeout: float, stdin: bytes) -> dict[str, Any]:
@@ -107,17 +114,13 @@ def _kill(proc: subprocess.Popen[bytes]) -> tuple[bytes, bytes, int]:
         try:
             os.killpg(proc.pid, signal.SIGKILL)
         except (ProcessLookupError, PermissionError, OSError):
-            try:
+            with contextlib.suppress(OSError):
                 proc.kill()
-            except OSError:
-                pass
     try:
         stdout, stderr = proc.communicate(timeout=5)
     except subprocess.TimeoutExpired:
-        try:
+        with contextlib.suppress(OSError):
             proc.kill()
-        except OSError:
-            pass
         stdout, stderr = proc.communicate(timeout=5)
     code = proc.returncode
     if code in (None, 0):

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import sys
-import time
 from pathlib import Path
 
 import pytest
@@ -135,12 +134,17 @@ def test_extension_hook_runs_before_the_model_call():
 def test_first_extension_stop_wins_and_skips_the_model():
     ran = []
     hooks = ExtensionHooks()
-    hooks.register_before_model(
-        lambda messages, tools: (ran.append("first"), {"stop": True, "reason": "ext"})[1]
-    )
-    hooks.register_before_model(
-        lambda messages, tools: ran.append("second") or {"stop": True}
-    )
+
+    def _first(messages: object, tools: object) -> dict:
+        ran.append("first")
+        return {"stop": True, "reason": "ext"}
+
+    def _second(messages: object, tools: object) -> dict:
+        ran.append("second")
+        return {"stop": True}
+
+    hooks.register_before_model(_first)
+    hooks.register_before_model(_second)
     model = ScriptedModel([{"role": "assistant", "content": "never"}])
     agent = Agent(model=model, tools={}, max_iterations=4, extensions=hooks)
     result = run_conversation(agent, "ping")
@@ -158,8 +162,12 @@ def test_autolearn_writes_through_the_skill_manager(tmp_path: Path):
     assert skipped == {"learned": False, "reason": "fewer than 2 tool calls"}
     assert not skills.exists()
 
-    nouns = "---\nname: latin\ndescription: Latin help.\n---\n# latin\n\nDecline nouns.\n"
-    verbs = "---\nname: latin\ndescription: Latin help.\n---\n# latin\n\nDecline verbs.\n"
+    nouns = (
+        "---\nname: latin\ndescription: Latin help.\n---\n# latin\n\nDecline nouns.\n"
+    )
+    verbs = (
+        "---\nname: latin\ndescription: Latin help.\n---\n# latin\n\nDecline verbs.\n"
+    )
     first = learner.consider_turn(2, "latin", nouns)
     assert first == {"learned": True, "skill": "latin"}
     viewed = json.loads(skill_view("latin", skills_root=skills))
@@ -237,7 +245,10 @@ def test_job_control_runs_polls_and_kills(tmp_path: Path):
 
 
 def test_screen_argv_refuses_danger_and_accepts_plain():
-    assert screen_argv(["sudo", "true"]) == {"ok": False, "reason": "refused binary: sudo"}
+    assert screen_argv(["sudo", "true"]) == {
+        "ok": False,
+        "reason": "refused binary: sudo",
+    }
     assert screen_argv(["rm", "-rf", "/"])["ok"] is False
     assert screen_argv(["rm", "--no-preserve-root", "x"])["ok"] is False
     assert screen_argv(["echo", "a\x00b"])["ok"] is False

@@ -4,13 +4,19 @@ from __future__ import annotations
 
 import threading
 import time
+from typing import Any
 
 from omes.agent.budget import OutputBudget
-from omes.agent.compression import USELESS_NOTICE, compress_messages, prune_useless_results
+from omes.agent.compression import (
+    USELESS_NOTICE,
+    compress_messages,
+    prune_useless_results,
+)
 from omes.agent.conversation_loop import Agent, run_conversation
 from omes.agent.harness import (
     PauseGate,
     commit_speculative,
+    events_of,
     inject_steer,
     prepare_speculative,
 )
@@ -34,18 +40,20 @@ def _tool_call(name: str, arguments: str = "{}", call_id: str = "call-1") -> dic
 
 def test_turn_emits_start_message_and_end_events():
     tools = {"echo": lambda: "pong"}
-    model = ScriptedModel([_tool_call("echo"), {"role": "assistant", "content": "done"}])
+    model = ScriptedModel(
+        [_tool_call("echo"), {"role": "assistant", "content": "done"}]
+    )
     agent = Agent(model=model, tools=tools, max_iterations=4)
     result = run_conversation(agent, "ping", system_message="sys")
 
     assert agent.tools is tools
-    kinds = [event["type"] for event in agent.events]
+    kinds = [event["type"] for event in events_of(agent)]
     assert kinds[0] == "turn_start"
     assert kinds[-1] == "turn_end"
     assert kinds.count("message") == len(result["messages"])
-    roles = [event["role"] for event in agent.events if event["type"] == "message"]
+    roles = [event["role"] for event in events_of(agent) if event["type"] == "message"]
     assert roles == [row["role"] for row in result["messages"]]
-    assert agent.events[-1]["turn_exit_reason"] == result["turn_exit_reason"]
+    assert events_of(agent)[-1]["turn_exit_reason"] == result["turn_exit_reason"]
 
 
 def test_before_model_hook_can_change_or_stop_the_request():
@@ -69,6 +77,7 @@ def test_before_model_hook_can_change_or_stop_the_request():
     stopped = run_conversation(stopper, "ping")
 
     assert budget_model.call_count == 0
+    assert stopper.budget is not None
     assert stopper.budget.remaining == 4
     assert stopped["turn_exit_reason"] == "halt"
 
@@ -92,7 +101,7 @@ def test_pause_holds_the_loop_and_resume_finishes_it():
     gate.pause()
     model = ScriptedModel([{"role": "assistant", "content": "done"}])
     agent = Agent(model=model, tools={}, max_iterations=4, pause_gate=gate)
-    outcome = {}
+    outcome: dict[str, Any] = {}
 
     def _run():
         outcome["result"] = run_conversation(agent, "ping")
@@ -121,9 +130,11 @@ def test_pause_during_tool_work_does_not_abort_it():
         time.sleep(0.4)
         return "slow-body"
 
-    model = ScriptedModel([_tool_call("slow"), {"role": "assistant", "content": "done"}])
+    model = ScriptedModel(
+        [_tool_call("slow"), {"role": "assistant", "content": "done"}]
+    )
     agent = Agent(model=model, tools={"slow": slow}, max_iterations=4, pause_gate=gate)
-    outcome = {}
+    outcome: dict[str, Any] = {}
     worker = threading.Thread(
         target=lambda: outcome.update(result=run_conversation(agent, "ping"))
     )
@@ -139,7 +150,9 @@ def test_pause_during_tool_work_does_not_abort_it():
         gate.resume()
         worker.join(timeout=5)
     bodies = [
-        row["content"] for row in outcome["result"]["messages"] if row.get("role") == "tool"
+        row["content"]
+        for row in outcome["result"]["messages"]
+        if row.get("role") == "tool"
     ]
     assert bodies == ["slow-body"]
 
@@ -152,7 +165,7 @@ def test_interrupt_unwinds_a_parked_wait_and_keeps_the_gate():
     agent = Agent(
         model=model, tools={}, max_iterations=4, pause_gate=gate, interrupt=interrupt
     )
-    outcome = {}
+    outcome: dict[str, Any] = {}
     worker = threading.Thread(
         target=lambda: outcome.update(result=run_conversation(agent, "ping"))
     )
@@ -178,7 +191,9 @@ def test_mid_turn_steer_is_its_own_user_row():
         inject_steer(agent, steer)
         return "tool-body"
 
-    model = ScriptedModel([_tool_call("echo"), {"role": "assistant", "content": "done"}])
+    model = ScriptedModel(
+        [_tool_call("echo"), {"role": "assistant", "content": "done"}]
+    )
     agent = Agent(model=model, tools={"echo": echo}, max_iterations=4)
     result = run_conversation(agent, "ping")
 
@@ -193,9 +208,13 @@ def test_mid_turn_steer_is_its_own_user_row():
 
 
 def test_legacy_pending_steer_still_delivers_after_a_tool_result():
-    model = ScriptedModel([_tool_call("echo"), {"role": "assistant", "content": "done"}])
+    model = ScriptedModel(
+        [_tool_call("echo"), {"role": "assistant", "content": "done"}]
+    )
     agent = Agent(
-        model=model, tools={"echo": lambda: "body"}, max_iterations=4,
+        model=model,
+        tools={"echo": lambda: "body"},
+        max_iterations=4,
         pending_steer="legacy steer",
     )
     result = run_conversation(agent, "ping")
@@ -222,7 +241,8 @@ def test_useless_results_are_not_errors_and_errors_are_never_useless():
         ]
     )
     agent = Agent(
-        model=model, tools={"empty_search": empty_search, "broken": broken},
+        model=model,
+        tools={"empty_search": empty_search, "broken": broken},
         max_iterations=6,
     )
     result = run_conversation(agent, "ping")
@@ -275,9 +295,13 @@ def test_speculation_commits_on_match_and_discards_on_mismatch():
         calls.append(x)
         return f"{x * 2}"
 
-    model = ScriptedModel([_tool_call("double", '{"x": 2}'), {"role": "assistant", "content": "ok"}])
+    model = ScriptedModel(
+        [_tool_call("double", '{"x": 2}'), {"role": "assistant", "content": "ok"}]
+    )
     agent = Agent(
-        model=model, tools={"double": double}, max_iterations=4,
+        model=model,
+        tools={"double": double},
+        max_iterations=4,
         speculative_tools={"double"},
     )
     result = run_conversation(agent, "ping")
@@ -295,7 +319,9 @@ def test_speculation_commits_on_match_and_discards_on_mismatch():
         cache_agent, {"double": double}, _tool_call("double", '{"x": 5}')["tool_calls"]
     )
     assert commit_speculative(cache_agent, "double", {"x": 6}) is None
-    content, is_error, useless = commit_speculative(cache_agent, "double", {"x": 5})
+    taken = commit_speculative(cache_agent, "double", {"x": 5})
+    assert taken is not None
+    content, is_error, useless = taken
     assert (content, is_error, useless) == ("10", False, False)
     assert commit_speculative(cache_agent, "double", {"x": 5}) is None
 

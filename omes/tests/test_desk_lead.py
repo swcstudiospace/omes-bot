@@ -43,7 +43,8 @@ def test_no_dispatcher_blocks_and_reopens(tmp_path):
     outcome = run_lead_pass(intake)
     assert outcome["tickets"][0]["status"] == "blocked"
     assert outcome["tickets"][0]["reason"] == "no dispatcher"
-    assert intake.get(record["intake_id"])["status"] == "open"
+    reopened = intake.get(record["intake_id"])
+    assert reopened is not None and reopened["status"] == "open"
     assert "0/1 tickets done." in outcome["report"]
 
 
@@ -57,7 +58,13 @@ def test_missing_and_invalid_receipts_block(tmp_path):
         calls["n"] += 1
         if calls["n"] == 1:
             return {"note": "forgot the receipt"}
-        return {"receipt": {"commands": [], "claims": [{"claim": "x", "evidence_command_index": 9}], "unverified": []}}
+        return {
+            "receipt": {
+                "commands": [],
+                "claims": [{"claim": "x", "evidence_command_index": 9}],
+                "unverified": [],
+            }
+        }
 
     outcome = run_lead_pass(intake, dispatch)
     assert [t["status"] for t in outcome["tickets"]] == ["blocked", "blocked"]

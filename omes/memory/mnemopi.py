@@ -96,7 +96,9 @@ def _check_bank(bank: str) -> None:
         or "[" in bank
         or "]" in bank
     ):
-        raise ValueError("bank must be a non-empty string without whitespace or brackets")
+        raise ValueError(
+            "bank must be a non-empty string without whitespace or brackets"
+        )
 
 
 __all__ = ["Mnemopi"]

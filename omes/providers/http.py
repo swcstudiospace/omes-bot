@@ -13,11 +13,12 @@ scripted peer that speaks real HTTP bytes.
 
 from __future__ import annotations
 
+import contextlib
 import http.client
 import json
-import socket
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 from urllib.parse import urlencode, urlsplit
 
 from omes.providers.base import ProviderError
@@ -40,7 +41,11 @@ class HttpTransport:
             or timeout <= 0
         ):
             raise ValueError("timeout must be a positive number of seconds")
-        if isinstance(max_retries, bool) or not isinstance(max_retries, int) or max_retries < 0:
+        if (
+            isinstance(max_retries, bool)
+            or not isinstance(max_retries, int)
+            or max_retries < 0
+        ):
             raise ValueError("max_retries must be a non-negative integer")
         self._policy = policy
         self._timeout = float(timeout)
@@ -51,7 +56,10 @@ class HttpTransport:
     def post(self, url: str, headers: dict, body: dict) -> dict:
         """POST one JSON body. Return the decoded JSON response."""
         payload = json.dumps(body).encode("utf-8")
-        merged = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+        merged = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(payload)),
+        }
         merged.update(headers or {})
         return self._send("POST", url, merged, payload)
 
@@ -66,11 +74,16 @@ class HttpTransport:
     def post_text(self, url: str, headers: dict, body: dict) -> str:
         """POST one JSON body. Return the raw UTF-8 response body."""
         payload = json.dumps(body).encode("utf-8")
-        merged = {"Content-Type": "application/json", "Content-Length": str(len(payload))}
+        merged = {
+            "Content-Type": "application/json",
+            "Content-Length": str(len(payload)),
+        }
         merged.update(headers or {})
         return self._send_text("POST", url, merged, payload)
 
-    def _send(self, method: str, url: str, headers: dict, payload: bytes | None) -> dict:
+    def _send(
+        self, method: str, url: str, headers: dict, payload: bytes | None
+    ) -> dict:
         """One request with retries. Hosts are allowlisted before any socket."""
         host, port, path, use_tls = _split(url)
         if host is None:
@@ -80,7 +93,9 @@ class HttpTransport:
         last: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
-                return self._once(method, host, port, path, use_tls, headers, payload, url)
+                return self._once(
+                    method, host, port, path, use_tls, headers, payload, url
+                )
             except _Retryable as exc:
                 last = exc
                 if attempt < self._max_retries and self._backoff > 0:
@@ -90,7 +105,9 @@ class HttpTransport:
         assert last is not None
         raise ProviderError(f"request to {host} failed after retries: {last}") from last
 
-    def _send_text(self, method: str, url: str, headers: dict, payload: bytes | None) -> str:
+    def _send_text(
+        self, method: str, url: str, headers: dict, payload: bytes | None
+    ) -> str:
         """One request with retries, returning the raw UTF-8 body."""
         host, port, path, use_tls = _split(url)
         if host is None:
@@ -100,7 +117,9 @@ class HttpTransport:
         last: Exception | None = None
         for attempt in range(self._max_retries + 1):
             try:
-                return self._once_text(method, host, port, path, use_tls, headers, payload, url)
+                return self._once_text(
+                    method, host, port, path, use_tls, headers, payload, url
+                )
             except _Retryable as exc:
                 last = exc
                 if attempt < self._max_retries and self._backoff > 0:
@@ -170,13 +189,11 @@ class HttpTransport:
                 response = connection.getresponse()
                 status = response.status
                 raw = response.read()
-            except (http.client.HTTPException, TimeoutError, socket.timeout, OSError) as exc:
+            except (http.client.HTTPException, TimeoutError, OSError) as exc:
                 raise _Retryable(str(exc) or type(exc).__name__) from exc
         finally:
-            try:
+            with contextlib.suppress(OSError):
                 connection.close()
-            except OSError:
-                pass
         return status, raw
 
 

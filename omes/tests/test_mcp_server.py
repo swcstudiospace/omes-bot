@@ -69,16 +69,23 @@ def test_call_tool_dispatches_and_marks_errors(tmp_path: Path):
     assert unknown.is_error is True
     assert "Unknown tool" in unknown.content[0].text
 
-    gated = asyncio.run(call(
-        None, Params("infra_railway_redeploy",
-                     {"project": "a", "service": "b", "prior_deployment_id": "d"})))
+    gated = asyncio.run(
+        call(
+            None,
+            Params(
+                "infra_railway_redeploy",
+                {"project": "a", "service": "b", "prior_deployment_id": "d"},
+            ),
+        )
+    )
     assert gated.is_error is True
     assert "approval required" in gated.content[0].text
 
 
 def test_default_registry_serves_the_roster(tmp_path: Path):
-    roster = roster_names((OMES / "contracts" / "tool-rosters" / "omes.yaml").read_text(
-        encoding="utf-8"))
+    roster = roster_names(
+        (OMES / "contracts" / "tool-rosters" / "omes.yaml").read_text(encoding="utf-8")
+    )
     registry = default_registry(ROOT, tmp_path)
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
@@ -99,29 +106,39 @@ def test_roster_call_refusal_policy_and_env(tmp_path: Path):
             self.name = name
             self.arguments = arguments
 
-    refused = asyncio.run(call(None, Params("write_file", {"path": "x", "content": "y"})))
+    refused = asyncio.run(
+        call(None, Params("write_file", {"path": "x", "content": "y"}))
+    )
     assert refused.is_error is True
     assert "policy forbids write_file" in refused.content[0].text
 
     policy = SeatPolicy.load(OMES / "contracts" / "policies" / "omes.json")
     guarded = default_registry(ROOT, tmp_path, policy=policy)
-    denied = _json.loads(guarded.dispatch(
-        "write_file", {"path": "contracts/tool-rosters/omes.yaml", "content": "x"}))
+    denied = _json.loads(
+        guarded.dispatch(
+            "write_file", {"path": "contracts/tool-rosters/omes.yaml", "content": "x"}
+        )
+    )
     assert "error" in denied
 
     log = ApprovalLog()
     assert log.approve("infra_railway_redeploy", "ada").get("approved") is True
     approved = default_registry(ROOT, tmp_path, approval_log=log)
-    ran = _json.loads(approved.dispatch("infra_railway_redeploy", {"project": "a",
-                                                                  "service": "b"}))
+    ran = _json.loads(
+        approved.dispatch("infra_railway_redeploy", {"project": "a", "service": "b"})
+    )
     assert "approval required" not in ran.get("error", "")
 
-    env = {"OMES_PACKS_JSON": _json.dumps({"demo": {"tools": ["t"], "seats": ["web"]}}),
-           "ULTRATHINK_ROOT": str(tmp_path / "ut")}
+    env = {
+        "OMES_PACKS_JSON": _json.dumps({"demo": {"tools": ["t"], "seats": ["web"]}}),
+        "ULTRATHINK_ROOT": str(tmp_path / "ut"),
+    }
     pack_log = ApprovalLog()
     pack_log.approve("app_tools_load", "ada")
     wired = default_registry(ROOT, tmp_path, env=env, approval_log=pack_log)
-    loaded = _json.loads(wired.dispatch("app_tools_load", {"app": "nope", "task_id": "t"}))
+    loaded = _json.loads(
+        wired.dispatch("app_tools_load", {"app": "nope", "task_id": "t"})
+    )
     assert loaded.get("available") == ["demo"]
     status = _json.loads(wired.dispatch("ult_status", {}))
     assert "not_configured" not in status.get("error", "")
@@ -130,8 +147,15 @@ def test_roster_call_refusal_policy_and_env(tmp_path: Path):
 def test_stdio_roundtrip_through_own_client(tmp_path: Path):
     from omes.tools.mcp_session import mcp_session_call
 
-    command = [sys.executable, "-m", "omes.mcp_server", "--root", str(ROOT),
-               "--home", str(tmp_path)]
+    command = [
+        sys.executable,
+        "-m",
+        "omes.mcp_server",
+        "--root",
+        str(ROOT),
+        "--home",
+        str(tmp_path),
+    ]
     called = mcp_session_call(command, "infra_db_health", {}, cwd=str(ROOT), timeout=30)
     assert "error" not in called, called
     text = called["result"]["content"][0]["text"]

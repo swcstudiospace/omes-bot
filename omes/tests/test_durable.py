@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -34,8 +35,11 @@ def test_journaled_turn_matches_its_transcript(tmp_path: Path):
         [_tool_call("echo"), {"role": "assistant", "content": "finished"}]
     )
     agent = Agent(
-        model=model, tools={"echo": lambda: "pong"}, max_iterations=4,
-        journal=journal, run_id="run-1",
+        model=model,
+        tools={"echo": lambda: "pong"},
+        max_iterations=4,
+        journal=journal,
+        run_id="run-1",
     )
     result = run_conversation(agent, "ping", system_message="sys")
 
@@ -76,7 +80,7 @@ def test_crashed_turn_resumes_from_the_journal(tmp_path: Path):
 
 def test_cron_history_is_bounded_and_ticks_do_not_repeat(tmp_path: Path):
     store = JobStore(tmp_path / "jobs.json")
-    calls = []
+    calls: list[str] = []
     store.schedule("do it", 100, interval_seconds=10)
 
     assert len(store.tick(100, calls.append) or []) == 1
@@ -88,7 +92,11 @@ def test_cron_history_is_bounded_and_ticks_do_not_repeat(tmp_path: Path):
     assert job["claimed_at"] is None
 
     for tick in range(110, 110 + 25 * 10, 10):
-        store.tick(tick, lambda prompt: f"ran@{tick}")
+
+        def _run(prompt: str, tick: int = tick) -> str:
+            return f"ran@{tick}"
+
+        store.tick(tick, _run)
 
     assert len(job["history"]) == HISTORY_LIMIT
     assert job["history"][-1] == {"ran_at": 350, "result": "ran@350"}
@@ -146,7 +154,7 @@ def test_workflow_resumes_from_its_last_checkpoint(tmp_path: Path):
         effects.append("three")
         return {**state, "three": True}
 
-    steps = [step_one, step_two, step_three]
+    steps: list[Callable[[dict], dict]] = [step_one, step_two, step_three]
     with pytest.raises(RuntimeError, match="crash"):
         run_workflow(tmp_path, "wf-1", steps, {"seed": 1})
 
@@ -160,4 +168,5 @@ def test_workflow_resumes_from_its_last_checkpoint(tmp_path: Path):
     assert finished["done"] is True
     assert finished["state"] == {"seed": 1, "one": True, "two": True, "three": True}
     assert effects == ["one", "two", "two", "three"]
-    assert load_checkpoint(tmp_path, "wf-1")["done"] == 3
+    final_checkpoint = load_checkpoint(tmp_path, "wf-1")
+    assert final_checkpoint is not None and final_checkpoint["done"] == 3

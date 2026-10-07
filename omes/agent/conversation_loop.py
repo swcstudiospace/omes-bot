@@ -9,6 +9,7 @@ the only sanctioned rewrite, and this loop does not call it.
 
 from __future__ import annotations
 
+import contextlib
 import time
 import uuid
 from dataclasses import dataclass
@@ -32,9 +33,9 @@ from omes.agent.model import Model
 from omes.agent.modes import apply_plan_mode
 from omes.agent.prompt_builder import build_system_prompt, steer_user_row
 from omes.agent.session_lease import SessionLease
-from omes.agent.turn_final_response import finish_text_response
+from omes.agent.turn_final_response import FinalResponseVerdict, finish_text_response
 from omes.agent.turn_finalizer import finalize_turn
-from omes.agent.turn_tool_round import run_tool_round
+from omes.agent.turn_tool_round import ToolRoundVerdict, run_tool_round
 
 
 @dataclass
@@ -91,6 +92,13 @@ class Agent:
     tracer: Any | None = None
     magic_keywords: Any | None = None
     substrate: Any | None = None
+    delegate_depth: int = 0
+    max_depth: int = 2
+    max_children: int = 1
+    child_model: Any | None = None
+    child_tool_hook: Any | None = None
+    _cached_system_prompt: str | None = None
+    _turn_budget: IterationBudget | None = None
 
     def __post_init__(self) -> None:
         if self.tools is None:
@@ -155,7 +163,9 @@ def _run_conversation_turn(
     _install_system_prompt(agent, messages, system_message)
     messages.append({"role": "user", "content": user_message})
     if isinstance(user_message, str):
-        messages.extend(notices_for_turn(user_message, agent.tools, agent.magic_keywords))
+        messages.extend(
+            notices_for_turn(user_message, agent.tools, agent.magic_keywords)
+        )
     _emit_new_rows(agent, messages, since)
     _journal_new_rows(agent, run_id, messages, since)
 
@@ -170,10 +180,12 @@ def _run_conversation_turn(
         agent.budget = budget
         agent._turn_budget = budget
     elif budget is getattr(agent, "_turn_budget", None):
+        assert budget is not None
         budget.refill(agent.max_iterations)
 
     original_tools = wrap_tools(agent)
     if agent.plan_mode:
+        assert agent.tools is not None
         agent.tools = apply_plan_mode(agent.tools)
     try:
         while api_call_count < agent.max_iterations and budget.remaining > 0:
@@ -212,7 +224,7 @@ def _run_conversation_turn(
                     prepare_speculative(
                         agent, original_tools, _tool_calls(assistant_message)
                     )
-                verdict = run_tool_round(
+                verdict: ToolRoundVerdict | FinalResponseVerdict = run_tool_round(
                     agent,
                     assistant_message=assistant_message,
                     messages=messages,
@@ -250,7 +262,9 @@ def _run_conversation_turn(
 
         if turn_exit_reason is None:
             if api_call_count >= agent.max_iterations:
-                turn_exit_reason = f"max_iterations_reached({api_call_count}/{agent.max_iterations})"
+                turn_exit_reason = (
+                    f"max_iterations_reached({api_call_count}/{agent.max_iterations})"
+                )
             elif budget.remaining <= 0:
                 turn_exit_reason = "budget_exhausted"
             else:
@@ -277,7 +291,9 @@ def _run_conversation_turn(
         restore_tools(agent, original_tools)
 
 
-def _open_substrate(agent: Agent, user_message: Any, system_message: str | None) -> str | None:
+def _open_substrate(
+    agent: Agent, user_message: Any, system_message: str | None
+) -> str | None:
     """Open the substrate session; prepend its brief block. Never raises."""
     substrate = getattr(agent, "substrate", None)
     if substrate is None:
@@ -289,10 +305,8 @@ def _open_substrate(agent: Agent, user_message: Any, system_message: str | None)
         return system_message
     if block:
         system_message = f"{block}\n\n{system_message}" if system_message else block
-    try:
+    with contextlib.suppress(Exception):
         substrate.on_prompt(user_message)
-    except Exception:
-        pass
     return system_message
 
 
@@ -308,9 +322,15 @@ def _close_substrate_turn(agent: Agent, result: dict) -> None:
         pass
 
 
-def _install_system_prompt(agent: Agent, messages: list, system_message: str | None) -> None:
+def _install_system_prompt(
+    agent: Agent, messages: list, system_message: str | None
+) -> None:
     """Build the system prompt once. A history that already starts with one is reused."""
-    if messages and isinstance(messages[0], dict) and messages[0].get("role") == "system":
+    if (
+        messages
+        and isinstance(messages[0], dict)
+        and messages[0].get("role") == "system"
+    ):
         content = messages[0].get("content")
         if isinstance(content, str) and content:
             agent._cached_system_prompt = content
@@ -350,7 +370,9 @@ def _begin_journal(agent: Agent) -> str | None:
     return run_id
 
 
-def _journal_new_rows(agent: Agent, run_id: str | None, messages: list, since: int) -> None:
+def _journal_new_rows(
+    agent: Agent, run_id: str | None, messages: list, since: int
+) -> None:
     """Persist rows appended at ``messages[since:]``. No journal, no-op."""
     journal = getattr(agent, "journal", None)
     if journal is None or run_id is None:
@@ -365,7 +387,9 @@ def _finish_journal(agent: Agent, run_id: str | None, result: dict) -> None:
     if journal is None or run_id is None:
         return
     response = result.get("final_response", "")
-    journal.finish_run(run_id, str(result.get("turn_exit_reason", "stopped")), str(response))
+    journal.finish_run(
+        run_id, str(result.get("turn_exit_reason", "stopped")), str(response)
+    )
 
 
 def _run_extension_hooks(agent: Agent, messages: list) -> dict | None:
