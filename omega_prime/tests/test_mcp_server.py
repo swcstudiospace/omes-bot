@@ -19,6 +19,7 @@ from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.coding import register_coding_tools
 from omega_prime.tools.infra import InfraClient, InfraContext, register_infra_tools
 from omega_prime.tools.registry import ToolRegistry
+from omega_prime.tools.rlm import RLM_TOOL_NAMES
 from omega_prime.tools.ultrathink import (
     UltrathinkClient,
     UltrathinkContext,
@@ -91,7 +92,8 @@ def test_default_registry_serves_the_roster(tmp_path: Path):
     registry = default_registry(ROOT, tmp_path)
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
-    assert served == [name for name in roster if name != "delegate_task"]
+    gated = {"delegate_task"} | set(RLM_TOOL_NAMES)
+    assert served == [name for name in roster if name not in gated]
     assert "delegate_task" not in served
 
 

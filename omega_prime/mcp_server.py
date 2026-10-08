@@ -216,6 +216,10 @@ def default_registry(
             or None,
         ),
     )
+    # Prime capability families are config-gated (default off): a disabled
+    # family is not registered and is absent from the offered roster (LOOP-05).
+    # RLM needs a live parent agent, so registration happens where the agent's
+    # registry is built (the delegate_task precedent: skipped here).
     return registry
 
 

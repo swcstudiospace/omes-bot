@@ -77,7 +77,15 @@ def check_registry(root: Path) -> tuple[bool, str]:
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
     missing = [name for name in roster if name not in served]
-    missing = [name for name in missing if name != "delegate_task"]
+    # delegate_task and the RLM family need a live parent agent (session/host),
+    # so default_registry intentionally does not serve them (same precedent).
+    from omega_prime.tools.rlm import RLM_TOOL_NAMES
+
+    missing = [
+        name
+        for name in missing
+        if name != "delegate_task" and name not in RLM_TOOL_NAMES
+    ]
     if missing:
         return False, f"registry does not serve: {', '.join(missing)}"
     return True, f"registry serves {len(served)} roster tools"

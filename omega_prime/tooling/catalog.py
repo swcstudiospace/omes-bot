@@ -26,6 +26,7 @@ from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
 from omega_prime.tools.quality import QUALITY_TOOL_NAMES
+from omega_prime.tools.rlm import RLM_TOOL_NAMES
 from omega_prime.tools.substrate_tools import SUBSTRATE_TOOL_NAMES
 from omega_prime.tools.systems import SYS_TOOL_NAMES
 from omega_prime.tools.telegram import TELEGRAM_TOOL_NAMES
@@ -51,6 +52,7 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("App packs", PACKS_TOOL_NAMES),
     ("Ultrathink", ULT_TOOL_NAMES),
     ("Substrate", SUBSTRATE_TOOL_NAMES),
+    ("RLM", RLM_TOOL_NAMES),
 )
 
 HEADER = """# Tool catalog

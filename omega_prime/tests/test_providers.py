@@ -61,6 +61,7 @@ from omega_prime.tools.quality import (
     register_quality_tools,
 )
 from omega_prime.tools.registry import ToolRegistry
+from omega_prime.tools.rlm import RLM_TOOL_NAMES, register_rlm_tools
 from omega_prime.tools.substrate_tools import (
     SUBSTRATE_TOOL_NAMES,
     register_substrate_tools,
@@ -351,6 +352,11 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
     register_packs_tools(registry, PacksClient(PacksContext()))
     register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext()))
     register_substrate_tools(registry, SubstrateClient())
+    register_rlm_tools(
+        registry,
+        Agent(model=ScriptedModel([]), tools={}),
+        run_child=lambda prompt, model=None, thinking=None: "ok",
+    )
 
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
@@ -371,6 +377,7 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         + PACKS_TOOL_NAMES
         + ULT_TOOL_NAMES
         + SUBSTRATE_TOOL_NAMES
+        + RLM_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     assert [item["function"]["name"] for item in offered] == roster

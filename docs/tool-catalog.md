@@ -874,3 +874,59 @@ Mark a node completed and drop its claim. Requires approval.
 - Required params: graph_id, node_id, token
 
 Refresh the lease TTL for an active claim using the token from the claim result.
+
+## rlm_spawn
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_collect
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_list_subagents
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_delete_subagent
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_create_session
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_progress_note
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## rlm_rename
+
+- Family: RLM
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
