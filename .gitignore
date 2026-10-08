@@ -1,6 +1,7 @@
 # Upstream checkouts. Read while porting. Not part of this repository.
 /hermes-agent/
 /oh-my-pi/
+/prime-agent/
 
 # Secrets
 .env

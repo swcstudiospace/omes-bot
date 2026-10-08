@@ -24,16 +24,20 @@ v8 milestone: public launch — branded README, standard public-repo files, rich
 
 v9 milestone: SOTA upgrade — the same one-agent product brought to state-of-the-art engineering and agent standards: in-flight hardening landed, lint + types enforced in CI, pinned dependencies, current provider/protocol wire formats, and a deeper hermetic eval battery. User decisions (2026-10-07): full-SOTA scope, land the dirty tree first, hermetic verification stays (live probes manual opt-in).
 
-## Current Milestone: v9 SOTA upgrade
+v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/`, PrimeIntellect, MIT, pinned `967eb13f`) contributes its differentiating logic — RLM subagent recursion (`rlm.spawn`/`collect`), the continual harness (`/refine` with snapshots and rollback), goals/heartbeats/autonomous mode, and agent-to-agent messaging — behavior-ported into the one Python agent per the v1–v9 precedent. The Rust workspace stays as an ignored read-only checkout and CI-built parity oracle. The repo relicenses to AGPL-3.0 (Spectrum Web Co 2026) and hardens to enterprise open-source standards. User decisions (2026-10-08): behavior-port architecture (no PyO3 boundary exists upstream; one-Python-process rule stands), capability-merge loop design, AGPL-3.0 relicense, degrade-with-warning for Prime capability failures.
 
-**Goal:** Bring Omega Prime to state-of-the-art engineering and agent standards while keeping the one-agent, one-process architecture.
+## Current Milestone: v10 Prime merge
+
+**Goal:** Merge Prime Agent into Omega Prime as the third logic source — behavior-faithful ports of its differentiating capabilities, typed connector adapters, an upgraded loop, and an enterprise-grade AGPL-3.0 repository.
 
 **Target features:**
-- Land and verify the in-flight hardening already in the tree
-- Engineering hygiene: linter + typechecker enforced in CI, pinned dependencies, current Python matrix
-- Provider and protocol currency: current wire formats, MCP SDK, streaming/structured output where the loop can use it
-- Agent depth: highest-value deferred items from v1–v8
-- Eval depth: grow the deterministic/adversarial battery, keep everything hermetic
+- Discovery: capability map + overlap map + green Rust parity baseline
+- Rust workspace in CI as the parity oracle (pinned toolchain, locked deps, license gate)
+- RLM recursion port: spawn/collect/list/delete/create_session/progress_note
+- Continual harness port: /refine, harness state, snapshots, rollback
+- Loop upgrade: goals, heartbeats, autonomous mode, agent messaging; default-off config flags; degraded mode; Hermes+Omp regression parity
+- Connector layer: typed adapters, contract tests, failure injection, parity fixtures
+- Repo hardening: AGPL-3.0, root files, docs, supply-chain CI
 
 ## Requirements
 
@@ -81,9 +85,12 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 
 ## Environment Facts
 
-- Planning root and code repo: `/root/src/repos/omega`; current branch
-  `v6-grok-ship`, HEAD `36fd803`. Existing Phase 52 changes are uncommitted;
-  preserve them. Do not git commit, push, merge, or tag during this continuation.
+- Planning root and code repo: `/root/src/repos/omega-prime`; current branch
+  `v6-grok-ship`, HEAD `79ff51a`. v9 is committed and clean. v10 phase commits
+  are expected (convention: `Phase NN: …` messages; `Refs SPE-XXXX` trailers
+  allowed). Never commit the `prime-agent/` checkout itself (ignored upstream,
+  like `hermes-agent/` and `oh-my-pi/`). Do not push, merge, or tag without
+  explicit user request.
 - GSD CLI: `node /root/.hermes/gsd-core/bin/gsd-tools.cjs`, run from this repo.
   Existing reports use body-only `**Status:**` fields; the CLI requires leading
   YAML frontmatter. Repair the artifacts, not the installed GSD tools.
@@ -127,7 +134,11 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v7 shares the `ultrathink` Hindsight bank | One set of episodic beliefs across the ultrathink system; no silos (user chose 2026-10-03) | ✓ Good |
 | v7 verifies with fakes + opt-in live probes | Committed tests stay hermetic; read-only Railway probes run manually, never in CI (user chose 2026-10-03) | ✓ Good |
 | v8 launches public with Greptile connected | User chose connect-now, push + PR, GitBook + verify CI (2026-10-03); init blocked on org app install (user step), KB enrollment stays a Greptile-contact ask | ✓ Good |
-| v9 upgrades to SOTA in place | User chose full-SOTA scope, land dirty tree first, hermetic verification stays (2026-10-07); one-agent architecture and Add-Bot unwired compat unchanged | — Pending |
+| v9 upgrades to SOTA in place | User chose full-SOTA scope, land dirty tree first, hermetic verification stays (2026-10-07); one-agent architecture and Add-Bot unwired compat unchanged | ✓ Good |
+| v10 ports Prime behavior into Python; Rust stays as parity oracle | prime-agent has no PyO3/maturin bindings (spawned-kernel process boundary); one-Python-process rule and the v1–v9 port precedent stand (2026-10-08) | — Pending |
+| v10 merges Prime as capabilities in the single loop | Hermes+Omp are already one merged loop; Prime joins as a third logic source, not a separate runtime agent (2026-10-08) | — Pending |
+| v10 relicenses to AGPL-3.0 (Spectrum Web Co 2026) | Explicit user request (2026-10-08); supersedes the v6 MIT decision; ported Prime code keeps MIT attribution | — Pending |
+| v10 degrades with warning on Prime capability failure | Prime families are default-off flags; Prime-disabled behavior matches pre-v10 exactly (2026-10-08) | — Pending |
 
 ## Evolution
 

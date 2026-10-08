@@ -31,6 +31,16 @@ Omega Prime does not vendor, subtree, or import either upstream checkout at runt
 - What is adapted: `packages/agent` behavior, the coding-agent tool and edit pipeline, LSP, DAP, sessions, tasks, MCP, capabilities, extensions, modes and plan mode, memories, hindsight, mnemopi, autolearn, goals, advisor, exec job control, agent-side security, and the `packages/ai` provider surface. The port is Python inside the same Omega Prime agent. TypeScript tests are the spec.
 - What is not adapted: `packages/tui`, collab web, stats site, CLI gallery and install chrome, Rust crates, and bazel or nix packaging. Same exception as Hermes: pull a piece in only when a phase's tests cannot pass without it.
 
+## Prime Agent
+
+- Remote: https://github.com/PrimeIntellect-ai/prime-agent.git
+- Commit: `967eb13fd488507af5f590e9c6ea8b2672f1fc05` (2026-10-07)
+- License: MIT
+- Copyright: PrimeIntellect
+- Role: read-only behavior-port source and CI parity oracle. The Rust workspace (9 crates: `pa-telemetry`, `pa-types`, `pa-ai`, `pa-models`, `pa-agent`, `pa-core`, `pa-daemon`, `pa-tui`, `pa-cli`) and the kernel-side Python runtime (`prime-agent-runtime/src/rlm/`) are read as the behavior spec; CI builds and tests the workspace so the ported behavior can be diffed against the original.
+- What is adapted (v10): the RLM recursion surface (`rlm.spawn`/`collect`/`list_subagents`/`delete_subagent`/`create_session`/`progress_note`), persistent-REPL semantics, the continual harness (`/refine`, harness state, snapshots, rollback), goals, heartbeats/schedules, autonomous mode (budgets + quality gates), and agent-to-agent messaging. The port is Python inside the same Omega Prime agent; the Rust and kernel-side sources are the spec.
+- What is not adapted: the TUI (`pa-tui`), the CLI binary (`pa-cli`), the daemon supervisor as a process model, telemetry sinks, the model-catalog transport, and packaging/installers. Omega Prime already has its own loop, providers, tools, and durability; Prime's versions are read for their differentiating logic only.
+
 ## Merge rule
 
-One Python process. One `OmegaPrimeAgent`. Where both upstreams implement the same concern, one Omega Prime implementation has to satisfy both invariants. Temporal is not the merge. It can become a durability adapter after cron and delegation exist.
+One Python process. One `OmegaPrimeAgent`. Where the upstreams implement the same concern, one Omega Prime implementation has to satisfy all invariants. Temporal is not the merge. It can become a durability adapter after cron and delegation exist.
