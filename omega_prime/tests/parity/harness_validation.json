@@ -1,0 +1,18 @@
+{
+  "fixture": "harness_validation",
+  "source": "prime-agent/prime-agent-runtime/src/rlm/harness.py @ 967eb13f (_validate_entry_shape / _validate_refinement_event)",
+  "description": "Harness entry and refinement-event validation rejections: unknown kind, missing id/title, non-string body, non-string tags; events require trigger, changes, non-empty evidence, outcome.",
+  "entry_rejections": [
+    {"kind": "widget", "entry": {"id": "x", "title": "t", "body": "b"}, "error": "unknown harness kind"},
+    {"kind": "prompt", "entry": {"id": "", "title": "t", "body": "b"}, "error": "non-empty id"},
+    {"kind": "prompt", "entry": {"id": "x", "title": "", "body": "b"}, "error": "requires a title"},
+    {"kind": "prompt", "entry": {"id": "x", "title": "t", "body": 12}, "error": "body string"},
+    {"kind": "prompt", "entry": {"id": "x", "title": "t", "body": "b", "tags": [1]}, "error": "tags must be strings"}
+  ],
+  "event_rejections": [
+    {"event": {"changes": {}, "evidence": ["e"], "outcome": "o"}, "error": "requires a trigger"},
+    {"event": {"trigger": "t", "evidence": ["e"], "outcome": "o"}, "error": "requires a changes object"},
+    {"event": {"trigger": "t", "changes": {}, "evidence": [], "outcome": "o"}, "error": "non-empty evidence"},
+    {"event": {"trigger": "t", "changes": {}, "evidence": ["e"]}, "error": "requires an outcome"}
+  ]
+}

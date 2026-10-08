@@ -1,0 +1,19 @@
+{
+  "fixture": "status_vocabularies",
+  "source": "prime-agent rlm/__init__.py + pa-core/src/goals.rs + pa-core/src/autonomous/ @ 967eb13f",
+  "description": "The closed status/vocabulary sets the port must keep verbatim.",
+  "subagent_statuses": ["running", "completed", "error"],
+  "collect_statuses": ["queued", "running", "done", "error", "cancelled"],
+  "activity_kinds": ["waiting", "writing", "executing"],
+  "goal_statuses": ["active", "paused", "completed"],
+  "harness_kinds": ["prompt", "memory", "skill", "subagent", "factory"],
+  "harness_scopes": ["local", "global"],
+  "autonomous_stop_reasons": [
+    "autonomous_max_turns",
+    "autonomous_max_tokens",
+    "autonomous_max_minutes",
+    "autonomous_gate_passed",
+    "autonomous_gate_failed",
+    "autonomous_completed"
+  ]
+}

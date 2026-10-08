@@ -26,7 +26,7 @@ with phase directories under `milestones/v1-phases/` through
 - [x] **Phase 55: RLM recursion port** - spawn/collect/list/delete/create_session/progress_note into the loop.
 - [x] **Phase 56: Continual harness port** - /refine, harness state, snapshots, rollback.
 - [x] **Phase 57: Agent loop upgrade** - Goals, heartbeats, autonomous mode, agent messaging; config flags; degraded mode; regression parity.
-- [ ] **Phase 58: Connector layer + parity suite** - Typed adapters, contract tests, failure injection, parity fixtures.
+- [x] **Phase 58: Connector layer + parity suite** - Typed adapters, contract tests, failure injection, parity fixtures.
 - [ ] **Phase 59: Repository hardening** - AGPL-3.0, root files, docs, supply-chain CI.
 - [ ] **Phase 60: Milestone audit + closeout** - Audit, archive, cleanup.
 
@@ -85,7 +85,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 58-01: Typed connectors + contract/failure-injection/parity tests
+- [x] 58-01: Typed connectors + contract/failure-injection/parity tests
 
 ### Phase 59: Repository hardening
 **Goal**: The repo reads as a state-of-the-art, enterprise-grade open-source project: AGPL-3.0 LICENSE with "Copyright (C) 2026 Spectrum Web Co", the full root file set, a rewritten README with the three-source architecture, merge documentation, and supply-chain CI on both ecosystems.

@@ -1,0 +1,14 @@
+{
+  "fixture": "rlm_progress_note",
+  "source": "prime-agent/prime-agent-runtime/src/rlm/__init__.py @ 967eb13f (progress note cap + throttle)",
+  "description": "Progress notes are capped at 512 UTF-16 code units and throttled to one per 10s per child; a throttled note is rejected with retry_after_ms.",
+  "max_utf16_code_units": 512,
+  "throttle_seconds": 10,
+  "cases": [
+    {"name": "ascii at cap", "message": "x", "repeat": 512, "accepted": true},
+    {"name": "over cap", "message": "x", "repeat": 513, "error": "exceeds 512 UTF-16 code units"},
+    {"name": "astral counts double", "message": "😀", "repeat": 256, "accepted": true},
+    {"name": "astral over cap", "message": "😀", "repeat": 257, "error": "exceeds 512 UTF-16 code units"}
+  ],
+  "throttle": {"first_accepted": true, "immediate_second_accepted": false}
+}

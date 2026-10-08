@@ -1,0 +1,18 @@
+{
+  "fixture": "goal_token_delta",
+  "source": "prime-agent/crates/pa-core/src/goals.rs @ 967eb13f (goal_token_delta_for_usage)",
+  "description": "Per-turn token accrual: total_tokens wins when present and valid; otherwise prompt+completion positive ints; bools and negatives never count; missing/invalid usage is 0. Accrual never raises.",
+  "cases": [
+    {"usage": {"total_tokens": 120, "prompt_tokens": 100, "completion_tokens": 20}, "delta": 120},
+    {"usage": {"prompt_tokens": 100, "completion_tokens": 20}, "delta": 120},
+    {"usage": {"prompt_tokens": 100}, "delta": 100},
+    {"usage": {"total_tokens": 0}, "delta": 0},
+    {"usage": {"total_tokens": true}, "delta": 0},
+    {"usage": {"total_tokens": -5, "prompt_tokens": 10}, "delta": 10},
+    {"usage": {"prompt_tokens": true, "completion_tokens": 7}, "delta": 7},
+    {"usage": {"prompt_tokens": -3, "completion_tokens": 0}, "delta": 0},
+    {"usage": {}, "delta": 0},
+    {"usage": null, "delta": 0},
+    {"usage": "lots", "delta": 0}
+  ]
+}

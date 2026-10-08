@@ -50,7 +50,7 @@ verification stays hermetic (live probes manual opt-in).
 - [x] **Phase 55: RLM recursion port** - `rlm.spawn`/`collect`/`list_subagents`/`delete_subagent`/`create_session`/`progress_note` and persistent-REPL semantics ported into `omega_prime` (extends `agent/delegate.py`); rostered tools; scripted-model tests.
 - [x] **Phase 56: Continual harness port** - `/refine` refinement loop, harness state (supplemental prompts, memories, skill descriptions, subagent specs), snapshots + rollback, evidence-backed update rules; extends `agent/curator.py` + `learning/`.
 - [x] **Phase 57: Agent loop upgrade** - Goals engine, heartbeats/schedules, autonomous mode (turn/token/time budgets + quality gates), agent-to-agent messaging; per-capability enable/disable config (default off); degraded mode with structured warnings; Hermes+Omp regression parity.
-- [ ] **Phase 58: Connector layer + parity suite** - Typed Python adapters exposing the ported capabilities through registry/roster; contract tests on both sides; failure-injection tests; behavior-parity fixtures generated from the Rust baseline.
+- [x] **Phase 58: Connector layer + parity suite** - Typed Python adapters exposing the ported capabilities through registry/roster; contract tests on both sides; failure-injection tests; behavior-parity fixtures generated from the Rust baseline.
 - [ ] **Phase 59: Repository hardening** - AGPL-3.0 LICENSE (Spectrum Web Co 2026) + headers; root file set audit; README rewrite with three-source architecture diagram; docs (ADR-0001, connectors.md, agent-loop.md, migration.md); supply-chain CI (cargo-deny, pip-audit, dependabot); issue/PR templates.
 - [ ] **Phase 60: Milestone audit + closeout** - Audit, archive v10 phase dirs to `milestones/v10-phases/`, collapse ROADMAP, cleanup.
 
@@ -201,7 +201,7 @@ baseline pin the port's fidelity.
 
 Plans:
 
-- [ ] 58-01: Typed connectors + contract/failure-injection/parity tests
+- [x] 58-01: Typed connectors + contract/failure-injection/parity tests
 
 ### Phase 59: Repository hardening
 

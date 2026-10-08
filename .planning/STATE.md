@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v10
 milestone_name: Prime merge
-current_phase: 58
-current_phase_name: Connector layer + parity suite
+current_phase: 59
+current_phase_name: Repository hardening
 status: in_progress
-stopped_at: "Phase 57 loop upgrade complete; Phase 58 connector layer next"
-last_updated: "2026-10-08T09:00:00Z"
+stopped_at: "Phase 58 connector layer complete; Phase 59 repo hardening next"
+last_updated: "2026-10-08T09:45:00Z"
 last_activity: 2026-10-08
-last_activity_desc: Phases 53-57 complete (discovery+parity baseline, Rust CI, RLM recursion port, continual harness port, loop upgrade). Phase 58 connector layer next.
-state_head: a2bebac
+last_activity_desc: Phases 53-58 complete (discovery, Rust CI, RLM port, harness port, loop upgrade, connector layer + parity suite). Phase 59 repo hardening next.
+state_head: 8e5ec42
 progress:
   total_phases: 8
-  completed_phases: 5
-  total_plans: 5
-  completed_plans: 5
-  percent: 62
+  completed_phases: 6
+  total_plans: 6
+  completed_plans: 6
+  percent: 75
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** One Omega Prime agent runs three agents' logic — Hermes, Omp,
 and Prime — in one Python process.
-**Current focus:** Phase 58 — Connector layer + parity suite
+**Current focus:** Phase 59 — Repository hardening
 
 ## Current Position
 
-Phase: 58 (Connector layer + parity suite) / v10 Prime merge
+Phase: 59 (Repository hardening) / v10 Prime merge
 Status: In progress
 Last activity: 2026-10-08 — Phases 53-57 complete. 53: capability + overlap
 maps, Rust parity baseline (622 passed, 3 known-failing pa-cli e2e). 54:
@@ -38,9 +38,11 @@ prime-agent.pin.json + drift guard + rust-parity CI. 55: RLM recursion port
 (RlmHost + rlm_* tools, 39 tests). 56: continual harness port (HarnessState +
 refine + harness_* tools, 19 tests). 57: loop upgrade (goals, heartbeats,
 autonomous budgets + quality gate, agent messaging, degraded mode, flags-off
-regression; 45 tests). Full suite 484 passed, 26 evals green.
+regression; 45 tests). 58: connector layer (omega_prime/prime/ typed
+adapters, SCHEMA_VERSION, 29 contract + 7 failure-injection + 6 parity-fixture
+tests). Full suite 526 passed, 26 evals green.
 
-Phase completion: 5 of 8.
+Phase completion: 6 of 8.
 
 ## Accumulated Context
 
@@ -74,6 +76,6 @@ None.
 
 ## Session
 
-**Last session:** 2026-10-08T09:00:00Z
-**Stopped at:** Phase 57 complete; Phase 58 connector layer next.
+**Last session:** 2026-10-08T09:45:00Z
+**Stopped at:** Phase 58 complete; Phase 59 repo hardening next.
 **Resume file:** .planning/milestones/v10-ROADMAP.md

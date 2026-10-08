@@ -1,0 +1,9 @@
+{
+  "fixture": "rlm_no_host_errors",
+  "source": "prime-agent/crates/pa-core/src/session_engine/rlm_host.rs @ 967eb13f (NoRlmChildren)",
+  "description": "Verbatim degraded no-host error strings: spawn/create_session raise; list and empty-target collect return empty; delete/collect with targets raise the unknown-target error.",
+  "spawn_error": "rlm.spawn requires a daemon-backed session: this session has no RLM child runtime",
+  "create_session_error": "rlm.create_session requires a daemon-backed depth-0 session",
+  "unknown_target_template": "No direct RLM subagent matches \"{target}\" in the current parent session",
+  "unknown_target_cases": ["ghost", "rlm-00000000000000000000000000000000"]
+}

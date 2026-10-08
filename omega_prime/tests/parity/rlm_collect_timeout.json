@@ -1,0 +1,9 @@
+{
+  "fixture": "rlm_collect_timeout",
+  "source": "prime-agent/prime-agent-runtime/src/rlm/__init__.py @ 967eb13f (collect settle semantics)",
+  "description": "collect with a timeout returns per-child snapshots instead of raising; an unsettled child keeps a non-terminal status and settled=false.",
+  "timeout_ms": 50,
+  "unsettled_statuses": ["queued", "running"],
+  "settled": false,
+  "terminal_statuses": ["done", "error", "cancelled"]
+}

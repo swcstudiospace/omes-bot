@@ -71,13 +71,13 @@ standards under AGPL-3.0.
 
 ### Connectors
 
-- [ ] **CONN-01**: Every Prime capability call goes through a typed adapter
+- [x\] **CONN-01**: Every Prime capability call goes through a typed adapter
   with a versioned schema; no ad-hoc dicts at the boundary
-- [ ] **CONN-02**: Contract tests validate request/response shapes on both
+- [x\] **CONN-02**: Contract tests validate request/response shapes on both
   sides of each adapter
-- [ ] **CONN-03**: Failure-injection tests prove the loop survives capability
+- [x\] **CONN-03**: Failure-injection tests prove the loop survives capability
   raise/timeout/bad-payload with a structured error and no hang
-- [ ] **CONN-04**: Behavior-parity fixtures derived from the Rust baseline pass
+- [x\] **CONN-04**: Behavior-parity fixtures derived from the Rust baseline pass
   against the ported implementation
 
 ### Repository
