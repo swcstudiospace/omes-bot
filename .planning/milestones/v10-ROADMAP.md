@@ -176,8 +176,8 @@ LOOP-07
 
 Plans:
 
-- [ ] 57-01: Goals + heartbeats + autonomous mode
-- [ ] 57-02: Agent messaging + config flags + degraded mode + regression
+- [x] 57-01: Goals + heartbeats + autonomous mode
+- [x] 57-02: Agent messaging + config flags + degraded mode + regression
 
 ### Phase 58: Connector layer + parity suite
 

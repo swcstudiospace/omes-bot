@@ -10,63 +10,63 @@ standards under AGPL-3.0.
 
 ### Discovery
 
-- [ ] **DISC-01**: `.planning/research/v10-prime-capability-map.md` covers the
+- [x\] **DISC-01**: `.planning/research/v10-prime-capability-map.md` covers the
   required capability list (RLM recursion surface, persistent REPL, continual
   harness + /refine, goals, heartbeats/schedules, autonomous mode, agent
   messaging, compaction, executable skills, daemon supervision + session
   persistence, system-prompt layering) with every must-preserve behavior cited
   to a source file
-- [ ] **DISC-02**: `.planning/research/v10-omega-overlap-map.md` names the exact
+- [x\] **DISC-02**: `.planning/research/v10-omega-overlap-map.md` names the exact
   Omega Prime integration points (registry, roster, prompt assembly, loop
   phases, config, durability) with file citations
-- [ ] **DISC-03**: `cargo test --workspace --locked` in `prime-agent/` exits 0
+- [x\] **DISC-03**: `cargo test --workspace --locked` in `prime-agent/` exits 0
   on the recorded toolchain; the result is logged as the parity baseline and
   `VENDOR.md` records the pin
 
 ### Build / CI
 
-- [ ] **BUILD-01**: CI runs `cargo build --locked` and `cargo test
+- [x\] **BUILD-01**: CI runs `cargo build --locked` and `cargo test
   --workspace --locked` for the prime-agent workspace on the pinned toolchain
-- [ ] **BUILD-02**: `cargo deny check licenses` passes against the prime-agent
+- [x\] **BUILD-02**: `cargo deny check licenses` passes against the prime-agent
   workspace with an AGPL-compatible allowlist
-- [ ] **BUILD-03**: The Rust toolchain version is pinned in-repo and matches CI
+- [x\] **BUILD-03**: The Rust toolchain version is pinned in-repo and matches CI
 
 ### RLM recursion
 
-- [ ] **RLM-01**: `rlm_spawn` + `rlm_collect` match Prime's handle shape,
+- [x\] **RLM-01**: `rlm_spawn` + `rlm_collect` match Prime's handle shape,
   settled/terminal states, and error surfaces, proven by scripted-model tests
-- [ ] **RLM-02**: `rlm_list_subagents` + `rlm_delete_subagent` inspect and reap
+- [x\] **RLM-02**: `rlm_list_subagents` + `rlm_delete_subagent` inspect and reap
   children with Prime's status vocabulary
-- [ ] **RLM-03**: `rlm_create_session` mints durable child sessions and
+- [x\] **RLM-03**: `rlm_create_session` mints durable child sessions and
   `rlm_progress_note` flows child→parent with Prime's acceptance semantics
-- [ ] **RLM-04**: Children are isolated: a child never sees parent context; the
+- [x\] **RLM-04**: Children are isolated: a child never sees parent context; the
   parent sees results only through collect
 
 ### Continual harness
 
-- [ ] **HARN-01**: Harness state CRUD covers supplemental prompts, memories,
+- [x\] **HARN-01**: Harness state CRUD covers supplemental prompts, memories,
   skill descriptions, and subagent specs, persisted across turns
-- [ ] **HARN-02**: A refine pass produces a reviewable diff and applies only
+- [x\] **HARN-02**: A refine pass produces a reviewable diff and applies only
   evidence-backed updates
-- [ ] **HARN-03**: Every applied refinement records a snapshot; rollback
+- [x\] **HARN-03**: Every applied refinement records a snapshot; rollback
   restores the prior state exactly
-- [ ] **HARN-04**: The base system prompt bytes are never changed by a refine
+- [x\] **HARN-04**: The base system prompt bytes are never changed by a refine
   pass (test-enforced)
 
 ### Agent loop
 
-- [ ] **LOOP-01**: A goal persists across turns until completed, paused, or
+- [x\] **LOOP-01**: A goal persists across turns until completed, paused, or
   cleared
-- [ ] **LOOP-02**: A heartbeat re-enters a session on schedule through the
+- [x\] **LOOP-02**: A heartbeat re-enters a session on schedule through the
   existing cron machinery
-- [ ] **LOOP-03**: Autonomous mode continues within configured turn/token/time
+- [x\] **LOOP-03**: Autonomous mode continues within configured turn/token/time
   budgets, runs a configured quality gate, and stops cleanly at a limit
-- [ ] **LOOP-04**: Two sessions exchange messages through rostered tools
-- [ ] **LOOP-05**: Each Prime capability family has a config flag, default off;
+- [x\] **LOOP-04**: Two sessions exchange messages through rostered tools
+- [x\] **LOOP-05**: Each Prime capability family has a config flag, default off;
   a disabled family is absent from roster and prompt
-- [ ] **LOOP-06**: A Prime capability failure logs a structured degradation
+- [x\] **LOOP-06**: A Prime capability failure logs a structured degradation
   event and the loop continues
-- [ ] **LOOP-07**: With all Prime flags off, the pre-v10 suite passes
+- [x\] **LOOP-07**: With all Prime flags off, the pre-v10 suite passes
   unmodified and a loop transcript fixture matches pre-v10 behavior
 
 ### Connectors
