@@ -19,6 +19,7 @@ from omega_prime.tools.coding import CODING_TOOL_NAMES
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.discord import DISCORD_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
+from omega_prime.tools.harness import HARNESS_TOOL_NAMES
 from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
@@ -53,6 +54,7 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Ultrathink", ULT_TOOL_NAMES),
     ("Substrate", SUBSTRATE_TOOL_NAMES),
     ("RLM", RLM_TOOL_NAMES),
+    ("Harness", HARNESS_TOOL_NAMES),
 )
 
 HEADER = """# Tool catalog

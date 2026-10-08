@@ -219,7 +219,14 @@ def default_registry(
     # Prime capability families are config-gated (default off): a disabled
     # family is not registered and is absent from the offered roster (LOOP-05).
     # RLM needs a live parent agent, so registration happens where the agent's
-    # registry is built (the delegate_task precedent: skipped here).
+    # registry is built (the delegate_task precedent: skipped here). The
+    # harness family is self-contained (needs only `root`), so it registers
+    # here when its flag is on.
+    from omega_prime.config import load_config, prime_enabled
+    from omega_prime.tools.harness import register_harness_tools
+
+    if prime_enabled(load_config(root), "harness"):
+        register_harness_tools(registry, root)
     return registry
 
 

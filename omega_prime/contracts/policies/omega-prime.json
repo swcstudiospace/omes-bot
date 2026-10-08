@@ -118,7 +118,13 @@
       "rlm_delete_subagent",
       "rlm_create_session",
       "rlm_progress_note",
-      "rlm_rename"
+      "rlm_rename",
+      "harness_upsert",
+      "harness_get",
+      "harness_list",
+      "harness_delete",
+      "harness_refine",
+      "harness_rollback"
     ]
   },
   "paths": {

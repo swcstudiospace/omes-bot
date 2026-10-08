@@ -930,3 +930,51 @@ Not served by the default registry.
 - Required params: none
 
 Not served by the default registry.
+
+## harness_upsert
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## harness_get
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## harness_list
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## harness_delete
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## harness_refine
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## harness_rollback
+
+- Family: Harness
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.

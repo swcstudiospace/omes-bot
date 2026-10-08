@@ -11,7 +11,9 @@
 # then App names from register_packs_tools, then Ultrathink
 # names from register_ultrathink_tools, then Substrate names from
 # register_substrate_tools, then RLM names from register_rlm_tools
-# (gated: prime.rlm.enabled, default off — registered only when enabled).
+# (gated: prime.rlm.enabled, default off — registered only when enabled),
+# then Harness names from register_harness_tools
+# (gated: prime.harness.enabled, default off — registered only when enabled).
 # This list is exactly those names, in that order.
 # Absorbed desk contracts (Phase 32): tool-rosters lead/systems/web/
 # android/ios/infra/quality/_core.yaml and tool-packs clippyos/desklanes/
@@ -136,3 +138,9 @@ tools:
   - rlm_create_session
   - rlm_progress_note
   - rlm_rename
+  - harness_upsert
+  - harness_get
+  - harness_list
+  - harness_delete
+  - harness_refine
+  - harness_rollback

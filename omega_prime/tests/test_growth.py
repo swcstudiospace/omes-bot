@@ -29,6 +29,7 @@ from omega_prime.tools.discord import (
     register_discord_tools,
 )
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
+from omega_prime.tools.harness import HARNESS_TOOL_NAMES, register_harness_tools
 from omega_prime.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omega_prime.tools.infra import (
     INFRA_TOOL_NAMES,
@@ -600,6 +601,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         Agent(model=ScriptedModel([]), tools={}),
         run_child=lambda prompt, model=None, thinking=None: "ok",
     )
+    register_harness_tools(registry, tmp_path)
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -626,6 +628,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + ULT_TOOL_NAMES
         + SUBSTRATE_TOOL_NAMES
         + RLM_TOOL_NAMES
+        + HARNESS_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

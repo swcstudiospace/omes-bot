@@ -79,12 +79,14 @@ def check_registry(root: Path) -> tuple[bool, str]:
     missing = [name for name in roster if name not in served]
     # delegate_task and the RLM family need a live parent agent (session/host),
     # so default_registry intentionally does not serve them (same precedent).
+    # The harness family is config-gated (default off), so it is likewise
+    # absent from the default registry unless prime.harness.enabled is set.
+    from omega_prime.tools.harness import HARNESS_TOOL_NAMES
     from omega_prime.tools.rlm import RLM_TOOL_NAMES
 
+    gated = set(RLM_TOOL_NAMES) | set(HARNESS_TOOL_NAMES)
     missing = [
-        name
-        for name in missing
-        if name != "delegate_task" and name not in RLM_TOOL_NAMES
+        name for name in missing if name != "delegate_task" and name not in gated
     ]
     if missing:
         return False, f"registry does not serve: {', '.join(missing)}"
