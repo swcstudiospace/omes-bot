@@ -14,7 +14,7 @@ from omes.providers.base import ProviderError
 from omes.providers.http import HttpTransport
 from omes.substrate.client import SubstrateClient, SubstrateError
 
-TOKEN = "secret-token-xyz"
+TOKEN = "test-mock-token"
 
 
 class _FakeTransport:
