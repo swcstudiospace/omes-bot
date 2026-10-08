@@ -1,5 +1,27 @@
 # Milestones
 
+## v10 — Prime merge (2026-10-08)
+
+**Status:** Complete. 8/8 phases, 10/10 plans, 32/32 requirements Done.
+
+**Core value delivered:** One Python agent runs Hermes, Omp, and Prime.
+Prime's RLM recursion, continual harness, goals, heartbeats, autonomous
+mode, and agent messaging are behavior-ported behind default-off flags.
+Typed connectors sit on that port. The pinned Rust workspace stays the
+parity oracle. The repo is AGPL-3.0, Copyright (C) 2026 Spectrum Web Co.
+
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 528 passed.
+`.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 26 passed.
+`assemble-prompts.sh --check` → exit 0. `omega_prime.setup_check` → exit 0.
+`catalog --check` → exit 0. `ruff check` and `ruff format --check` → exit 0.
+`python -m mypy omega_prime` → exit 0, 215 files.
+`pip-audit -r requirements-lock.txt --ignore-vuln PYSEC-2026-4114` → exit 0.
+`cargo-deny check licenses` → exit 0. All 32 requirements satisfied.
+
+**Archive:** `milestones/v10-ROADMAP.md`, `milestones/v10-REQUIREMENTS.md`, `milestones/v10-MILESTONE-AUDIT.md`, `milestones/v10-phases/`.
+
+**Decisions:** Behavior-port into Python (no PyO3 boundary); Prime joins the one loop; AGPL-3.0 relicense; degrade-with-warning; PYSEC-2026-4114 ignored because tweepy pins oauthlib below 4 and the bug is in an authorization-server grant this process does not host.
+
 ## v9 — SOTA upgrade (2026-10-08)
 
 **Status:** Complete. 7/7 phases, 12/12 plans, 19/19 requirements Done.

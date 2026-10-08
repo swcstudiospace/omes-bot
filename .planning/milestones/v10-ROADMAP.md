@@ -1,7 +1,7 @@
 # Roadmap: Omega Prime v10 — Prime merge
 
 **Defined:** 2026-10-08
-**Status:** Active
+**Status:** Complete (2026-10-08)
 
 ## Overview
 
@@ -52,7 +52,7 @@ verification stays hermetic (live probes manual opt-in).
 - [x] **Phase 57: Agent loop upgrade** - Goals engine, heartbeats/schedules, autonomous mode (turn/token/time budgets + quality gates), agent-to-agent messaging; per-capability enable/disable config (default off); degraded mode with structured warnings; Hermes+Omp regression parity.
 - [x] **Phase 58: Connector layer + parity suite** - Typed Python adapters exposing the ported capabilities through registry/roster; contract tests on both sides; failure-injection tests; behavior-parity fixtures generated from the Rust baseline.
 - [x] **Phase 59: Repository hardening** - AGPL-3.0 LICENSE (Spectrum Web Co 2026) + headers; root file set audit; README rewrite with three-source architecture diagram; docs (ADR-0001, connectors.md, agent-loop.md, migration.md); supply-chain CI (cargo-deny, pip-audit, dependabot); issue/PR templates.
-- [ ] **Phase 60: Milestone audit + closeout** - Audit, archive v10 phase dirs to `milestones/v10-phases/`, collapse ROADMAP, cleanup.
+- [x] **Phase 60: Milestone audit + closeout** - Audit, archive v10 phase dirs to `milestones/v10-phases/`, collapse ROADMAP, cleanup.
 
 ## Phase Details
 
@@ -230,8 +230,8 @@ and supply-chain CI on both ecosystems.
 
 Plans:
 
-- [ ] 59-01: License + root files + community automation
-- [ ] 59-02: README + docs + supply-chain CI
+- [x] 59-01: License + root files + community automation
+- [x] 59-02: README + docs + supply-chain CI
 
 ### Phase 60: Milestone audit + closeout
 
@@ -248,4 +248,4 @@ collapses; STATE records completion; cleanup runs per convention.
 
 Plans:
 
-- [ ] 60-01: Audit + archive + cleanup
+- [x] 60-01: Audit + archive + cleanup

@@ -99,7 +99,7 @@ standards under AGPL-3.0.
 
 ### Closeout
 
-- [ ] **DONE-01**: The milestone audit cites a passing command + exit code for
+- [x] **DONE-01**: The milestone audit cites a passing command + exit code for
   every v10 requirement
-- [ ] **DONE-02**: ROADMAP/MILESTONES/STATE record v10 complete; phase dirs
+- [x] **DONE-02**: ROADMAP/MILESTONES/STATE record v10 complete; phase dirs
   archive to `milestones/v10-phases/`; cleanup runs per convention

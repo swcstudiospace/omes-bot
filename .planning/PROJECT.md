@@ -2,11 +2,11 @@
 
 ## What This Is
 
-Omega Prime is one Grok programming bot (`swcstudiospace/omega-prime`). It ports the Hermes Agent runtime and the oh-my-pi agent harness into a single Python agent, then exposes that agent the way programming-desk exposes a seat: a prompt that points at a skills folder, a tool roster, and a prompt folder. The upstream checkouts in this directory (hermes-agent, oh-my-pi) and `~/src/repos/programming-desk` and `~/src/repos/claude-ultrathink` are read-only sources. The bot lives under `omega_prime/`.
+Omega Prime is one Grok programming bot (`swcstudiospace/omega-prime`). It ports the Hermes Agent runtime, the oh-my-pi agent harness, and Prime Agent's differentiating logic into a single Python agent, then exposes that agent the way programming-desk exposes a seat: a prompt that points at a skills folder, a tool roster, and a prompt folder. The upstream checkouts in this directory (`hermes-agent/`, `oh-my-pi/`, `prime-agent/`) and `~/src/repos/programming-desk` and `~/src/repos/claude-ultrathink` are read-only sources. The bot lives under `omega_prime/`.
 
 ## Core Value
 
-One Omega Prime agent runs both agents' logic — loops, subagents, tools, skills, memory, and the rest of each runtime — so later tools, connectors, skills, memories, and routines have a real agent to attach to.
+One Omega Prime agent runs Hermes, Omp, and Prime logic — loops, subagents, tools, skills, memory, and the rest of each runtime — so later tools, connectors, skills, memories, and routines have a real agent to attach to.
 
 v2 milestone: that same agent, hardened the way OpenShell and AgentOS harden theirs — a declarative seat policy enforced at dispatch, a credential broker that keeps secrets out of transcripts, durable runs that resume after a crash, and real transports with structured traces. Still one in-process Python agent with one seat.
 
@@ -26,9 +26,9 @@ v9 milestone: SOTA upgrade — the same one-agent product brought to state-of-th
 
 v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/`, PrimeIntellect, MIT, pinned `967eb13f`) contributes its differentiating logic — RLM subagent recursion (`rlm.spawn`/`collect`), the continual harness (`/refine` with snapshots and rollback), goals/heartbeats/autonomous mode, and agent-to-agent messaging — behavior-ported into the one Python agent per the v1–v9 precedent. The Rust workspace stays as an ignored read-only checkout and CI-built parity oracle. The repo relicenses to AGPL-3.0 (Spectrum Web Co 2026) and hardens to enterprise open-source standards. User decisions (2026-10-08): behavior-port architecture (no PyO3 boundary exists upstream; one-Python-process rule stands), capability-merge loop design, AGPL-3.0 relicense, degrade-with-warning for Prime capability failures.
 
-## Current Milestone: v10 Prime merge
+## Current Milestone: v10 Prime merge (shipped 2026-10-08)
 
-**Goal:** Merge Prime Agent into Omega Prime as the third logic source — behavior-faithful ports of its differentiating capabilities, typed connector adapters, an upgraded loop, and an enterprise-grade AGPL-3.0 repository.
+**Goal:** Merge Prime Agent into Omega Prime as the third logic source — behavior-faithful ports of its differentiating capabilities, typed connector adapters, an upgraded loop, and an enterprise-grade AGPL-3.0 repository. Shipped. No next milestone is scoped.
 
 **Target features:**
 - Discovery: capability map + overlap map + green Rust parity baseline
@@ -43,28 +43,30 @@ v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/
 
 ### Validated
 
-(None yet — ship to validate)
+- ✓ Single-seat Grok shell, Hermes loop, registry, skills, memory, delegation, and the Omp harness — v1
+- ✓ In-process policy, credential broker, durable runs, and transports — v2
+- ✓ Grok Bot connector, engagement sweep, curator, and eval harness — v3
+- ✓ tweepy, MCP SDK, PyRIT, APScheduler, Telegram, and Discord as real dependencies — v4
+- ✓ Programming Desk absorbed as Lead plus domain packs — v5
+- ✓ Add-Bot product: template, optional MCP host, GitBook docs — v6
+- ✓ Substrate surface: briefs, trail, shared Hindsight bank, docs answers — v7
+- ✓ Public-launch files, generated tool catalog, Greptile review standards — v8
+- ✓ SOTA engineering: egress hardening, lint and types, lockfile, provider protocols, hermetic evals — v9
+- ✓ Prime RLM, continual harness, goals, heartbeats, autonomous mode, and agent messaging in the one Python process — v10
+- ✓ Typed Prime connectors, Rust parity-oracle CI, and the AGPL-3.0 repository — v10
 
 ### Active
 
-- [x] Single-seat Grok shell: directives, prompt, roster, template, deterministic assemble
-- [x] Hermes conversation loop and turn phases, with the prompt, steer, compression, and interrupt invariants
-- [x] Tool registry and the coding toolset
-- [x] Remaining Hermes agent tools (code execution, MCP, browser, approvals, plugins)
-- [x] Skills, memory, session search, and the curator
-- [x] Delegation and cron re-entering the same agent
-- [x] Omp harness behavior merged into that same loop
-- [x] Omp edit pipeline, LSP, and DAP
-- [x] Sessions, tasks, modes, plan mode, extensions, autolearn, goals, advisor, exec, and agent-side security
-- [x] One memory store that serves both call shapes
-- [x] Provider surface with a Grok adapter, and a Grok Bot template that matches what is actually registered
+None. The next milestone is not scoped.
 
 ### Out of Scope
 
 - Temporal as the way the two agents are merged — one Python process is the merge; Temporal can be a later durability adapter
 - A sidecar that calls the Hermes checkout and the Omp checkout — both runtimes are ported, not wrapped
 - Product chrome: Hermes TUI, desktop, website, locales, packaging, messaging gateways, Feishu, Yuanbao, Home Assistant, Spotify, kanban UI; Omp TUI, collab web, stats site, CLI gallery, Rust crates, bazel and nix packaging
-- Pushing this repository or opening a GitHub repo from this milestone
+- Pushing this repository or opening a GitHub repo from a milestone — do not push, merge, or tag without an explicit request
+- Embedding Prime Agent as a Rust process or a PyO3 extension — upstream has no bindings; the port stays Python
+- Dependabot on the ignored `prime-agent/` checkout — the commit pin and cargo-deny are the gate
 - Provisioning a Grok Bot account — the template markdown is what a person pastes into Share → Create template
 - Seven-seat desk rules (channel size, QUALITY off-channel, cross-seat intake). `ownership.yaml` stays so the tree can grow later
 
@@ -76,7 +78,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 
 ## Constraints
 
-- **Repo boundary**: This git root is `/root/src/repos/omega`. Do not commit into `/root/src/repos` (`swcstudiospace/repos`). Do not push.
+- **Repo boundary**: This git root is `/root/src/repos/omega-prime`. Do not commit into `/root/src/repos` (`swcstudiospace/repos`). Do not push.
 - **Runtime**: One Python process. No Node or Rust agent process beside Omega Prime. No new global toolchain.
 - **Sources**: Do not vendor, subtree, or runtime-import `hermes-agent/` or `oh-my-pi/`.
 - **Verification**: A completion claim needs a command and an exit code (programming-desk PD-1). No secrets (PD-4). No destructive operation without recorded approval (PD-5).
@@ -86,25 +88,23 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 ## Environment Facts
 
 - Planning root and code repo: `/root/src/repos/omega-prime`; current branch
-  `v6-grok-ship`, HEAD `79ff51a`. v9 is committed and clean. v10 phase commits
-  are expected (convention: `Phase NN: …` messages; `Refs SPE-XXXX` trailers
-  allowed). Never commit the `prime-agent/` checkout itself (ignored upstream,
-  like `hermes-agent/` and `oh-my-pi/`). Do not push, merge, or tag without
-  explicit user request.
+  `v6-grok-ship`. v10 Prime merge shipped 2026-10-08. Never commit the
+  `prime-agent/` checkout itself (ignored upstream, like `hermes-agent/` and
+  `oh-my-pi/`). Do not push, merge, or tag without an explicit user request.
 - GSD CLI: `node /root/.hermes/gsd-core/bin/gsd-tools.cjs`, run from this repo.
   Existing reports use body-only `**Status:**` fields; the CLI requires leading
   YAML frontmatter. Repair the artifacts, not the installed GSD tools.
 - Repo virtualenv: `.venv/bin/python` is Python 3.12.3; `.venv/bin/ruff` is
   0.16.10; `.venv/bin/mypy` is 2.4.0. No install or global toolchain is needed.
-- Parent baseline on 2026-10-07: `.venv/bin/python -m pytest omega_prime/tests -q`
-  passed 352 tests with no skips. `.venv/bin/python -m omega_prime.evals.runner
+- Closeout baseline on 2026-10-08: `.venv/bin/python -m pytest omega_prime/tests -q`
+  passed 528 tests. `.venv/bin/python -m omega_prime.evals.runner
   omega_prime/evals/cases` passed 26 evals. Use a fresh HOME and XDG_DATA_HOME beneath
   `$TMPDIR` (`/root/.hermes/cache/scratch`) for verification; keep real HOME
   `/root` for GSD/role discovery and do not use `/tmp/fakehome`.
-- Other parent baseline gates, all exit 0: `bash
+- Other closeout gates, all exit 0: `bash
   omega_prime/scripts/assemble-prompts.sh --check`, `.venv/bin/ruff check omega_prime/`,
-  `.venv/bin/ruff format --check omega_prime/` (206 files), `.venv/bin/mypy omega_prime/`
-  (175 source files), `.venv/bin/python -m omega_prime.setup_check --root .`, and
+  `.venv/bin/ruff format --check omega_prime/` (246 files), `.venv/bin/python -m mypy omega_prime/`
+  (215 source files), `.venv/bin/python -m omega_prime.setup_check --root .`, and
   `.venv/bin/python -m omega_prime.tooling.catalog --check`.
 - Setup smoke check serves 108 roster tools over MCP; optional ultrathink and
   substrate connections remain unconfigured. The milestone is hermetic;
@@ -135,10 +135,11 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v7 verifies with fakes + opt-in live probes | Committed tests stay hermetic; read-only Railway probes run manually, never in CI (user chose 2026-10-03) | ✓ Good |
 | v8 launches public with Greptile connected | User chose connect-now, push + PR, GitBook + verify CI (2026-10-03); init blocked on org app install (user step), KB enrollment stays a Greptile-contact ask | ✓ Good |
 | v9 upgrades to SOTA in place | User chose full-SOTA scope, land dirty tree first, hermetic verification stays (2026-10-07); one-agent architecture and Add-Bot unwired compat unchanged | ✓ Good |
-| v10 ports Prime behavior into Python; Rust stays as parity oracle | prime-agent has no PyO3/maturin bindings (spawned-kernel process boundary); one-Python-process rule and the v1–v9 port precedent stand (2026-10-08) | — Pending |
-| v10 merges Prime as capabilities in the single loop | Hermes+Omp are already one merged loop; Prime joins as a third logic source, not a separate runtime agent (2026-10-08) | — Pending |
-| v10 relicenses to AGPL-3.0 (Spectrum Web Co 2026) | Explicit user request (2026-10-08); supersedes the v6 MIT decision; ported Prime code keeps MIT attribution | — Pending |
-| v10 degrades with warning on Prime capability failure | Prime families are default-off flags; Prime-disabled behavior matches pre-v10 exactly (2026-10-08) | — Pending |
+| v10 ports Prime behavior into Python; Rust stays as parity oracle | prime-agent has no PyO3/maturin bindings (spawned-kernel process boundary); one-Python-process rule and the v1–v9 port precedent stand (2026-10-08) | ✓ Good |
+| v10 merges Prime as capabilities in the single loop | Hermes+Omp are already one merged loop; Prime joins as a third logic source, not a separate runtime agent (2026-10-08) | ✓ Good |
+| v10 relicenses to AGPL-3.0 (Spectrum Web Co 2026) | Explicit user request (2026-10-08); supersedes the v6 MIT decision; ported Prime code keeps MIT attribution | ✓ Good |
+| v10 degrades with warning on Prime capability failure | Prime families are default-off flags; Prime-disabled behavior matches pre-v10 exactly (2026-10-08) | ✓ Good |
+| v10 ignores PYSEC-2026-4114 instead of forcing oauthlib 4 | tweepy 4.17 pins `oauthlib<4`; the advisory is an authorization-server PKCE timing oracle this process does not host (2026-10-08) | ✓ Good |
 
 ## Evolution
 
@@ -158,4 +159,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-07 after v9 milestone start (SOTA upgrade; defining requirements)*
+*Last updated: 2026-10-08 after v10 Prime merge shipped*
