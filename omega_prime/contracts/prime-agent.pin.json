@@ -1,0 +1,10 @@
+{
+  "remote": "https://github.com/PrimeIntellect-ai/prime-agent.git",
+  "commit": "967eb13fd488507af5f590e9c6ea8b2672f1fc05",
+  "toolchain": "1.98.1",
+  "known_failing_tests": [
+    "acp_prompt_settles_after_rlm_quiescence",
+    "acp_cancel_during_settle_cancels_the_subagents",
+    "acp_eof_during_settle_exits_and_leaves_resident_subagents"
+  ]
+}

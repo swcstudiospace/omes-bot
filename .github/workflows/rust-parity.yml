@@ -1,0 +1,81 @@
+name: rust-parity
+
+# v10 parity oracle: the Prime Agent Rust workspace is the behavior
+# baseline for the Omega Prime port (see .planning/research/
+# v10-prime-capability-map.md). The checkout itself is gitignored, so this
+# job clones the pinned upstream commit recorded in
+# omega_prime/contracts/prime-agent.pin.json (drift-guarded against
+# VENDOR.md by omega_prime/tests/test_prime_pin.py).
+
+on:
+  push:
+    paths:
+      - omega_prime/contracts/prime-agent.pin.json
+      - VENDOR.md
+      - .github/workflows/rust-parity.yml
+  pull_request:
+    paths:
+      - omega_prime/contracts/prime-agent.pin.json
+      - VENDOR.md
+      - .github/workflows/rust-parity.yml
+  schedule:
+    # Weekly: surface upstream-adjacent bit-rot even when this repo is quiet.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: read pin
+        id: pin
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          pin = json.load(open("omega_prime/contracts/prime-agent.pin.json"))
+          print(f"remote={pin['remote']}")
+          print(f"commit={pin['commit']}")
+          print(f"toolchain={pin['toolchain']}")
+          skips = " ".join(f"--skip {t}" for t in pin["known_failing_tests"])
+          print(f"skips={skips}")
+          EOF
+
+      - name: checkout prime-agent at the pinned commit
+        uses: actions/checkout@v4
+        with:
+          repository: PrimeIntellect-ai/prime-agent
+          ref: ${{ steps.pin.outputs.commit }}
+          path: prime-agent
+
+      - name: rust toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.pin.outputs.toolchain }}
+
+      - name: cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: prime-agent
+          key: ${{ steps.pin.outputs.commit }}
+
+      - name: build (locked)
+        working-directory: prime-agent
+        run: cargo build --locked
+
+      # The --skip set is the Phase 53 baseline's documented exclusions:
+      # three pa-cli acp_mode_e2e tests whose ACP-stdio settle assertions are
+      # timing-sensitive on shared runners (reproduced locally under full
+      # parallelism; pa-cli is out of v10 port scope). Each exclusion carries
+      # its reason here per the prime-agent AGENTS.md disabled-test rule.
+      - name: test workspace (locked)
+        working-directory: prime-agent
+        run: cargo test --workspace --locked -- ${{ steps.pin.outputs.skips }}
+
+      - name: license gate
+        uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check licenses
+          arguments: --locked
+          manifest-path: prime-agent/Cargo.toml
