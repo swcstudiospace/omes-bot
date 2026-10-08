@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """The Prime connector layer (CONN-01).
 
 Typed, versioned adapters between the tool surface (registry dispatch →

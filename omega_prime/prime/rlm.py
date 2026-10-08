@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Typed connector over the RLM recursion port (CONN-01).
 
 Sits between the ``rlm_*`` tool handlers (JSON dicts) and

@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Register the goals tool family on one registry.
 
 Ported from Prime Agent's goals (see ``omega_prime/agent/goals.py``). Gated on

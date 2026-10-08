@@ -6,6 +6,42 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### v10 — Prime merge
+
+#### Added
+
+- Prime Agent capabilities ported into the one Python agent (behavior port;
+  see `docs/adr/0001-prime-merge-architecture.md`): RLM recursion
+  (`rlm_spawn`/`rlm_collect`/`rlm_list_subagents`/`rlm_delete_subagent`/
+  `rlm_create_session`/`rlm_progress_note`), the continual harness
+  (`harness_*` with evidence-backed refinement, snapshots, and exact
+  rollback), persistent goals with token budgets and continuation prompts
+  (`goal_*`), session heartbeats on the cron scheduler (`heartbeat_*`),
+  bounded autonomous mode with a shell quality gate (`autonomous_*`), and
+  agent-to-agent messaging (`agent_message_send`, `agent_observe`).
+- `omega_prime/prime/` connector layer: typed, versioned adapters
+  (`SCHEMA_VERSION`, strict decoders, structured `PrimeError`s) between the
+  tool surface and every ported capability, with contract, failure-injection,
+  and source-cited parity-fixture test suites.
+- `omega-prime.json` config surface: every Prime family is a default-off
+  flag (`prime.<family>.enabled`, or `OMEGA_PRIME_PRIME_<FAMILY>_ENABLED`);
+  with all flags off the pre-v10 behavior is bit-for-bit preserved.
+- Degraded mode: a failing Prime hook emits a structured `prime_degraded`
+  event and the loop continues without that family for the turn.
+- Rust parity-oracle CI (`rust-parity.yml`): the pinned prime-agent
+  workspace builds and tests on a pinned toolchain with cargo-deny license
+  enforcement; `contracts/prime-agent.pin.json` is drift-guarded.
+- Supply-chain CI: pip-audit workflow and dependabot for pip and
+  github-actions; `.github/CODEOWNERS`.
+- Docs: ADR 0001 (merge architecture), `connectors.md`, `agent-loop.md`,
+  `migration.md`.
+
+#### Changed
+
+- **Relicensed from MIT to AGPL-3.0-only**, Copyright (C) 2026 Spectrum Web
+  Co. Upstream-ported modules retain their MIT attributions (VENDOR.md);
+  new source files carry SPDX headers. See `docs/migration.md`.
+
 ### Added
 
 - Pinned development lint/type checks and a Python 3.12–3.14 CI matrix with

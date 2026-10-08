@@ -82,18 +82,18 @@ standards under AGPL-3.0.
 
 ### Repository
 
-- [ ] **REPO-01**: `LICENSE` carries the full AGPL-3.0 text with "Copyright (C)
+- [x] **REPO-01**: `LICENSE` carries the full AGPL-3.0 text with "Copyright (C)
   2026 Spectrum Web Co"; new source files carry SPDX-License-Identifier:
   AGPL-3.0-only headers; ported Prime code retains MIT attribution
-- [ ] **REPO-02**: Root file set present and current: README, CHANGELOG,
+- [x] **REPO-02**: Root file set present and current: README, CHANGELOG,
   CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CODEOWNERS, .gitignore,
   .gitattributes, .editorconfig, issue/PR templates, dependabot
-- [ ] **REPO-03**: `docs/` gains adr/0001-prime-merge-architecture.md,
+- [x] **REPO-03**: `docs/` gains adr/0001-prime-merge-architecture.md,
   connectors.md, agent-loop.md, and migration.md; GitBook structure stays
   valid
-- [ ] **REPO-04**: Supply-chain CI runs cargo-deny (prime-agent workspace),
+- [x] **REPO-04**: Supply-chain CI runs cargo-deny (prime-agent workspace),
   pip-audit, and dependabot for cargo/pip/github-actions
-- [ ] **REPO-05**: README documents the Hermes+Omp+Prime architecture with a
+- [x] **REPO-05**: README documents the Hermes+Omp+Prime architecture with a
   diagram, quickstart, dual-toolchain build, and configuration reference;
   every documented command is executed and passes
 

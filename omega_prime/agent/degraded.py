@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Degraded mode for Prime loop hooks (LOOP-06).
 
 Every Prime capability hook is wrapped: a hook that raises or times out logs

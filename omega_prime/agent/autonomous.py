@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Bounded autonomous mode — a behavior port of Prime Agent's autonomous driver.
 
 Source contract: ``pa-core/src/autonomous/`` (driver + gates) +

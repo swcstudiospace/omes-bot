@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Typed connector over the Prime goals port (CONN-01).
 
 Sits between the ``goal_*`` tool handlers and

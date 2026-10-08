@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Typed connector over bounded autonomous mode (CONN-01).
 
 Sits between the ``autonomous_*`` tool handlers and

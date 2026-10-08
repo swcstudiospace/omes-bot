@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Agent-to-agent messaging — a behavior port of Prime Agent's messaging.
 
 Source contract: ``pa-daemon/src/agent_messaging*.rs`` @ ``967eb13f`` (MIT,

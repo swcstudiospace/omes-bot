@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Register the RLM recursion tool family on one registry, bound to one parent agent.
 
 Ported from Prime Agent's kernel RLM API (see ``omega_prime/agent/rlm.py``).

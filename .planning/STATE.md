@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v10
 milestone_name: Prime merge
-current_phase: 59
-current_phase_name: Repository hardening
+current_phase: 60
+current_phase_name: Milestone closeout
 status: in_progress
-stopped_at: "Phase 58 connector layer complete; Phase 59 repo hardening next"
-last_updated: "2026-10-08T09:45:00Z"
+stopped_at: "Phase 59 repo hardening complete; Phase 60 milestone closeout next"
+last_updated: "2026-10-08T10:05:00Z"
 last_activity: 2026-10-08
-last_activity_desc: Phases 53-58 complete (discovery, Rust CI, RLM port, harness port, loop upgrade, connector layer + parity suite). Phase 59 repo hardening next.
+last_activity_desc: Phases 53-59 complete (discovery, Rust CI, RLM port, harness port, loop upgrade, connector layer + parity suite, repo hardening). Phase 60 milestone closeout next.
 state_head: 8e5ec42
 progress:
   total_phases: 8
-  completed_phases: 6
-  total_plans: 6
-  completed_plans: 6
-  percent: 75
+  completed_phases: 7
+  total_plans: 7
+  completed_plans: 7
+  percent: 88
 ---
 
 # Project State
@@ -26,13 +26,13 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** One Omega Prime agent runs three agents' logic — Hermes, Omp,
 and Prime — in one Python process.
-**Current focus:** Phase 59 — Repository hardening
+**Current focus:** Phase 60 — Milestone closeout
 
 ## Current Position
 
-Phase: 59 (Repository hardening) / v10 Prime merge
+Phase: 60 (Milestone closeout) / v10 Prime merge
 Status: In progress
-Last activity: 2026-10-08 — Phases 53-57 complete. 53: capability + overlap
+Last activity: 2026-10-08 — Phases 53-58 complete. 53: capability + overlap
 maps, Rust parity baseline (622 passed, 3 known-failing pa-cli e2e). 54:
 prime-agent.pin.json + drift guard + rust-parity CI. 55: RLM recursion port
 (RlmHost + rlm_* tools, 39 tests). 56: continual harness port (HarnessState +
@@ -40,9 +40,11 @@ refine + harness_* tools, 19 tests). 57: loop upgrade (goals, heartbeats,
 autonomous budgets + quality gate, agent messaging, degraded mode, flags-off
 regression; 45 tests). 58: connector layer (omega_prime/prime/ typed
 adapters, SCHEMA_VERSION, 29 contract + 7 failure-injection + 6 parity-fixture
-tests). Full suite 526 passed, 26 evals green.
+tests). 59: repo hardening (AGPL-3.0 relicense, CODEOWNERS/dependabot/
+supply-chain CI, README rewrite with three-source architecture, ADR-0001 +
+connectors/agent-loop/migration docs, SPDX headers, README accuracy gate).
 
-Phase completion: 6 of 8.
+Phase completion: 7 of 8.
 
 ## Accumulated Context
 

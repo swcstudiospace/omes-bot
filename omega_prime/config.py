@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Minimal Omega Prime configuration surface.
 
 v10 introduces per-family Prime capability flags. There is intentionally no

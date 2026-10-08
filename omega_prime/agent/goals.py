@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Persistent goals with budgets — a behavior port of Prime Agent's goals.
 
 Source contract: ``pa-core/src/goals.rs`` + ``pa-daemon/src/goal_continuation.rs``
@@ -57,7 +59,7 @@ class PrimeGoalStore(GoalStore):
     def __init__(self, directory: str | Path) -> None:
         super().__init__(directory)
         self._sidecar_path = Path(directory) / _SIDECAR_NAME
-        self._prime = self._load_sidecar()
+        self._prime: dict[str, Any] = self._load_sidecar()
 
     # -- lifecycle ----------------------------------------------------------
 
@@ -212,7 +214,7 @@ class PrimeGoalStore(GoalStore):
         if not self._document.get("objective"):
             raise ValueError("no active goal: set an objective first")
 
-    def _load_sidecar(self) -> dict:
+    def _load_sidecar(self) -> dict[str, Any]:
         if not self._sidecar_path.is_file():
             return {"status": "cleared"}
         try:

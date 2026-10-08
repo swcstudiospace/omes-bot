@@ -1,0 +1,15 @@
+# Dependabot: pip + github-actions. Cargo is deliberately excluded —
+# prime-agent is an ignored upstream checkout (the parity oracle), not a
+# dependency of this repo (see VENDOR.md).
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5

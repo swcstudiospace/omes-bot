@@ -1,16 +1,16 @@
 [project]
 name = "omega-prime"
 version = "0.1.0"
-description = "One Grok programming bot. Hermes and oh-my-pi agent logic in one Python process."
+description = "One Grok programming bot. Hermes, oh-my-pi, and Prime agent logic in one Python process."
 readme = "README.md"
-license = { text = "MIT" }
-authors = [{ name = "SWC Studio" }]
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Spectrum Web Co" }]
 requires-python = ">=3.11"
 keywords = ["grok", "agent", "programming-bot", "mcp"]
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
+  "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",

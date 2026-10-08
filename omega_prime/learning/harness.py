@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Continual harness state store — a behavior port of Prime Agent's harness.
 
 Source: ``prime-agent/prime-agent-runtime/src/rlm/harness.py`` @ ``967eb13f``

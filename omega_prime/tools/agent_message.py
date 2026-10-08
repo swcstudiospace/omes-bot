@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Register the agent-messaging tool family on one registry.
 
 Ported from Prime Agent's agent messaging (see

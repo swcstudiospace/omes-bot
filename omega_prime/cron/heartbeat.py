@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Session heartbeat — a cron job kind that re-enters a named session.
 
 Behavior port of Prime Agent's heartbeat (``rlm-heartbeat`` skill +

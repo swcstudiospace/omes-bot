@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Register the autonomous-mode tool family on one registry.
 
 Ported from Prime Agent's autonomous driver (see

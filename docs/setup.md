@@ -34,8 +34,9 @@ Skip what you don't use: every unconfigured client reports
 ## 3. Optional: attach the tool host
 
 Without this step Omega Prime still answers from its prompt, skills, and
-routines. With it, the bot also calls the real Omega Prime tools (109 on
-the roster).
+routines. With it, the bot also calls the real Omega Prime tools (135 on
+the roster; 108 served by default — the Prime families are config-gated,
+default off).
 
 On a machine you control (Linux, Mac, or WSL2, Python 3.11+):
 

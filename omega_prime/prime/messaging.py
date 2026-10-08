@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Typed connector over agent-to-agent messaging (CONN-01).
 
 Sits between the ``agent_message_*`` tool handlers and

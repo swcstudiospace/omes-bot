@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """RLM recursion for Omega Prime — a behavior port of Prime Agent's kernel API.
 
 Source: ``prime-agent/prime-agent-runtime/src/rlm/__init__.py`` (kernel-side

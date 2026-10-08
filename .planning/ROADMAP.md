@@ -27,7 +27,7 @@ with phase directories under `milestones/v1-phases/` through
 - [x] **Phase 56: Continual harness port** - /refine, harness state, snapshots, rollback.
 - [x] **Phase 57: Agent loop upgrade** - Goals, heartbeats, autonomous mode, agent messaging; config flags; degraded mode; regression parity.
 - [x] **Phase 58: Connector layer + parity suite** - Typed adapters, contract tests, failure injection, parity fixtures.
-- [ ] **Phase 59: Repository hardening** - AGPL-3.0, root files, docs, supply-chain CI.
+- [x] **Phase 59: Repository hardening** - AGPL-3.0, root files, docs, supply-chain CI.
 - [ ] **Phase 60: Milestone audit + closeout** - Audit, archive, cleanup.
 
 ## Phase Details

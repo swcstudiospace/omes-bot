@@ -1,0 +1,23 @@
+name: supply-chain
+
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "17 4 * * 1" # weekly, Monday 04:17 UTC
+
+# Python dependency audit. The Rust side (cargo-deny against the pinned
+# prime-agent workspace) lives in rust-parity.yml.
+
+jobs:
+  pip-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install
+        run: python3 -m pip install -e . pip-audit
+      - name: pip-audit
+        run: python3 -m pip_audit --progress-spinner off

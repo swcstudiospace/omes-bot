@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """The refine pass — evidence-backed updates to supplemental harness state.
 
 Ported contract (Prime Agent ``/refine`` + ``pa-core/src/refinement/``):

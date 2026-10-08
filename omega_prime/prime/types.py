@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
 """Decode discipline for the Prime connector layer (CONN-01, CONN-02).
 
 Mirrors Prime's payload decoders (``rlm/__init__.py``
