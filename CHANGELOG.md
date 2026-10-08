@@ -41,6 +41,10 @@ All notable changes to this project are documented here. Format follows
 - **Relicensed from MIT to AGPL-3.0-only**, Copyright (C) 2026 Spectrum Web
   Co. Upstream-ported modules retain their MIT attributions (VENDOR.md);
   new source files carry SPDX headers. See `docs/migration.md`.
+- Supply-chain audit reads `requirements-lock.txt` and ignores
+  PYSEC-2026-4114. That advisory is an oauthlib authorization-server PKCE
+  timing oracle; tweepy 4.17 pins `oauthlib<4`, and this process does not
+  host that grant. See SECURITY.md.
 
 ### Added
 

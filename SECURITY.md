@@ -43,3 +43,13 @@ Network operations and browser sessions enforce fail-closed egress boundaries:
   cgroup lifecycle, and socket tracking. Unverified sandbox environments fail closed.
 - Test coverage and evidence are validated through hermetic test suites and runtime
   verifications (`omega_prime/tests/test_web.py` and `omega_prime/tests/test_browser_egress.py`).
+
+## Dependency exceptions
+
+`requirements-lock.txt` pins `oauthlib==3.3.1` because `tweepy==4.17.0`
+requires `oauthlib>=3.2.0,<4`. [PYSEC-2026-4114](https://osv.dev/vulnerability/PYSEC-2026-4114)
+is a PKCE timing oracle in oauthlib's authorization-server grant
+(`code_challenge_method_plain` / `code_challenge_method_s256`). Omega Prime
+does not host that grant. The supply-chain workflow ignores only that
+advisory, against the lockfile, until a tweepy release accepts `oauthlib>=4`.
+The runner's own `pip` is not part of the audit.

@@ -138,6 +138,8 @@ def test_dependabot_and_supply_chain_cover_both_ecosystems() -> None:
         encoding="utf-8"
     )
     assert "pip_audit" in supply or "pip-audit" in supply
+    assert "requirements-lock.txt" in supply
+    assert "--ignore-vuln PYSEC-2026-4114" in supply
     rust = (ROOT / ".github" / "workflows" / "rust-parity.yml").read_text(
         encoding="utf-8"
     )

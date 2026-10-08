@@ -20,4 +20,10 @@ jobs:
       - name: install
         run: python3 -m pip install -e . pip-audit
       - name: pip-audit
-        run: python3 -m pip_audit --progress-spinner off
+        # Audit the committed lock, not the runner's own pip. oauthlib stays
+        # below 4 because tweepy 4.17 requires oauthlib>=3.2.0,<4.
+        # PYSEC-2026-4114 is a PKCE timing oracle in oauthlib's
+        # authorization-server grant (code_challenge_method_*), which this
+        # process does not host. Drop the ignore when tweepy accepts
+        # oauthlib>=4. See SECURITY.md.
+        run: python3 -m pip_audit --progress-spinner off -r requirements-lock.txt --ignore-vuln PYSEC-2026-4114
