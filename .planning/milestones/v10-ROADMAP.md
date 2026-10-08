@@ -45,10 +45,10 @@ verification stays hermetic (live probes manual opt-in).
 
 ## Phases
 
-- [ ] **Phase 53: Prime discovery + parity baseline** - Capability map and overlap map land under `.planning/research/`; `cargo test --workspace` baseline green on the prime-agent checkout; upstream pin recorded in VENDOR.md.
-- [ ] **Phase 54: Rust workspace CI integration** - CI builds and tests the prime-agent workspace as the parity oracle (pinned toolchain, `--locked`); cargo-deny license gate scoped to that workspace; build caching.
-- [ ] **Phase 55: RLM recursion port** - `rlm.spawn`/`collect`/`list_subagents`/`delete_subagent`/`create_session`/`progress_note` and persistent-REPL semantics ported into `omega_prime` (extends `agent/delegate.py`); rostered tools; scripted-model tests.
-- [ ] **Phase 56: Continual harness port** - `/refine` refinement loop, harness state (supplemental prompts, memories, skill descriptions, subagent specs), snapshots + rollback, evidence-backed update rules; extends `agent/curator.py` + `learning/`.
+- [x] **Phase 53: Prime discovery + parity baseline** - Capability map and overlap map land under `.planning/research/`; `cargo test --workspace` baseline green on the prime-agent checkout; upstream pin recorded in VENDOR.md.
+- [x] **Phase 54: Rust workspace CI integration** - CI builds and tests the prime-agent workspace as the parity oracle (pinned toolchain, `--locked`); cargo-deny license gate scoped to that workspace; build caching.
+- [x] **Phase 55: RLM recursion port** - `rlm.spawn`/`collect`/`list_subagents`/`delete_subagent`/`create_session`/`progress_note` and persistent-REPL semantics ported into `omega_prime` (extends `agent/delegate.py`); rostered tools; scripted-model tests.
+- [x] **Phase 56: Continual harness port** - `/refine` refinement loop, harness state (supplemental prompts, memories, skill descriptions, subagent specs), snapshots + rollback, evidence-backed update rules; extends `agent/curator.py` + `learning/`.
 - [ ] **Phase 57: Agent loop upgrade** - Goals engine, heartbeats/schedules, autonomous mode (turn/token/time budgets + quality gates), agent-to-agent messaging; per-capability enable/disable config (default off); degraded mode with structured warnings; Hermes+Omp regression parity.
 - [ ] **Phase 58: Connector layer + parity suite** - Typed Python adapters exposing the ported capabilities through registry/roster; contract tests on both sides; failure-injection tests; behavior-parity fixtures generated from the Rust baseline.
 - [ ] **Phase 59: Repository hardening** - AGPL-3.0 LICENSE (Spectrum Web Co 2026) + headers; root file set audit; README rewrite with three-source architecture diagram; docs (ADR-0001, connectors.md, agent-loop.md, migration.md); supply-chain CI (cargo-deny, pip-audit, dependabot); issue/PR templates.
@@ -77,7 +77,7 @@ the parity baseline; the upstream pin is recorded.
 
 Plans:
 
-- [ ] 53-01: Capability map + overlap map + Rust baseline
+- [x] 53-01: Capability map + overlap map + Rust baseline
 
 ### Phase 54: Rust workspace CI integration
 
@@ -98,7 +98,7 @@ workspace, and builds are cached.
 
 Plans:
 
-- [ ] 54-01: Parity-oracle CI job + toolchain pin + deny gate
+- [x] 54-01: Parity-oracle CI job + toolchain pin + deny gate
 
 ### Phase 55: RLM recursion port
 
@@ -123,7 +123,7 @@ existing delegate machinery, with persistent working context across calls.
 
 Plans:
 
-- [ ] 55-01: RLM recursion tools + semantics port
+- [x] 55-01: RLM recursion tools + semantics port
 
 ### Phase 56: Continual harness port
 
@@ -145,7 +145,7 @@ the immutable base system prompt is never rewritten.
 
 Plans:
 
-- [ ] 56-01: Harness state + refine loop + snapshots
+- [x] 56-01: Harness state + refine loop + snapshots
 
 ### Phase 57: Agent loop upgrade
 
