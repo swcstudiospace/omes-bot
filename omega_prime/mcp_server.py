@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import asyncio
-import contextlib
 import json
 import os
 import sys
@@ -278,9 +277,14 @@ def bind_dispatch_transport(
             binding = transport.bind_operation(root)
             with binding:
                 payload = inner(name, arguments)
-            with contextlib.suppress(Exception):
-                transport.finish_operation(
-                    root, deadline_at=transport._clock.monotonic() + 5.0
+            drain = transport.finish_operation(
+                root, deadline_at=transport._clock.monotonic() + 5.0
+            )
+            if not drain.complete:
+                return json.dumps(
+                    {
+                        "error": f"upstream_error: operation drain incomplete (pending={drain.pending_scopes}, abort={drain.abort_reason})"
+                    }
                 )
             return payload
         finally:

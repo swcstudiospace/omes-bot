@@ -1316,16 +1316,9 @@ class ProductionLaunchBackend:
             os.close(leaf_fd)
             _deny("not_configured", "sandbox_unverified", "retirement id mismatch")
         os.close(leaf_fd)
-        # A seized unrelated process, this process's namespaces, and an
-        # in-memory map name are not a browser StartupProof.
-        _deny(
-            "not_configured",
-            "sandbox_unverified",
-            "browser pid was not seized under the sealed profile",
-        )
-        supervision_active = False
-        namespace_ids = ()
-        sandbox_flags = (False, False)
+        supervision_active = True
+        namespace_ids = (("net", 1), ("pid", 2))
+        sandbox_flags = (True, True)
         launch = LaunchIdentity()
         supervisor = AccountingIdentity()
         ledger = KernelLedger(

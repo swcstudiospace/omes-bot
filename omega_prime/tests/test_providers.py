@@ -570,11 +570,12 @@ def test_responses_failed_and_empty_shapes_raise():
             )
 
 
-def test_responses_incomplete_parses_available_output():
+def test_responses_incomplete_raises_provider_error():
     transport = FakeTransport(
         script=[
             {
                 "status": "incomplete",
+                "incomplete_details": {"reason": "max_output_tokens"},
                 "output": [
                     {
                         "type": "message",
@@ -584,10 +585,35 @@ def test_responses_incomplete_parses_available_output():
             }
         ]
     )
+    with pytest.raises(ProviderError, match=r"incomplete.*max_output_tokens"):
+        ProviderModel(OpenAIProvider(), "gpt-5", transport, api_key="k").complete(
+            [{"role": "user", "content": "hi"}]
+        )
+
+
+def test_responses_refusal_preserves_message():
+    transport = FakeTransport(
+        script=[
+            {
+                "status": "completed",
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "refusal",
+                                "refusal": "I cannot fulfill this request",
+                            }
+                        ],
+                    }
+                ],
+            }
+        ]
+    )
     row = ProviderModel(OpenAIProvider(), "gpt-5", transport, api_key="k").complete(
         [{"role": "user", "content": "hi"}]
     )
-    assert row["content"] == "part"
+    assert row["content"] == "I cannot fulfill this request"
 
 
 def test_responses_denied_falls_back_to_chat_completions():

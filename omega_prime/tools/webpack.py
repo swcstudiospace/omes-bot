@@ -24,7 +24,6 @@ from omega_prime.providers.destination import (
     DestinationTransport,
     SafeFetch,
 )
-from omega_prime.tools.playwright_browser import PlaywrightBrowser
 from omega_prime.tools.registry import ToolRegistry
 from omega_prime.tools.vision import vision_analyze
 
@@ -310,12 +309,25 @@ class WebClient:
                     "connectivity": connectivity,
                     "error": "connectivity failed",
                 }
-            factory = self.ctx.browser_factory or PlaywrightBrowser
+            factory = self.ctx.browser_factory
+            if factory is None:
+                return {
+                    "url": url,
+                    "connectivity": connectivity,
+                    "error": "not_configured: browser_factory is required",
+                }
             create_session = getattr(factory, "create_session", None)
             if callable(create_session) and root is not None:
                 browser = create_session(operation=root)
             elif callable(factory):
-                browser = factory()
+                try:
+                    browser = factory()
+                except TypeError as exc:
+                    return {
+                        "url": url,
+                        "connectivity": connectivity,
+                        "error": f"invalid browser factory: {exc}",
+                    }
             else:
                 return {"url": url, "error": "invalid browser factory"}
 

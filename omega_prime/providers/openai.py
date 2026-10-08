@@ -140,7 +140,15 @@ class OpenAIProvider(Provider):
         calls: dict[int, dict[str, Any]] = {}
         usage: dict[str, int] | None = None
         finish: str | None = None
-        for event in self._sse_data(lines):
+        saw_done = False
+        raw_lines = list(lines) if lines is not None else []
+        for line in raw_lines:
+            if isinstance(line, str) and line.strip() in (
+                "data: [DONE]",
+                "data:[DONE]",
+            ):
+                saw_done = True
+        for event in self._sse_data(raw_lines):
             for choice in event.get("choices") or []:
                 if not isinstance(choice, dict):
                     continue
@@ -182,6 +190,8 @@ class OpenAIProvider(Provider):
             )
             if block is not None:
                 usage = block
+        if not saw_done and finish is None:
+            raise ProviderError(f"{self.name} stream ended before completion marker")
         row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
         merged = [calls[index] for index in sorted(calls) if calls[index]["name"]]
         if merged:
@@ -239,10 +249,17 @@ def _parse_chat_response(name: str, payload: dict) -> dict:
 
 def _parse_responses_response(name: str, payload: dict) -> dict:
     """One assistant row from a Responses ``output`` list."""
-    if payload.get("status") == "failed":
+    status = payload.get("status")
+    if status == "failed":
         error = payload.get("error") or {}
         detail = error.get("message") if isinstance(error, dict) else error
         raise ProviderError(f"{name} response failed: {detail}")
+    if status in ("incomplete", "cancelled"):
+        details = payload.get("incomplete_details") or {}
+        reason = details.get("reason") if isinstance(details, dict) else details
+        raise ProviderError(
+            f"{name} response {status}: {reason or 'output limit reached'}"
+        )
     output = payload.get("output")
     if not isinstance(output, list) or not output:
         raise ProviderError(f"{name} response has no output items")
@@ -256,8 +273,11 @@ def _parse_responses_response(name: str, payload: dict) -> dict:
             for block in item.get("content") or []:
                 if not isinstance(block, dict):
                     continue
-                if block.get("type") in ("output_text", "refusal"):
+                btype = block.get("type")
+                if btype == "output_text":
                     texts.append(_text(block.get("text")))
+                elif btype == "refusal":
+                    texts.append(_text(block.get("refusal") or block.get("text")))
         elif kind == "function_call":
             if not item.get("name"):
                 raise ProviderError(f"{name} function_call has no name")

@@ -411,14 +411,20 @@ class TLSVerifier:
         self, raw: Any, *, identity: str, context: ssl.SSLContext, scope: OperationScope
     ) -> Any:
         try:
-            wrapped_sock = context.wrap_socket(
-                raw._sock,
-                server_hostname=None if _is_ip_literal(identity) else identity,
-            )
-            if _is_ip_literal(identity):
+            is_ip = _is_ip_literal(identity)
+            if is_ip:
+                orig_check = context.check_hostname
+                try:
+                    context.check_hostname = False
+                    wrapped_sock = context.wrap_socket(raw._sock, server_hostname=None)
+                finally:
+                    context.check_hostname = orig_check
+                cert = wrapped_sock.getpeercert() or {}
                 match_fn = getattr(ssl, "match_hostname", None)
                 if callable(match_fn):
-                    match_fn(wrapped_sock.getpeercert() or {}, identity)
+                    match_fn(cert, identity)
+            else:
+                wrapped_sock = context.wrap_socket(raw._sock, server_hostname=identity)
         except DestinationDenied:
             raise
         except Exception:
@@ -949,18 +955,29 @@ class DestinationTransport:
             for _skey, scope in list(self._scopes.items()):
                 if scope.operation is operation:
                     scope._closed = True
+                    self._scopes.pop(_skey, None)
             self._scope_open = {
                 s
                 for s in self._scope_open
                 if self._scopes.get(s) is None
                 or self._scopes[s].operation is not operation
             }
-            for _ckey, conn in list(self._connections.items()):
+            for pkey, prec in list(self._permits.items()):
+                p = prec.get("permit")
                 if (
-                    conn.permit.scope_identity is not None
-                    and self._scopes.get(id(conn.scope_identity._token)) is not None
+                    p is not None
+                    and p.scope_identity is not None
+                    and getattr(p.scope_identity, "operation", None) is operation
                 ):
-                    pass
+                    self._permits.pop(pkey, None)
+            for _ckey, conn in list(self._connections.items()):
+                if conn.scope_identity is not None:
+                    scope_obj = self._scopes.get(id(conn.scope_identity._token))
+                    if scope_obj is not None and scope_obj.operation is operation:
+                        self._connections.pop(_ckey, None)
+            for xkey, xrec in list(self._exchanges.items()):
+                if xrec.get("operation") == key:
+                    self._exchanges.pop(xkey, None)
             self._root_finished.add(key)
             drain = OperationDrain(
                 operation=operation.identity,
@@ -1052,12 +1069,30 @@ class DestinationTransport:
             if skey not in self._scope_open:
                 return
             self._scope_open.discard(skey)
+            self._scopes.pop(skey, None)
             scope._closed = True
             parent_handle = getattr(scope, "_parent_handle", None)
             sub = getattr(scope, "_parent_sub", None)
             if parent_handle is not None and sub is not None:
                 with contextlib.suppress(Exception):
                     parent_handle.unsubscribe(sub)
+            for pkey, prec in list(self._permits.items()):
+                p = prec.get("permit")
+                if (
+                    p is not None
+                    and p.scope_identity is not None
+                    and p.scope_identity._token is scope.identity._token
+                ):
+                    self._permits.pop(pkey, None)
+            for ckey, conn in list(self._connections.items()):
+                if (
+                    conn.scope_identity is not None
+                    and conn.scope_identity._token is scope.identity._token
+                ):
+                    self._connections.pop(ckey, None)
+            for xkey, xrec in list(self._exchanges.items()):
+                if xrec.get("scope") == skey:
+                    self._exchanges.pop(xkey, None)
 
     def _unregister_connection(self, conn: ValidatedConnection) -> None:
         with self._lock:
@@ -1573,81 +1608,91 @@ def _read_response(
     headers: HeaderPairs = ()
     status = 0
     reason = b""
-    while True:
-        chunk = _recv_chunk(sock, scope, limits, limits.io_chunk_max)
-        if not chunk:
-            raise DestinationDenied(
-                _deny("response_framing", "incomplete response head").refusal
-            )
-        buf.extend(chunk)
-        if len(buf) > limits.header_bytes_max + limits.header_line_max:
-            raise DestinationDenied(
-                _deny("over_bounds", "response head is oversized").refusal
-            )
-        idx = bytes(buf).find(b"\r\n\r\n")
-        if idx >= 0:
-            head = bytes(buf[:idx])
-            rest = bytes(buf[idx + 4 :])
-            break
-    lines = head.split(b"\r\n")
-    if not lines or len(lines[0]) > limits.header_line_max:
-        raise DestinationDenied(_deny("response_framing", "bad status line").refusal)
-    m = re.match(rb"^HTTP/1\.[01] (\d{3}) (.*)$", lines[0])
-    if not m:
-        raise DestinationDenied(_deny("response_framing", "bad status line").refusal)
-    status = int(m.group(1))
-    reason = m.group(2)
     raw_headers: list[tuple[bytes, bytes]] = []
-    total = 0
-    for line in lines[1:]:
-        if len(line) > limits.header_line_max:
+    rest = b""
+
+    while True:
+        while True:
+            idx = bytes(buf).find(b"\r\n\r\n")
+            if idx >= 0:
+                head = bytes(buf[:idx])
+                rest = bytes(buf[idx + 4 :])
+                buf = bytearray(rest)
+                break
+            chunk = _recv_chunk(sock, scope, limits, limits.io_chunk_max)
+            if not chunk:
+                raise DestinationDenied(
+                    _deny("response_framing", "incomplete response head").refusal
+                )
+            buf.extend(chunk)
+            if len(buf) > limits.header_bytes_max + limits.header_line_max:
+                raise DestinationDenied(
+                    _deny("over_bounds", "response head is oversized").refusal
+                )
+        lines = head.split(b"\r\n")
+        if not lines or len(lines[0]) > limits.header_line_max:
             raise DestinationDenied(
-                _deny("over_bounds", "header line is oversized").refusal
+                _deny("response_framing", "bad status line").refusal
             )
-        if b":" not in line:
+        m = re.match(rb"^HTTP/1\.[01] (\d{3}) (.*)$", lines[0])
+        if not m:
             raise DestinationDenied(
-                _deny("response_framing", "bad header line").refusal
+                _deny("response_framing", "bad status line").refusal
             )
-        name, value = line.split(b":", 1)
-        name = name.strip()
-        value = value.strip()
-        try:
-            text = name.decode("ascii")
-        except UnicodeDecodeError:
-            raise DestinationDenied(
-                _deny("response_framing", "header name must be ASCII").refusal
-            ) from None
-        if not _TOKEN_RE.match(text):
-            raise DestinationDenied(
-                _deny("response_framing", "header name is not a token").refusal
-            )
-        if b"\x00" in value or b"\r" in value or b"\n" in value:
-            raise DestinationDenied(
-                _deny("response_framing", "header value has bad bytes").refusal
-            )
-        total += len(name) + len(value)
-        if (
-            len(raw_headers) + 1 > limits.header_count_max
-            or total > limits.header_bytes_max
-        ):
-            raise DestinationDenied(
-                _deny("over_bounds", "too many response headers").refusal
-            )
-        raw_headers.append((name, value))
-    lowered = [(n.decode("ascii").lower(), v) for n, v in raw_headers]
-    while status in (100, 101, 102, 103):
+        status = int(m.group(1))
+        reason = m.group(2)
+        raw_headers = []
+        total = 0
+        for line in lines[1:]:
+            if len(line) > limits.header_line_max:
+                raise DestinationDenied(
+                    _deny("over_bounds", "header line is oversized").refusal
+                )
+            if b":" not in line:
+                raise DestinationDenied(
+                    _deny("response_framing", "bad header line").refusal
+                )
+            name, value = line.split(b":", 1)
+            name = name.strip()
+            value = value.strip()
+            try:
+                text = name.decode("ascii")
+            except UnicodeDecodeError:
+                raise DestinationDenied(
+                    _deny("response_framing", "header name must be ASCII").refusal
+                ) from None
+            if not _TOKEN_RE.match(text):
+                raise DestinationDenied(
+                    _deny("response_framing", "header name is not a token").refusal
+                )
+            if b"\x00" in value or b"\r" in value or b"\n" in value:
+                raise DestinationDenied(
+                    _deny("response_framing", "header value has bad bytes").refusal
+                )
+            total += len(name) + len(value)
+            if (
+                len(raw_headers) + 1 > limits.header_count_max
+                or total > limits.header_bytes_max
+            ):
+                raise DestinationDenied(
+                    _deny("over_bounds", "too many response headers").refusal
+                )
+            raw_headers.append((name, value))
+
         if status == 101:
             raise DestinationDenied(
                 _deny("unsupported_channel", "protocol upgrade refused").refusal
             )
-        interim += 1
-        if interim > limits.interim_1xx_max:
-            raise DestinationDenied(
-                _deny("response_framing", "too many interim responses").refusal
-            )
-        raise DestinationDenied(
-            _deny("response_framing", "interim response without final status").refusal
-        )
+        if 100 <= status < 200:
+            interim += 1
+            if interim > limits.interim_1xx_max:
+                raise DestinationDenied(
+                    _deny("response_framing", "too many interim responses").refusal
+                )
+            continue
+        break
+
+    lowered = [(n.decode("ascii").lower(), v) for n, v in raw_headers]
     locations = [v for k, v in lowered if k == "location"]
     if len(set(locations)) > 1:
         raise DestinationDenied(
@@ -1747,12 +1792,24 @@ def _read_chunked(
     while True:
         idx = bytes(buf).find(b"\r\n")
         while idx < 0:
+            if len(buf) > limits.header_line_max:
+                raise DestinationDenied(
+                    _deny(
+                        "over_bounds", "chunk header line exceeds header_line_max"
+                    ).refusal
+                )
             chunk = _recv_chunk(sock, scope, limits, limits.io_chunk_max)
             if not chunk:
                 raise DestinationDenied(
                     _deny("response_framing", "truncated chunk").refusal
                 )
             buf.extend(chunk)
+            if len(buf) > limits.header_line_max and bytes(buf).find(b"\r\n") < 0:
+                raise DestinationDenied(
+                    _deny(
+                        "over_bounds", "chunk header line exceeds header_line_max"
+                    ).refusal
+                )
             idx = bytes(buf).find(b"\r\n")
         line = bytes(buf[:idx]).split(b";", 1)[0].strip()
         del buf[: idx + 2]
