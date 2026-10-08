@@ -8,10 +8,10 @@
 
 Commands + exit codes (all four gates):
 
-- [ ] `.venv/bin/python -m pytest omes/tests -q`
-- [ ] `.venv/bin/python -m omes.evals.runner omes/evals/cases`
-- [ ] `bash omes/scripts/assemble-prompts.sh --check`
-- [ ] `.venv/bin/python -m omes.setup_check --root .`
+- [ ] `.venv/bin/python -m pytest omega_prime/tests -q`
+- [ ] `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases`
+- [ ] `bash omega_prime/scripts/assemble-prompts.sh --check`
+- [ ] `.venv/bin/python -m omega_prime.setup_check --root .`
 
 ## Contracts touched
 

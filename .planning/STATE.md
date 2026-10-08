@@ -24,7 +24,7 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-10-07)
 
-**Core value:** One Omes agent runs both agents' logic — v9 brings that
+**Core value:** One Omega Prime agent runs both agents' logic — v9 brings that
 product to SOTA engineering and agent standards, same architecture.
 **Current focus:** Milestone v9 complete — merge to main branch
 

@@ -11,7 +11,7 @@ scope: Large
 
 ## Why This Matters
 
-Verification today is partial: receipts are structure-checked and model-written, not tied to executed commands; the gate runner only checks the Omes repo with whatever python3 is on PATH; Greptile is unconfigured. Omega must verify target-repo code by actually running gates (sandboxed where available) and binding receipts to the recorded runs.
+Verification today is partial: receipts are structure-checked and model-written, not tied to executed commands; the gate runner only checks the Omega Prime repo with whatever python3 is on PATH; Greptile is unconfigured. Omega must verify target-repo code by actually running gates (sandboxed where available) and binding receipts to the recorded runs.
 
 ## When to Surface
 
@@ -25,8 +25,8 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/tools/quality.py:148-155`
-- `omes/tools/quality.py:240-241`
+- `omega_prime/tools/quality.py:148-155`
+- `omega_prime/tools/quality.py:240-241`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutDesk.json`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutOmesSurface.json`
 

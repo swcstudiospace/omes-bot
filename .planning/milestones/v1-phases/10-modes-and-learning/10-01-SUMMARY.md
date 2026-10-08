@@ -14,7 +14,7 @@ Sessions and tasks persist as versioned JSON documents with atomic writes; new h
 
 ## Verification
 
-Command: `python3 -m pytest omes/tests -q`
+Command: `python3 -m pytest omega_prime/tests -q`
 
 Exit code: 0
 

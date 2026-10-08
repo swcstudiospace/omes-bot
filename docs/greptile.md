@@ -30,7 +30,7 @@ connection first.
 - Structured rules mirroring CONTRIBUTING.md: roster-exactness for new
   tools, hermetic tests, no secrets, receipt-backed claims, linked docs.
 
-Rules use stable ids and repo-root scopes; `omes/tests/test_greptile_config.py`
+Rules use stable ids and repo-root scopes; `omega_prime/tests/test_greptile_config.py`
 keeps the file inside the documented schema.
 
 ## Knowledge base
@@ -44,8 +44,8 @@ its section version.
 Sync it by hand (needs `GREPTILE_API_KEY` from the org's API settings):
 
 ```bash
-GREPTILE_API_KEY=... .venv/bin/python -m omes.greptile.kb_sync \
-  --repo swcstudiospace/omes-bot --out kb
+GREPTILE_API_KEY=... .venv/bin/python -m omega_prime.greptile.kb_sync \
+  --repo swcstudiospace/omega-prime --out kb
 ```
 
 Without a key, an unenrolled repo, or nothing published yet, the sync

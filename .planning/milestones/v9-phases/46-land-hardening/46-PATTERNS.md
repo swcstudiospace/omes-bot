@@ -29,36 +29,36 @@ These are **proposed** writer targets, not authorization to edit them. “Existi
 
 | Proposed New/Modified File | State / Proposed Owner | Role | Data Flow | Closest Inspected Analog | Match Quality |
 |---|---|---|---|---|---|
-| `omes/providers/destination.py` | Proposed creation; Phase46FetchIntegration | provider; model; transport utility | request-response; address/response transform | `omes/tools/webpack.py` imports, `WebContext`, `_error`, preview boundary | partial style; no safe-connection core analog |
-| `omes/tools/webpack.py` | Existing tracked; Phase46FetchIntegration | service; context model; registry adapter | request-response; transform; screenshot file-I/O | Same file: `WebContext`, `preview_check`, `review_page`, registration | exact style; vulnerable internals are cutover seams |
-| `omes/mcp_server.py` | Existing tracked; Phase46FetchIntegration | provider/composition root; MCP controller | request-response; schema/result transform | Same file: `default_registry`, `main`, `call_tool_handler` | exact composition/result style |
-| `omes/tests/test_web.py` | Existing tracked; Phase46FetchIntegration | test | request-response; injected lifecycle; temporary file-I/O | Same file: `_ctx`, preview/review/approval assertions | exact unit-test style; not runtime safety proof |
-| `omes/tests/test_mcp_server.py` | Existing tracked; Phase46FetchIntegration; body unread | test | request-response; dispatch/result transform | `omes/tests/test_web.py` registry/approval assertions; `mcp_server.py` observed result boundary | role-match; MCP-specific test conventions uninspected |
-| `omes/tools/playwright_browser.py` | Existing tracked; Phase46BrowserSafety | service/browser provider | request-response; event-driven lifecycle; file-I/O | Same file: injected launcher and lifecycle methods | exact adapter style; no mandatory confinement analog |
-| `omes/tools/browser_egress.py` | Proposed creation; Phase46BrowserSafety | provider; enforcement/lifecycle utility | event-driven; request-response; descriptor/process lifecycle | `omes/tools/playwright_browser.py` explicit resource ownership/cleanup | role-match only; kernel/IPC/event machinery has no inspected analog |
-| `omes/tools/browser.py` | Existing tracked; Phase46BrowserSafety; body unread | service/registry adapter [INFERENCE from manifest's in-zone browser migration] | request-response; browser lifecycle [INFERENCE] | `omes/tools/webpack.py` family registration; `playwright_browser.py` public lifecycle shapes | role-match; actual wrapper signatures uninspected |
-| `omes/tests/test_platform.py` | Existing tracked; Phase46BrowserSafety; body unread | test | request-response; browser lifecycle/file-I/O [manifest-driven classification] | `omes/tests/test_web.py` browser lifecycle/resource assertions | role-match; unrelated platform behavior must remain untouched |
-| `omes/tests/test_browser_egress.py` | Proposed creation; Phase46BrowserSafety | test | event-driven; request-response; confinement/descriptor lifecycle | `omes/tests/test_web.py` fixture injection and explicit close/resource assertions | role-match; no real confinement-fixture analog |
+| `omega_prime/providers/destination.py` | Proposed creation; Phase46FetchIntegration | provider; model; transport utility | request-response; address/response transform | `omega_prime/tools/webpack.py` imports, `WebContext`, `_error`, preview boundary | partial style; no safe-connection core analog |
+| `omega_prime/tools/webpack.py` | Existing tracked; Phase46FetchIntegration | service; context model; registry adapter | request-response; transform; screenshot file-I/O | Same file: `WebContext`, `preview_check`, `review_page`, registration | exact style; vulnerable internals are cutover seams |
+| `omega_prime/mcp_server.py` | Existing tracked; Phase46FetchIntegration | provider/composition root; MCP controller | request-response; schema/result transform | Same file: `default_registry`, `main`, `call_tool_handler` | exact composition/result style |
+| `omega_prime/tests/test_web.py` | Existing tracked; Phase46FetchIntegration | test | request-response; injected lifecycle; temporary file-I/O | Same file: `_ctx`, preview/review/approval assertions | exact unit-test style; not runtime safety proof |
+| `omega_prime/tests/test_mcp_server.py` | Existing tracked; Phase46FetchIntegration; body unread | test | request-response; dispatch/result transform | `omega_prime/tests/test_web.py` registry/approval assertions; `mcp_server.py` observed result boundary | role-match; MCP-specific test conventions uninspected |
+| `omega_prime/tools/playwright_browser.py` | Existing tracked; Phase46BrowserSafety | service/browser provider | request-response; event-driven lifecycle; file-I/O | Same file: injected launcher and lifecycle methods | exact adapter style; no mandatory confinement analog |
+| `omega_prime/tools/browser_egress.py` | Proposed creation; Phase46BrowserSafety | provider; enforcement/lifecycle utility | event-driven; request-response; descriptor/process lifecycle | `omega_prime/tools/playwright_browser.py` explicit resource ownership/cleanup | role-match only; kernel/IPC/event machinery has no inspected analog |
+| `omega_prime/tools/browser.py` | Existing tracked; Phase46BrowserSafety; body unread | service/registry adapter [INFERENCE from manifest's in-zone browser migration] | request-response; browser lifecycle [INFERENCE] | `omega_prime/tools/webpack.py` family registration; `playwright_browser.py` public lifecycle shapes | role-match; actual wrapper signatures uninspected |
+| `omega_prime/tests/test_platform.py` | Existing tracked; Phase46BrowserSafety; body unread | test | request-response; browser lifecycle/file-I/O [manifest-driven classification] | `omega_prime/tests/test_web.py` browser lifecycle/resource assertions | role-match; unrelated platform behavior must remain untouched |
+| `omega_prime/tests/test_browser_egress.py` | Proposed creation; Phase46BrowserSafety | test | event-driven; request-response; confinement/descriptor lifecycle | `omega_prime/tests/test_web.py` fixture injection and explicit close/resource assertions | role-match; no real confinement-fixture analog |
 | `docs/tool-host.md` | Existing tracked; Phase46Docs; body unread | documentation / operator contract | batch; implementation/evidence transform | No inspected documentation-style analog; observed `mcp_server.py` wiring supplies facts only | no source-pattern analog in allowed reads |
 | `docs/architecture.md` | Existing tracked; Phase46Docs; body unread | documentation / architecture contract | batch; implementation/evidence transform | No inspected documentation-style analog; observed context/policy/lifecycle seams supply facts only | no source-pattern analog in allowed reads |
 | `SECURITY.md` | Existing tracked; Phase46Docs; body unread | documentation / security contract | batch; accepted-security-evidence transform | No inspected documentation-style analog; supplied before receipts and observed unsafe seams are evidence only | no source-pattern analog in allowed reads |
 | `CHANGELOG.md` | Existing tracked; Phase46Docs; body unread | documentation / change record | batch; verified-change transform | No inspected changelog-style analog | no source-pattern analog in allowed reads |
 
-**Intentionally unchanged reference:** `omes/policy/policy.py` is an existing tracked model/utility (`file-I/O` and declarative decision transform), with an exact self-analog in `SeatPolicy.__init__/load/allows_host` and `_check`. It is not in either proposed code-writer manifest. Its presence in the A01 analysis scope does not authorize assigning a new policy writer. Reuse its public exact/empty semantics through composition; the mapper does not propose changing its schema/private fields.
+**Intentionally unchanged reference:** `omega_prime/policy/policy.py` is an existing tracked model/utility (`file-I/O` and declarative decision transform), with an exact self-analog in `SeatPolicy.__init__/load/allows_host` and `_check`. It is not in either proposed code-writer manifest. Its presence in the A01 analysis scope does not authorize assigning a new policy writer. Reuse its public exact/empty semantics through composition; the mapper does not propose changing its schema/private fields.
 
 ### Proposed ownership and dependency boundaries
 
-- **Phase46FetchIntegration:** exactly `omes/providers/destination.py`, `omes/tools/webpack.py`, `omes/mcp_server.py`, `omes/tests/test_web.py`, `omes/tests/test_mcp_server.py`. Sole shared transport/webpack/MCP composition writer; its two tests are exclusive. The report proposes publishing the shared definitions before coupled browser implementation, then integrating the completed browser handoff.
-- **Phase46BrowserSafety:** exactly `omes/tools/playwright_browser.py`, `omes/tools/browser_egress.py`, `omes/tools/browser.py`, `omes/tests/test_platform.py`, `omes/tests/test_browser_egress.py`. No destination/webpack/MCP or their-test writes. Guarded factory/terminal composition is handed back to the shared writer, not implemented through sibling edits.
+- **Phase46FetchIntegration:** exactly `omega_prime/providers/destination.py`, `omega_prime/tools/webpack.py`, `omega_prime/mcp_server.py`, `omega_prime/tests/test_web.py`, `omega_prime/tests/test_mcp_server.py`. Sole shared transport/webpack/MCP composition writer; its two tests are exclusive. The report proposes publishing the shared definitions before coupled browser implementation, then integrating the completed browser handoff.
+- **Phase46BrowserSafety:** exactly `omega_prime/tools/playwright_browser.py`, `omega_prime/tools/browser_egress.py`, `omega_prime/tools/browser.py`, `omega_prime/tests/test_platform.py`, `omega_prime/tests/test_browser_egress.py`. No destination/webpack/MCP or their-test writes. Guarded factory/terminal composition is handed back to the shared writer, not implemented through sibling edits.
 - **Phase46Docs:** exactly `docs/tool-host.md`, `docs/architecture.md`, `SECURITY.md`, `CHANGELOG.md`. Report proposes documentation after both code writers stop and Main supplies actual candidate-bound receipts/accepted disposition. No canonical `.planning` ownership is assigned to this writer.
 - `46-VERIFICATION.md` remains a parent-owned planning/evidence record named by the route. The route also names `46-SECURITY.md` for independent security reporting; verification describes `46-VALIDATION.md` as partial. These are evidence records, not product-source analogs or additional mapper outputs.
 - These manifests remain proposals until Main pins the accepted exact capture and focused plan/ownership. No source API, task lease, runtime pass or dispatch is asserted by this mapping.
 
 ## Pattern Assignments
 
-### `omes/providers/destination.py` — proposed transport provider/models
+### `omega_prime/providers/destination.py` — proposed transport provider/models
 
-**State:** Proposed new file; exact-path lookup reported it missing. **Analog:** `omes/tools/webpack.py`, partial construction/import/response-boundary style only.
+**State:** Proposed new file; exact-path lookup reported it missing. **Analog:** `omega_prime/tools/webpack.py`, partial construction/import/response-boundary style only.
 
 **Imports pattern — `webpack.py:12–27`:** stdlib first and package-absolute collaborator imports. Reuse organization, not every legacy dependency.
 
@@ -75,10 +75,10 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 from urllib.parse import urlparse
 
-from omes.credentials.redact import redact_text
-from omes.tools.playwright_browser import PlaywrightBrowser
-from omes.tools.registry import ToolRegistry
-from omes.tools.vision import vision_analyze
+from omega_prime.credentials.redact import redact_text
+from omega_prime.tools.playwright_browser import PlaywrightBrowser
+from omega_prime.tools.registry import ToolRegistry
+from omega_prime.tools.vision import vision_analyze
 ```
 
 `urllib.request` is an observed legacy import, not a required safe-transport dependency. `WebContext`'s dataclass excerpt below and `SeatPolicy`'s validated-construction excerpt under Shared Patterns supply existing plain-model conventions. The `_error` excerpt supplies the adapter-facing error dictionary convention; it does not define the proposed transport's internal error/type protocol.
@@ -89,7 +89,7 @@ from omes.tools.vision import vision_analyze
 
 ---
 
-### `omes/tools/webpack.py` — existing service/context/registry adapter
+### `omega_prime/tools/webpack.py` — existing service/context/registry adapter
 
 **Analog:** Current tracked file itself; preserve family conventions/public result boundary, replacing vulnerable internals.
 
@@ -178,18 +178,18 @@ Retain the fetch no-follow requirement, not the unchecked connection. `_default_
 
 ---
 
-### `omes/mcp_server.py` — existing composition root/MCP controller
+### `omega_prime/mcp_server.py` — existing composition root/MCP controller
 
 **Analog:** Current `default_registry`/`main` wiring and MCP result translation.
 
 **Observed imports — line 25 and line 48, respectively:**
 
 ```python
-from omes.policy.policy import SeatPolicy
+from omega_prime.policy.policy import SeatPolicy
 ```
 
 ```python
-from omes.tools.webpack import WebClient, WebContext, register_web_tools
+from omega_prime.tools.webpack import WebClient, WebContext, register_web_tools
 ```
 
 **Current construction signature — lines 115–122:**
@@ -212,7 +212,7 @@ def default_registry(
     registry = ToolRegistry(approval_log=approval_log, policy=policy)
     root = Path(root)
     home = Path(home)
-    register_coding_tools(registry, root / "omes", policy=policy)
+    register_coding_tools(registry, root / "omega_prime", policy=policy)
 ```
 
 **Web construction — line 161:**
@@ -227,9 +227,9 @@ Policy reaches registry/coding construction, but the web context receives **only
 
 ```python
     try:
-        policy = SeatPolicy.load(root / "omes" / "contracts" / "policies" / "omes.json")
+        policy = SeatPolicy.load(root / "omega_prime" / "contracts" / "policies" / "omega-prime.json")
     except (OSError, ValueError) as exc:
-        print(f"omes-mcp-server: cannot load seat policy: {exc}", file=sys.stderr)
+        print(f"omega-prime-mcp-server: cannot load seat policy: {exc}", file=sys.stderr)
         return 2
 ```
 
@@ -258,7 +258,7 @@ Keep refusal visible at the top-level `error`/`is_error` boundary. The inspected
 
 ---
 
-### `omes/tests/test_web.py` — existing FetchIntegration regression surface
+### `omega_prime/tests/test_web.py` — existing FetchIntegration regression surface
 
 **Analog:** Current tracked test itself. Proposed manifest gives this file exclusively to FetchIntegration.
 
@@ -272,10 +272,10 @@ from pathlib import Path
 
 import pytest
 
-from omes.tools.approvals import ApprovalLog
-from omes.tools.playwright_browser import PlaywrightBrowser
-from omes.tools.registry import ToolRegistry
-from omes.tools.webpack import WebClient, WebContext, register_web_tools
+from omega_prime.tools.approvals import ApprovalLog
+from omega_prime.tools.playwright_browser import PlaywrightBrowser
+from omega_prime.tools.registry import ToolRegistry
+from omega_prime.tools.webpack import WebClient, WebContext, register_web_tools
 ```
 
 **Preview fake result — lines 54–60:**
@@ -344,9 +344,9 @@ These fake-fetch tests do not exercise DNS/mixed answers, numeric aliases, peer 
 
 ---
 
-### `omes/tests/test_mcp_server.py` — existing, unread MCP test target
+### `omega_prime/tests/test_mcp_server.py` — existing, unread MCP test target
 
-**Analog:** `omes/tests/test_web.py:231–253` for registry construction/JSON outcome/approval style; `omes/mcp_server.py:228–241` for the actual observed MCP error boundary. This target is tracked but its contents were not read; no fixture/function names in it are asserted.
+**Analog:** `omega_prime/tests/test_web.py:231–253` for registry construction/JSON outcome/approval style; `omega_prime/mcp_server.py:228–241` for the actual observed MCP error boundary. This target is tracked but its contents were not read; no fixture/function names in it are asserted.
 
 **Concrete dispatch assertion — `test_web.py:241–244`:**
 
@@ -361,7 +361,7 @@ Use the imports and scoped construction pattern from `test_web.py:3–13,107–1
 
 ---
 
-### `omes/tools/playwright_browser.py` — existing BrowserSafety adapter
+### `omega_prime/tools/playwright_browser.py` — existing BrowserSafety adapter
 
 **Analog:** Current tracked file for public methods/results and ownership style only.
 
@@ -441,7 +441,7 @@ Reuse explicit ownership/reset/attempt-all/error aggregation, but it is not a de
 
 ---
 
-### `omes/tools/browser_egress.py` — proposed enforcement owner/controller
+### `omega_prime/tools/browser_egress.py` — proposed enforcement owner/controller
 
 **State:** Proposed creation, missing at exact lookup. **Analog:** `playwright_browser.py:27–43,82–96`, role-match only.
 
@@ -453,7 +453,7 @@ There is **no inspected core analog** for the revised namespace/IPC/descriptor b
 
 ---
 
-### `omes/tools/browser.py` — existing, unread browser family seam
+### `omega_prime/tools/browser.py` — existing, unread browser family seam
 
 **Analog:** `webpack.py:358–396` for single-family handler/schema/error/approval registration and `playwright_browser.py:33–96` for observed browser result/lifecycle shapes.
 
@@ -463,9 +463,9 @@ Use the concrete `_wrap`/registration excerpts under Shared Patterns as the clos
 
 ---
 
-### `omes/tests/test_platform.py` — existing, unread BrowserSafety compatibility target
+### `omega_prime/tests/test_platform.py` — existing, unread BrowserSafety compatibility target
 
-**Analog:** `omes/tests/test_web.py:212–228`, role-match for browser lifecycle/resource assertions. The target's own test body/fixtures were not read.
+**Analog:** `omega_prime/tests/test_web.py:212–228`, role-match for browser lifecycle/resource assertions. The target's own test body/fixtures were not read.
 
 **Concrete lifecycle assertion style:**
 
@@ -493,7 +493,7 @@ Reuse explicit holder/resource state and repeated-close assertions, with the act
 
 ---
 
-### `omes/tests/test_browser_egress.py` — proposed browser enforcement regressions
+### `omega_prime/tests/test_browser_egress.py` — proposed browser enforcement regressions
 
 **State:** Proposed creation, missing at exact lookup. **Analog:** `test_web.py:3–13,107–119,212–228` for pytest imports, scoped injection and explicit lifecycle/resource outcomes; role-match only.
 
@@ -516,7 +516,7 @@ No documentation body was inspected, so no existing heading/changelog formatting
 
 ### Public policy methods and exact/empty network semantics
 
-**Source:** The intentionally unchanged tracked `omes/policy/policy.py`.
+**Source:** The intentionally unchanged tracked `omega_prime/policy/policy.py`.
 
 **Validated construction — lines 22–32:**
 
@@ -646,8 +646,8 @@ Main's later union must cover all-address/mixed A/AAAA, ambiguous numeric forms,
 
 ### Required security cores without an implemented bounded-source precedent
 
-- `omes/providers/destination.py` / the legacy fetch cutover: no observed safe resolver/admission/permit/numeric peer/TLS/exchange core; only partial model/adapter style.
-- `omes/tools/browser_egress.py` / `playwright_browser.py`: no observed mandatory confinement, trusted sticky event producer, before-traffic attachment or terminal descendant/drain implementation; lifecycle style alone is insufficient.
+- `omega_prime/providers/destination.py` / the legacy fetch cutover: no observed safe resolver/admission/permit/numeric peer/TLS/exchange core; only partial model/adapter style.
+- `omega_prime/tools/browser_egress.py` / `playwright_browser.py`: no observed mandatory confinement, trusted sticky event producer, before-traffic attachment or terminal descendant/drain implementation; lifecycle style alone is insufficient.
 - MCP shared composition: current root-only web context does not implement policy-bound safe consumers or serialized cancellation drain.
 - New/existing gap tests: no observed real DNS/peer/TLS or confined-Chromium fixture. Fake methods/PNG and close flags must not masquerade as the required actual after evidence.
 
@@ -655,7 +655,7 @@ Use Main's later complete exact accepted hashed revision for these cores, not ab
 
 ## Metadata
 
-**Strong analog search scope:** Exactly `omes/tools/webpack.py`, `omes/tools/playwright_browser.py`, `omes/mcp_server.py`, `omes/policy/policy.py`, `omes/tests/test_web.py`. Five strong tracked analogs were read; search stopped there. No assertion that uninspected modules contain no other patterns/callers.
+**Strong analog search scope:** Exactly `omega_prime/tools/webpack.py`, `omega_prime/tools/playwright_browser.py`, `omega_prime/mcp_server.py`, `omega_prime/policy/policy.py`, `omega_prime/tests/test_web.py`. Five strong tracked analogs were read; search stopped there. No assertion that uninspected modules contain no other patterns/callers.
 
 **Source-content scans:** 5 files, 1,270 lines total, each read in one bounded ranged call. Targeted grep anchors supplied citation line numbers; no second source-range read occurred.
 
@@ -665,11 +665,11 @@ Use Main's later complete exact accepted hashed revision for these cores, not ab
 
 | Source | Lines | SHA-256 |
 |---|---:|---|
-| `omes/tools/webpack.py` | 465 | `c077a5f2966b159081b6c604feb270c6168a866cee2d83a357d8e214005fd31d` |
-| `omes/tools/playwright_browser.py` | 99 | `a3d30f084c58807e79d0af11fb69022fcaf5fa55636cbd3c7cda5581e72bdd24` |
-| `omes/mcp_server.py` | 320 | `efc8bec843b1bfb32f119676ed018b289041e37d56f4e9e098a6c63d91820ba4` |
-| `omes/policy/policy.py` | 133 | `d8f241c77018c4bb95fccf1534afb0b70dec7d2f1436b85bfe7d216529c87b23` |
-| `omes/tests/test_web.py` | 253 | `9b0f414dddb97fab1c10c403b55cec88617ef6ac976a697871a84ed11dd94d4b` |
+| `omega_prime/tools/webpack.py` | 465 | `c077a5f2966b159081b6c604feb270c6168a866cee2d83a357d8e214005fd31d` |
+| `omega_prime/tools/playwright_browser.py` | 99 | `a3d30f084c58807e79d0af11fb69022fcaf5fa55636cbd3c7cda5581e72bdd24` |
+| `omega_prime/mcp_server.py` | 320 | `efc8bec843b1bfb32f119676ed018b289041e37d56f4e9e098a6c63d91820ba4` |
+| `omega_prime/policy/policy.py` | 133 | `d8f241c77018c4bb95fccf1534afb0b70dec7d2f1436b85bfe7d216529c87b23` |
+| `omega_prime/tests/test_web.py` | 253 | `9b0f414dddb97fab1c10c403b55cec88617ef6ac976a697871a84ed11dd94d4b` |
 
 **Unread limits:** Bodies of `browser.py`, `test_mcp_server.py`, `test_platform.py`, all four documentation targets, registry/approvals/vision, other tests, installed Playwright/Chromium internals, deployment configuration and reference clones. The complete revised API/confinement report was not consumed/pinned/accepted by this mapper. Manifest role inferences are marked; imported names do not prove unseen implementations.
 

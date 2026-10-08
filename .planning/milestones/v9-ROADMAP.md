@@ -1,8 +1,8 @@
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Milestones
 
-- ✅ **v1 One Omes agent** — Phases 1-12 (shipped 2026-10-03)
+- ✅ **v1 One Omega Prime agent** — Phases 1-12 (shipped 2026-10-03)
 - ✅ **v2 Enterprise hardening** — Phases 13-16 (shipped 2026-10-03)
 - ✅ **v3 Grok Bot** — Phases 17-20 (shipped 2026-10-03)
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)
@@ -45,8 +45,8 @@ criteria pass; verification stays hermetic (live probes manual opt-in).
 **Requirements**: LAND-01, LAND-02
 **Success Criteria** (what must be TRUE):
 
-  1. `pytest omes/tests -q` passes with the landed changes (no new skips).
-  2. `omes.evals.runner` passes and `assemble-prompts.sh --check` passes.
+  1. `pytest omega_prime/tests -q` passes with the landed changes (no new skips).
+  2. `omega_prime.evals.runner` passes and `assemble-prompts.sh --check` passes.
   3. Roster/policy/template composition tests cover every touched name.
   4. Working tree contains no uncommitted v9-previous edits.
 
@@ -74,7 +74,7 @@ until real security, runtime, and matching-head CI evidence passes.
 
   1. `ruff check` passes on the repo and runs in CI (ruff pinned in dev extra).
   2. `ruff format --check` passes on the repo and runs in CI.
-  3. The typechecker reports zero errors on `omes/` and runs in CI via pip only.
+  3. The typechecker reports zero errors on `omega_prime/` and runs in CI via pip only.
   4. Suite + evals + assemble stay green after all lint/type fixes.
 
 Plans:
@@ -90,7 +90,7 @@ Plans:
 
   1. Dependency floors are raised to verified versions with a committed lockfile.
   2. CI matrix runs the suite on 3.12, 3.13, and 3.14 (floor stays 3.11).
-  3. `import omes.tools.discord` and the suite pass on 3.13+ (audioop-safe).
+  3. `import omega_prime.tools.discord` and the suite pass on 3.13+ (audioop-safe).
   4. `mcp>=2,<3` is pinned with no v1-isms and conformance recorded.
 
 Plans:

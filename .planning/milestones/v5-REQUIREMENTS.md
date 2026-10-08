@@ -1,48 +1,48 @@
 # Requirements: v5 Desk packs
 
 Milestone-scoped. v4 requirements are archived in `milestones/v4-REQUIREMENTS.md`.
-Ground truth: `.planning/codebase/`. User decisions (2026-10-03): Omes stays
+Ground truth: `.planning/codebase/`. User decisions (2026-10-03): Omega Prime stays
 one agent (Lead) with domain packs; entire desk scope; interactive device review.
 
 ## Lead pack
 
-- [x] **LEAD-01**: Intake→ticket→dispatch→consolidate→report runs as Omes routines on delegate/todo/registry/approval machinery.
+- [x] **LEAD-01**: Intake→ticket→dispatch→consolidate→report runs as Omega Prime routines on delegate/todo/registry/approval machinery.
 - [x] **LEAD-02**: Desk core+lead tools ported as registry families (brief, ownership, events, doctor, intake, graph, bus, roster, prompt render).
-- [x] **LEAD-03**: Desk memory/retention and receipt-check map onto Omes memory and receipts without duplication.
+- [x] **LEAD-03**: Desk memory/retention and receipt-check map onto Omega Prime memory and receipts without duplication.
 
 ## Systems pack
 
-- [x] **SYS-01**: Systems tools ported (index/events query, cache, contracts, design artifacts; LSP wired to the existing Omes LSP).
-- [x] **SYS-02**: Rust + Python platform skills land in `omes/skills/`.
+- [x] **SYS-01**: Systems tools ported (index/events query, cache, contracts, design artifacts; LSP wired to the existing Omega Prime LSP).
+- [x] **SYS-02**: Rust + Python platform skills land in `omega_prime/skills/`.
 
 ## Web pack
 
 - [x] **WEB-01**: Web tools ported (Vercel lifecycle, preview_check, bundle secret scan).
 - [x] **WEB-02**: Real browser transport (Playwright) behind `BrowserSession`; screenshots flow into `vision_analyze` with connectivity checks.
-- [x] **WEB-03**: TypeScript/Deno + Vercel platform skills land in `omes/skills/`.
+- [x] **WEB-03**: TypeScript/Deno + Vercel platform skills land in `omega_prime/skills/`.
 
 ## Mobile pack
 
 - [x] **MOB-01**: Store tools ported (Play tracks/rollouts, TestFlight, phased releases, size/lint/entitlements gates, review risk).
 - [x] **MOB-02**: Interactive device transports (Appium/adb/simctl) with screenshot review wired to vision; no live devices in tests.
-- [x] **MOB-03**: Android + iOS platform skills land in `omes/skills/`.
+- [x] **MOB-03**: Android + iOS platform skills land in `omega_prime/skills/`.
 
 ## Infra pack
 
 - [x] **INF-01**: Infra tools ported (Railway lifecycle, Tailscale, VPS units, DB health).
-- [x] **INF-02**: Railway/Tailscale, Terraform/K8s, remote-dev-machine skills land in `omes/skills/`.
+- [x] **INF-02**: Railway/Tailscale, Terraform/K8s, remote-dev-machine skills land in `omega_prime/skills/`.
 
 ## Quality pack
 
 - [x] **QUA-01**: Quality tools ported (gates_run, greptile_review, receipt_approve, waivers, contract ack, supply-chain, secret scan).
-- [x] **QUA-02**: Desk CI gates mirrored as Omes eval cases + CI checks.
-- [x] **QUA-03**: Code-review, debugging, security skills land in `omes/skills/`.
+- [x] **QUA-02**: Desk CI gates mirrored as Omega Prime eval cases + CI checks.
+- [x] **QUA-03**: Code-review, debugging, security skills land in `omega_prime/skills/`.
 
 ## Packs + skills remainder
 
 - [x] **REM-01**: App tool-pack tools ported (pack load, API smoke, Supabase, push test, flags, crash reports, scoreboard, store listing, render jobs).
 - [x] **REM-02**: Remaining skills ported (uplift, dispatch, bootstrap, memory, docs, packs ceiling, contract-first, gateway usage, doctor, receipts).
-- [x] **REM-03**: Seat prompts, templates, roster JSON, ownership, and contract versions merged into Omes contracts.
+- [x] **REM-03**: Seat prompts, templates, roster JSON, ownership, and contract versions merged into Omega Prime contracts.
 
 ## Hardening
 

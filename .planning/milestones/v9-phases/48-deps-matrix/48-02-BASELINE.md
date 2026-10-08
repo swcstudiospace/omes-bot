@@ -1,7 +1,7 @@
 # Phase 48 Plan 02 — Pre-dispatch Baseline (Main-owned, Task 0)
 
 - Captured (UTC): 2026-10-07T15:23:14Z
-- Repository: /root/src/repos/Omes-Bot
+- Repository: /root/src/repos/omega
 - Branch: v6-grok-ship
 - HEAD: 36fd803c7b7c727e04edad2294f1e3cb800b0901
 - Plan: .planning/phases/48-deps-matrix/48-02-PLAN.md (SHA-256 2409d572c317bf17287a57ab9a2a4a44b4ac52a2d86cef02b7225f275f9dd9d9; independent check: VERIFICATION PASSED, local://omega-p48-checker-replan-pass.md)
@@ -20,16 +20,16 @@
  M docs/tool-catalog.md
  M docs/tool-host.md
  M docs/user-guide.md
- M omes/evals/cases/golden.json
- M omes/evals/cases/redteam.json
- M omes/evals/runner.py
- M omes/tests/test_deps_matrix.py
- M omes/tests/test_docs.py
- M omes/tests/test_evals.py
- D omes/tests/test_lint_types.py
- M omes/tests/test_mcp_server.py
- M omes/tests/test_substrate_session.py
- M omes/tools/substrate_tools.py
+ M omega_prime/evals/cases/golden.json
+ M omega_prime/evals/cases/redteam.json
+ M omega_prime/evals/runner.py
+ M omega_prime/tests/test_deps_matrix.py
+ M omega_prime/tests/test_docs.py
+ M omega_prime/tests/test_evals.py
+ D omega_prime/tests/test_lint_types.py
+ M omega_prime/tests/test_mcp_server.py
+ M omega_prime/tests/test_substrate_session.py
+ M omega_prime/tools/substrate_tools.py
 ?? .planning/REQUIREMENTS.md
 ?? .planning/milestone.lock
 ?? .planning/phases/46-land-hardening/46-01-PLAN.md
@@ -94,15 +94,15 @@
 a69d7f0d0e8f51c4ade89e80d376ea46316bec6369f54c182c63fdfb45c04e63  .github/workflows/ci.yml
 ea4763a79fb7cece686522684f3b5b0eacafd7360c64496ceb15bb9d46d0a4d8  pyproject.toml
 9c28598692f4b765265b8a4d648ba46e83b9de92ea0ea84574bfd2063c2db575  requirements-lock.txt
-9d784f92fdbb4f9e3c61939f179217da2c22f6381e2c3cab05b47f1f22c7545c  omes/tests/test_deps_matrix.py
-fdc182216fe112ab3a3e785581ab0075f193a8357722ed50df20f25424effddb  omes/tools/discord.py
+9d784f92fdbb4f9e3c61939f179217da2c22f6381e2c3cab05b47f1f22c7545c  omega_prime/tests/test_deps_matrix.py
+fdc182216fe112ab3a3e785581ab0075f193a8357722ed50df20f25424effddb  omega_prime/tools/discord.py
 ```
 
 ## (c) Other active writers at snapshot time (live TaskStore records, correlation ut-muxyg46j-497dedf5)
 
 | Task | Agent | State | Declared write_paths | Declared allowed_paths |
 |---|---|---|---|---|
-| Tutmu-p46-contract | A03 | IN_PROGRESS | [] | ["omes/tools/webpack.py", "omes/tools/playwright_browser.py", "omes/mcp_server.py", "omes/policy/policy.py", ".planning/phases/46-land-hardening/46-VERIFICATION.md"] |
+| Tutmu-p46-contract | A03 | IN_PROGRESS | [] | ["omega_prime/tools/webpack.py", "omega_prime/tools/playwright_browser.py", "omega_prime/mcp_server.py", "omega_prime/policy/policy.py", ".planning/phases/46-land-hardening/46-VERIFICATION.md"] |
 | Tutmu-omega-parity | A15 | IN_PROGRESS | null | null |
 
 Declared sets are recorded for audit only; a declared-but-unexecuted write set never exempts a delta.

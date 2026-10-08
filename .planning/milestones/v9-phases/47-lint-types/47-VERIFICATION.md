@@ -13,22 +13,22 @@ score: 4/4 success criteria verified
 ## Success criteria
 
 1. `ruff check` passes and runs in CI (pinned dev extra) — PASS (clean;
-   `lint` job runs `python3 -m ruff check omes/`).
+   `lint` job runs `python3 -m ruff check omega_prime/`).
 2. `ruff format --check` passes and runs in CI — PASS (204 files clean;
    same job).
-3. Typechecker reports zero errors on `omes/` and runs in CI via pip only —
+3. Typechecker reports zero errors on `omega_prime/` and runs in CI via pip only —
    PASS (mypy, 0 errors / 173 files; `types` job; no Node).
 4. Suite + evals + assemble stay green — PASS (315 tests, 23 evals,
    assemble up to date, setup_check ok).
 
 ## Commands
 
-- `.venv/bin/ruff check omes/` → exit 0, all checks passed.
-- `.venv/bin/ruff format --check omes/` → exit 0, 204 files formatted.
-- `.venv/bin/mypy omes/` → exit 0, no issues in 173 files.
-- `HOME=/tmp/fakehome .venv/bin/python -m pytest omes/tests -q` → exit 0, 315 passed.
-- `HOME=/tmp/fakehome .venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed.
-- `bash omes/scripts/assemble-prompts.sh --check` → exit 0.
+- `.venv/bin/ruff check omega_prime/` → exit 0, all checks passed.
+- `.venv/bin/ruff format --check omega_prime/` → exit 0, 204 files formatted.
+- `.venv/bin/mypy omega_prime/` → exit 0, no issues in 173 files.
+- `HOME=/tmp/fakehome .venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 315 passed.
+- `HOME=/tmp/fakehome .venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 23 passed.
+- `bash omega_prime/scripts/assemble-prompts.sh --check` → exit 0.
 
 ## Requirements
 

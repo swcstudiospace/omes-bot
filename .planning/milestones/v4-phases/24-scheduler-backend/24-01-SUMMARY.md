@@ -2,7 +2,7 @@
 
 ## What shipped
 
-`omes/cron/apscheduler_backend.py`: `SchedulerService(store, runner)`
+`omega_prime/cron/apscheduler_backend.py`: `SchedulerService(store, runner)`
 registers one in-memory APScheduler entry per incomplete future job (date
 trigger for one-shots, interval trigger for intervals, UTC-aware) and runs
 `store.tick` on every fire. `start()` ticks overdue jobs immediately, then
@@ -13,18 +13,18 @@ shared-due-date test: one job ran twice before the lock).
 
 `pyproject.toml` gains `apscheduler>=3.10` (verified against 3.11.3). CI
 already installs the project, so no workflow change.
-`omes/cron/scheduler.py` is untouched. This closes the v3-deferred "cron
+`omega_prime/cron/scheduler.py` is untouched. This closes the v3-deferred "cron
 scheduling of sweep/nightly pass" item at the backend level.
 
 ## Verification
 
-- `.venv/bin/python -m pytest omes/tests/test_apscheduler_backend.py -q` →
+- `.venv/bin/python -m pytest omega_prime/tests/test_apscheduler_backend.py -q` →
   exit 0, 6 passed (one-shot persist, interval repeat, shared due date
   exactly-once, restart resume, overdue on start, double-start/stop safety).
   Timing-sensitive tests repeated 3x with no flakes.
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 150 passed (144 + 6).
-- `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed.
-- `bash omes/scripts/assemble-prompts.sh --check` → exit 0.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 150 passed (144 + 6).
+- `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 6 passed.
+- `bash omega_prime/scripts/assemble-prompts.sh --check` → exit 0.
 
 ## Follow-ups
 

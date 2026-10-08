@@ -11,7 +11,7 @@ scope: Large
 
 ## Why This Matters
 
-v5 ported 49/50 desk tool surfaces and all 24 skills, but the runtime is unconfigured: desk contexts are built with empty seams, coding tools root at <root>/omes so Omega cannot program a target repo, delegate_task is not served, the lead pass routine is test-only, gates only run Omes own suite, receipts are model-written and bot-00-omes cannot approve its own receipts, and Railway/Greptile/Vercel/Play/ASC clients do not exist.
+v5 ported 49/50 desk tool surfaces and all 24 skills, but the runtime is unconfigured: desk contexts are built with empty seams, coding tools root at <root>/omega_prime so Omega cannot program a target repo, delegate_task is not served, the lead pass routine is test-only, gates only run Omega Prime's own suite, receipts are model-written and bot-00-omega-prime cannot approve its own receipts, and Railway/Greptile/Vercel/Play/ASC clients do not exist.
 
 ## When to Surface
 
@@ -25,11 +25,11 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/mcp_server.py:115-188`
-- `omes/tools/lead.py`
-- `omes/routines/desk_lead.py`
-- `omes/tools/quality.py`
-- `omes/tools/infra.py`
+- `omega_prime/mcp_server.py:115-188`
+- `omega_prime/tools/lead.py`
+- `omega_prime/routines/desk_lead.py`
+- `omega_prime/tools/quality.py`
+- `omega_prime/tools/infra.py`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutDesk.json`
 
 ## Notes

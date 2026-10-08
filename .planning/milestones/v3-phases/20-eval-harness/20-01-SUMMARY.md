@@ -10,11 +10,11 @@ affects: []
 
 # Phase 20 summary
 
-`omes/evals/runner.py` replays JSON cases: loop cases through `run_conversation` with `ScriptedModel`, registry cases through policy/approval-gated dispatch. Seven structural expectation types (final contains/not, exit reason, tool called/not, refusal text, tool-row count) keep runs deterministic with no judge. Six shipped cases pass: three golden persona checks and three red-team checks (policy escape refused, unapproved publish refused, injected tool output contained). `.github/workflows/ci.yml` runs the suite, the evals, and the assemble check on push and PR.
+`omega_prime/evals/runner.py` replays JSON cases: loop cases through `run_conversation` with `ScriptedModel`, registry cases through policy/approval-gated dispatch. Seven structural expectation types (final contains/not, exit reason, tool called/not, refusal text, tool-row count) keep runs deterministic with no judge. Six shipped cases pass: three golden persona checks and three red-team checks (policy escape refused, unapproved publish refused, injected tool output contained). `.github/workflows/ci.yml` runs the suite, the evals, and the assemble check on push and PR.
 
 ## Verification
 
-Command: `python3 -m pytest omes/tests -q` (plus `python3 -m omes.evals.runner omes/evals/cases`)
+Command: `python3 -m pytest omega_prime/tests -q` (plus `python3 -m omega_prime.evals.runner omega_prime/evals/cases`)
 
 Exit code: 0 (both)
 

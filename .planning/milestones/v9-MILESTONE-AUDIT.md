@@ -102,13 +102,13 @@ The source stem identifies the PLAN/SUMMARY pair in the corresponding phase dire
 
 ### T-46-08 — Fetch destination enforcement (high)
 
-`omes/tools/webpack.py:71-106,224-229` checks literal spelling but accepts unresolved/noncanonical hosts, then delegates real resolution/connection to urllib. `omes/mcp_server.py:161` leaves the shipped host allow-list unset. Existing canonical-literal tests do not prove DNS destination or connected-peer enforcement.
+`omega_prime/tools/webpack.py:71-106,224-229` checks literal spelling but accepts unresolved/noncanonical hosts, then delegates real resolution/connection to urllib. `omega_prime/mcp_server.py:161` leaves the shipped host allow-list unset. Existing canonical-literal tests do not prove DNS destination or connected-peer enforcement.
 
 **Required:** validate all resolved A/AAAA destinations, reject non-public/ambiguous numeric forms, constrain the actual peer against rebinding, enforce the real fetch consumer's network policy, preserve no redirects, and add hermetic refusal regressions.
 
 ### T-46-12 — Browser requests escape the initial guard (high)
 
-`omes/tools/webpack.py:287-304` performs a guarded probe before separate browser navigation. `omes/tools/playwright_browser.py:37-56` does not enforce destination policy on redirects, frames, subresources, or subsequent navigation.
+`omega_prime/tools/webpack.py:287-304` performs a guarded probe before separate browser navigation. `omega_prime/tools/playwright_browser.py:37-56` does not enforce destination policy on redirects, frames, subresources, or subsequent navigation.
 
 **Required:** enforce destination/peer policy for every browser request, or require enforced egress sandboxing, with independent hermetic request-refusal regressions.
 
@@ -119,7 +119,7 @@ Both are source-observed missing controls. Private-service reachability/exploita
 Phase 48 success criteria explicitly require the suite to run on Python 3.12/3.13/3.14 and the Discord guard/suite to work on real 3.13+ interpreters. Only actual 3.12 execution was observed in this continuation; the historical audioop simulation is not sufficient.
 
 - Executable lookup found no 3.13/3.14 on PATH. Narrowed standard/tool-cache discovery found only 3.12 binaries, including the actions-runner 3.12.14 cache; no alternative 3.13/3.14 runtime was discovered.
-- Read-only recent branch-run inspection showed pre-v9 runs. Exact `gh run list --repo swcstudiospace/omes-bot --commit 36fd803c7b7c727e04edad2294f1e3cb800b0901 --limit 5 --json databaseId,headSha,status,conclusion,workflowName` returned `[]`.
+- Read-only recent branch-run inspection showed pre-v9 runs. Exact `gh run list --repo swcstudiospace/omega-prime --commit 36fd803c7b7c727e04edad2294f1e3cb800b0901 --limit 5 --json databaseId,headSha,status,conclusion,workflowName` returned `[]`.
 - The final v9 tree includes uncommitted Phase 52 changes; no current-tree hosted CI proof is claimed. No workflow trigger, installation, or Git publication was performed.
 
 Obtain actual runtime/matrix proof, or request explicit user approval to defer this named acceptance. No silent scope reduction. See [48-VERIFICATION.md](phases/48-deps-matrix/48-VERIFICATION.md) and [48-VALIDATION.md](phases/48-deps-matrix/48-VALIDATION.md).
@@ -142,14 +142,14 @@ Final post-cleanup parent commands, in a fresh isolated HOME/XDG sandbox:
 
 | Gate | Observed result |
 |------|-----------------|
-| `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider --basetemp <sandbox>/pytest` | 344 passed, no skips; 12 warnings |
-| `.venv/bin/python -m omes.evals.runner omes/evals/cases` | 26 passed, zero failed |
-| `bash omes/scripts/assemble-prompts.sh --check` | up to date |
-| `.venv/bin/ruff check omes/` | clean |
-| `.venv/bin/ruff format --check omes/` | 205 files accepted |
-| `.venv/bin/mypy --cache-dir <sandbox>/mypy omes/` | zero issues in 174 files |
-| `.venv/bin/python -m omes.setup_check --root .` | roster/template/assembly OK; 108 MCP-served tools |
-| `.venv/bin/python -m omes.tooling.catalog --check` | catalog current |
+| `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider --basetemp <sandbox>/pytest` | 344 passed, no skips; 12 warnings |
+| `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` | 26 passed, zero failed |
+| `bash omega_prime/scripts/assemble-prompts.sh --check` | up to date |
+| `.venv/bin/ruff check omega_prime/` | clean |
+| `.venv/bin/ruff format --check omega_prime/` | 205 files accepted |
+| `.venv/bin/mypy --cache-dir <sandbox>/mypy omega_prime/` | zero issues in 174 files |
+| `.venv/bin/python -m omega_prime.setup_check --root .` | roster/template/assembly OK; 108 MCP-served tools |
+| `.venv/bin/python -m omega_prime.tooling.catalog --check` | catalog current |
 | `.venv/bin/python -m pip check` | no broken requirements |
 
 The earlier actual `SubstrateClient` MCP JSON decoder → `ToolRegistry` → `call_tool_handler` and `run_conversation` next-`ScriptedModel`-request smoke passed with zero live service calls: no raw retrieval, supported synthetic secret/sentinel absent, bounded typed metadata/citation provenance, strict-JSON finite scores, malformed-versus-empty distinction, and bounded/redacted errors. Runtime code was unchanged by subsequent test-only cleanup, so this remains applicable; it is not presented as a newly rerun smoke.

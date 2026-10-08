@@ -546,8 +546,8 @@
           "data": null
         },
         "traceback_tail": [
-          "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-          "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+          "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
           "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
         ]
       },
@@ -566,8 +566,8 @@
               "data": null
             },
             "traceback_tail": [
-              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+              "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
             ]
           },
@@ -587,8 +587,8 @@
               "data": null
             },
             "traceback_tail": [
-              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+              "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
             ]
           },
@@ -693,21 +693,21 @@
                   "data": null
                 },
                 "traceback_tail": [
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
                   "mcp.shared.exceptions.MCPError: Server returned an error response\n"
                 ]
               }
             ],
             "traceback_tail": [
-              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "    | mcp.shared.exceptions.MCPError: Server returned an error response\n",
               "    +------------------------------------\n"
             ]
           }
         ],
         "traceback_tail": [
-          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
           "      | mcp.shared.exceptions.MCPError: Server returned an error response\n",
           "      +------------------------------------\n"
         ]
@@ -800,21 +800,21 @@
                   "data": null
                 },
                 "traceback_tail": [
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
                   "mcp.shared.exceptions.MCPError: Server returned an error response\n"
                 ]
               }
             ],
             "traceback_tail": [
-              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "    | mcp.shared.exceptions.MCPError: Server returned an error response\n",
               "    +------------------------------------\n"
             ]
           }
         ],
         "traceback_tail": [
-          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
           "      | mcp.shared.exceptions.MCPError: Server returned an error response\n",
           "      +------------------------------------\n"
         ]
@@ -907,21 +907,21 @@
                   "data": null
                 },
                 "traceback_tail": [
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
                   "mcp.shared.exceptions.MCPError: Not Found\n"
                 ]
               }
             ],
             "traceback_tail": [
-              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "    | mcp.shared.exceptions.MCPError: Not Found\n",
               "    +------------------------------------\n"
             ]
           }
         ],
         "traceback_tail": [
-          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
           "      | mcp.shared.exceptions.MCPError: Not Found\n",
           "      +------------------------------------\n"
         ]
@@ -1016,21 +1016,21 @@
                   "data": null
                 },
                 "traceback_tail": [
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
-                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
                   "mcp.shared.exceptions.MCPError: Not Found\n"
                 ]
               }
             ],
             "traceback_tail": [
-              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
               "    | mcp.shared.exceptions.MCPError: Not Found\n",
               "    +------------------------------------\n"
             ]
           }
         ],
         "traceback_tail": [
-          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
           "      | mcp.shared.exceptions.MCPError: Not Found\n",
           "      +------------------------------------\n"
         ]
@@ -1120,19 +1120,19 @@
               "message": "All connection attempts failed",
               "traceback_tail": [
                 "  File \"/usr/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n",
-                "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpcore2/_exceptions.py\", line 17, in map_exceptions\n    raise to_exc(exc) from exc\n",
+                "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/httpcore2/_exceptions.py\", line 17, in map_exceptions\n    raise to_exc(exc) from exc\n",
                 "httpcore2.ConnectError: All connection attempts failed\n"
               ]
             },
             "traceback_tail": [
               "  File \"/usr/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n",
-              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\n",
+              "  File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\n",
               "httpx2.ConnectError: All connection attempts failed\n"
             ]
           }
         ],
         "traceback_tail": [
-          "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    |     raise mapped_exc(message) from exc\n",
+          "    |   File \"/root/src/repos/omega/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    |     raise mapped_exc(message) from exc\n",
           "    | httpx2.ConnectError: All connection attempts failed\n",
           "    +------------------------------------\n"
         ]

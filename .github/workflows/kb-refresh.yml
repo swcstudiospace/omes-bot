@@ -28,7 +28,7 @@ jobs:
         if: steps.gate.outputs.has_key == 'true'
         env:
           GREPTILE_API_KEY: ${{ secrets.GREPTILE_API_KEY }}
-        run: python3 -m omes.greptile.kb_sync --repo swcstudiospace/omes-bot --out kb
+        run: python3 -m omega_prime.greptile.kb_sync --repo swcstudiospace/omega-prime --out kb
       - name: open update PR
         if: steps.gate.outputs.has_key == 'true' && success()
         env:
@@ -36,8 +36,8 @@ jobs:
         run: |
           if git status --porcelain kb/ | grep -q .; then
             branch="kb-refresh-$(date +%Y%m%d)"
-            git config user.name "omes-kb-sync"
-            git config user.email "omes-kb-sync@users.noreply.github.com"
+            git config user.name "omega-prime-kb-sync"
+            git config user.email "omega-prime-kb-sync@users.noreply.github.com"
             git checkout -b "$branch"
             git add kb/
             git commit -m "KB refresh: mirror Greptile knowledge base."

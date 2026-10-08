@@ -10,14 +10,14 @@
 - **pyproject.toml**: `[tool.ruff]` config, dev extras with exact pins
   (ruff; checker), raised `>=` floors, 3.13/3.14 classifiers.
 - **Lockfile**: committed `requirements-lock.txt` (pip freeze, no new toolchain).
-- **Providers** (`omes/providers/`): retry + usage in `ProviderModel`;
+- **Providers** (`omega_prime/providers/`): retry + usage in `ProviderModel`;
   Responses mode in `openai.py`; streaming as a new `Transport` method so
   `FakeTransport` keeps tests hermetic; raised Anthropic `max_tokens`.
-- **Discord import** (`omes/tools/discord.py` + test): lazy/guard so 3.13/3.14
-  (no audioop) import cleanly; Omes uses REST only.
-- **PyRIT target** (`omes/evals/pyrit_target.py` + test): isolate HOME/data dir
+- **Discord import** (`omega_prime/tools/discord.py` + test): lazy/guard so 3.13/3.14
+  (no audioop) import cleanly; Omega Prime uses REST only.
+- **PyRIT target** (`omega_prime/evals/pyrit_target.py` + test): isolate HOME/data dir
   per test so collection never touches `~/.local/share`.
-- **Evals** (`omes/evals/`): orchestrator + scorer cases (deterministic subset);
+- **Evals** (`omega_prime/evals/`): orchestrator + scorer cases (deterministic subset);
   chunk extraction in substrate docs_search.
 
 ## New vs modified

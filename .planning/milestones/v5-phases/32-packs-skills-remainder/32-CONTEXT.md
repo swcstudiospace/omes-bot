@@ -7,10 +7,10 @@
 <domain>
 ## Phase Boundary
 
-Everything else in the desk lands in Omes. App tool-pack tools become a
+Everything else in the desk lands in Omega Prime. App tool-pack tools become a
 registry family with roster/policy entries and fake-backed tests; all
-remaining desk skills land in `omes/skills/`; seat prompts, templates,
-roster JSON, ownership, and contract versions merge into Omes contracts.
+remaining desk skills land in `omega_prime/skills/`; seat prompts, templates,
+roster JSON, ownership, and contract versions merge into Omega Prime contracts.
 Requirements: REM-01, REM-02, REM-03.
 </domain>
 

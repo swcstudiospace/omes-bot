@@ -14,7 +14,7 @@ tags: [openshell, sandbox, verification]
 ## What This Validates
 
 **Given** `/usr/bin/openshell` 0.1.2 talking to the already-running local gateway (`openshell`, `https://127.0.0.1:17670`, Docker compute driver) on this host,
-**when** a sandbox is created from a default-deny policy derived from `omes/hosting/openshell/sandbox-policy.yaml`, a sample Python project is copied in, and `pytest` runs inside it,
+**when** a sandbox is created from a default-deny policy derived from `omega_prime/hosting/openshell/sandbox-policy.yaml`, a sample Python project is copied in, and `pytest` runs inside it,
 **then** the pytest exit code, stdout and a JUnit report come back to the host; outbound network is denied; writes outside the policy's paths fail; and the sandbox (and every container the run created) is gone afterwards. Create, run and delete times are measured.
 
 ## Research
@@ -67,7 +67,7 @@ The script exits 0 only if every check passes. It writes `results/<UTC-run-id>.j
 
 Files:
 - `sample-project/`: `calc.py`, `tests/test_calc.py` (one passing and one deliberately failing test), `pyproject.toml`.
-- `verify-policy.yaml`: derived policy. It differs from the Omes policy in two ways: `landlock: hard_requirement`, and `/app` is dropped.
+- `verify-policy.yaml`: derived policy. It differs from the Omega Prime policy in two ways: `landlock: hard_requirement`, and `/app` is dropped.
 - `image/Dockerfile`: the verifier image. Non-root `app` (1500), `/sandbox` workspace, `pytest==8.4.2`, `curl`, `iproute2`, and `/opt/omega-dac-writable` (mode 0777; Unix permissions allow writes there, the policy does not).
 - `probes/net_probe.py`: outbound attempts with urllib HTTPS (env proxy and direct), plain HTTP, raw TCP to 1.1.1.1:443 and pypi.org:443, and curl. It records DNS resolution and the *names* of proxy env vars only.
 - `probes/fs_probe.py`: writes and reads in allowed paths, read-only paths and unlisted paths.
@@ -113,7 +113,7 @@ Plausible surprises worth recording rather than "fixing":
 
 ## Investigation Trail
 
-1. Read the spike workflow and MANIFEST (row 002). Read `omes/hosting/openshell/sandbox-policy.yaml`: `include_workdir`, the same filesystem lists, `landlock: best_effort`, `network_policies: {}`.
+1. Read the spike workflow and MANIFEST (row 002). Read `omega_prime/hosting/openshell/sandbox-policy.yaml`: `include_workdir`, the same filesystem lists, `landlock: best_effort`, `network_policies: {}`.
 2. Ran read-only checks: `openshell --help` and the help for `sandbox`, `create`, `exec`, `upload`, `download`, `get`, `list`, `delete`, `logs`, `policy get`, `gateway`, `template` and `settings`; `openshell status`, `gateway info`, `gateway list`, `sandbox list`; `docker ps -a` and `docker images`. Found that a gateway already exists and is healthy, so no gateway lifecycle is needed. Found that no default or supervisor images are cached, so pulls are expected.
 3. Read the docs (pages listed under Research). Pivot: the default Ubuntu image has no pytest and the gate has no network, so a verifier image with tooling baked in is required. Upload also cannot be combined with a create-time command, which forces the scratch-sandbox, upload, exec, delete flow for real repos.
 4. Weak point in the obvious write probe: writing to root-owned `/etc` fails under plain Unix permissions anyway. Added DAC-writable, unlisted targets (`/opt/omega-dac-writable` at 0777, `/home/app`, `/var/tmp`) so that a denial proves Landlock is enforcing. Switched `landlock` to `hard_requirement` so that an unenforced filesystem policy fails closed.

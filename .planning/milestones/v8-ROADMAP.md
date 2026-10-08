@@ -1,8 +1,8 @@
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Milestones
 
-- ✅ **v1 One Omes agent** — Phases 1-12 (shipped 2026-10-03)
+- ✅ **v1 One Omega Prime agent** — Phases 1-12 (shipped 2026-10-03)
 - ✅ **v2 Enterprise hardening** — Phases 13-16 (shipped 2026-10-03)
 - ✅ **v3 Grok Bot** — Phases 17-20 (shipped 2026-10-03)
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)
@@ -17,7 +17,7 @@ with phase directories under `milestones/v1-phases/` through
 
 ## v8 Overview
 
-v7 plugged Omes into the substrate (see `milestones/v7-ROADMAP.md`). v8
+v7 plugged Omega Prime into the substrate (see `milestones/v7-ROADMAP.md`). v8
 launches the repo in public: a README with real branding, the standard
 public-repo files, richer GitBook docs with a generated tool catalog kept
 fresh by CI, Greptile connected with repo review standards, and a KB sync

@@ -18,6 +18,12 @@ All notable changes to this project are documented here. Format follows
 
 ### Changed
 
+- Renamed the product from Omes Bot to Omega Prime: Python package `omes` is
+  now `omega_prime`, the distribution is `omega-prime`, the seat is
+  `bot-00-omega-prime`, contracts moved to `contracts/tool-rosters/omega-prime.yaml`
+  and `contracts/policies/omega-prime.json`, the template is
+  `grokbot/templates/OMEGA_PRIME.md`, and `OMES_*` environment variables are
+  now `OMEGA_PRIME_*`.
 - Documentation search now returns bounded, redacted excerpts and explicit
   citation provenance instead of copying the raw retrieval response.
 - Ultrathink mark evals exercise the real approval contract through an injected
@@ -62,5 +68,5 @@ First public release: one Grok programming bot, eight milestones deep.
 - Public launch (v8): branded README, community files, generated tool
   catalog with CI freshness, Greptile review standards + KB sync pipeline.
 
-[Unreleased]: https://github.com/swcstudiospace/omes-bot/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/swcstudiospace/omes-bot/releases/tag/v0.1.0
+[Unreleased]: https://github.com/swcstudiospace/omega-prime/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/swcstudiospace/omega-prime/releases/tag/v0.1.0

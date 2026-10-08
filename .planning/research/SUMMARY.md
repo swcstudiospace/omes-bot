@@ -31,5 +31,5 @@
 - Web: MCP spec/SDK v2 changelogs, xAI model catalogs, Anthropic/OpenAI API
   docs and SDKs, Ruff 0.16.x configs, Python 3.14/3.15 status, PyRIT 1.1.0,
   2026 typechecker comparisons, Responses-vs-Chat-Completions migration notes.
-- Codebase: `omes/providers/`, `omes/mcp_server.py`, `omes/evals/`,
-  `omes/tools/discord.py`, `pyproject.toml`, `.github/workflows/ci.yml`.
+- Codebase: `omega_prime/providers/`, `omega_prime/mcp_server.py`, `omega_prime/evals/`,
+  `omega_prime/tools/discord.py`, `pyproject.toml`, `.github/workflows/ci.yml`.

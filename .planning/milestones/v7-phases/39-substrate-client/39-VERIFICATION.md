@@ -15,8 +15,8 @@
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 257 passed.
-- `.venv/bin/python -m pytest omes/tests/test_substrate.py omes/tests/test_transports.py -q` → exit 0, 20 passed.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 257 passed.
+- `.venv/bin/python -m pytest omega_prime/tests/test_substrate.py omega_prime/tests/test_transports.py -q` → exit 0, 20 passed.
 
 ## Requirements
 

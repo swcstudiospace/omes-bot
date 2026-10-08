@@ -27,10 +27,10 @@ created: "2026-10-07"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omes/tests`) |
+| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omega_prime/tests`) |
 | **Config file** | `pyproject.toml` (floors, `requires-python >= 3.11`, 3.12–3.14 classifiers) |
-| **Quick run command** | `.venv/bin/python -m pytest omes/tests/test_deps_matrix.py omes/tests/test_discord.py -q` |
-| **Full suite command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
+| **Quick run command** | `.venv/bin/python -m pytest omega_prime/tests/test_deps_matrix.py omega_prime/tests/test_discord.py -q` |
+| **Full suite command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
 | **Estimated runtime** | ~26 seconds |
 
 ---
@@ -50,9 +50,9 @@ created: "2026-10-07"
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 48-01-01 | 01 | 1 | HYG-04 | — | Declared floors and exact lock remain present; installed dependency set and real SDK consumers work | executable environment + suite | `.venv/bin/python -m pip check` + full suite | ✅ | ✅ green (no broken requirements; 344 tests passed); historical floor evidence preserved |
 | 48-01-02 | 01 | 1 | HYG-04 | — | Committed lockfile and documented installation remain available | artifact + environment | `requirements-lock.txt`, setup docs, `.venv/bin/python -m pip check` | ✅ | ✅ present / consistent; no fresh installation claimed |
-| 48-01-03 | 01 | 1 | HYG-05 | — | Discord import guard: try/except in tools + tests; fail-soft factory raises `DiscordError`; real-client test skips when unimportable | unit | `.venv/bin/python -m pytest omes/tests/test_discord.py -q` | ✅ | ✅ green (hist. exit 0; sim probe: 315 passed + 1 version-gated skip) |
+| 48-01-03 | 01 | 1 | HYG-05 | — | Discord import guard: try/except in tools + tests; fail-soft factory raises `DiscordError`; real-client test skips when unimportable | unit | `.venv/bin/python -m pytest omega_prime/tests/test_discord.py -q` | ✅ | ✅ green (hist. exit 0; sim probe: 315 passed + 1 version-gated skip) |
 | 48-01-04 | 01 | 1 | HYG-05 | — | Required CI matrix includes 3.12/3.13/3.14; real final-candidate suite and hosted outcomes must be observed | hosted/runtime validation | Actual matrix execution on the final v9 tree | configured | pending: real 3.13.14/3.14.6 import/guard/pip diagnostics passed; final full gates and matching-head CI remain required |
-| 48-01-05 | 01 | 1 | HYG-06 | — | MCP major cap declared; actual SDK schema/error behavior and spec note remain correct | SDK behavior | MCP tests within the full suite; `.venv/bin/python -m omes.setup_check --root .` | ✅ | ✅ green; incidental pin/spelling proxies removed |
+| 48-01-05 | 01 | 1 | HYG-06 | — | MCP major cap declared; actual SDK schema/error behavior and spec note remain correct | SDK behavior | MCP tests within the full suite; `.venv/bin/python -m omega_prime.setup_check --root .` | ✅ | ✅ green; incidental pin/spelling proxies removed |
 | 48-01-06 | 01 | 1 | HYG-04, HYG-05, HYG-06 | — | Full gates green + historical commit `ca48e4d` | unit/eval | suite + evals + assemble + ruff + mypy | ✅ | ✅ green (hist. 321 passed / 23 evals; final suite 344 green) |
 | 48-02-00 | 02 | 1 | HYG-05 | — | Main freezes the pre-dispatch baseline (porcelain plus five SHA-256) before the sole CI writer is released | artifact | `test -f .planning/phases/48-deps-matrix/48-02-BASELINE.md` | ✅ | ✅ green (exit 0; baseline SHA-256 `e223a4e5…e45d`) |
 | 48-02-01 | 02 | 1 | HYG-05 | T-48-02-01..03, T-48-02-SC | Receipt tracer: fail-fast false ×3, interpreter-bound pip, identity/pip/import receipts, `-rA`/JUnit named guard, exit propagation, `always()` five-state summaries; sole-writer scope proven against the baseline | static + scope | Plan Task 1 `<automated>` ×5 + `actionlint -no-color -oneline .github/workflows/ci.yml` | ✅ | ✅ green, source/static only. Diff 469+/9−. Scope: only ci.yml (A11) and the baseline (Main) were added. Invariants unchanged. `actionlint` exit 0. Hosted execution pending (manual-only) |
@@ -78,8 +78,8 @@ dirty-worktree smoke evidence, not final full-suite or hosted acceptance.
 
 Existing infrastructure covers all phase requirements — no Wave 0 needed.
 
-- [x] `omes/tests/test_deps_matrix.py` — actual missing-Discord import/factory regression
-- [x] `omes/tests/test_discord.py` — guard branch + real-client skip tests
+- [x] `omega_prime/tests/test_deps_matrix.py` — actual missing-Discord import/factory regression
+- [x] `omega_prime/tests/test_discord.py` — guard branch + real-client skip tests
 - [x] `requirements-lock.txt` — 150-line freeze (verified present)
 
 ---

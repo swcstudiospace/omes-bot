@@ -93,7 +93,7 @@ None yet. Main makes explicit-path commits after all product writers stop and th
   - `fail-fast: false` on verify, lint and types.
   - `python3 -m pip` installs with the original inputs.
   - Identity, pip version, `pip list --format=json` and `pip check` steps.
-  - Verify-only ordinary imports of `discord` and `omes.tools.discord`.
+  - Verify-only ordinary imports of `discord` and `omega_prime.tools.discord`.
   - The suite runs with `-rA --junitxml=$RUNNER_TEMP/phase48-suite.xml`.
   - Every command step is wrapped to record and propagate its exit code.
   - An always-run `receipt summary` step in each matrix job.
@@ -106,7 +106,7 @@ None yet. Main makes explicit-path commits after all product writers stop and th
 |---|---|---|
 | `git diff --stat -- .github/workflows/ci.yml` | 0 | `1 file changed, 469 insertions(+), 9 deletions(-)` |
 | `git status --porcelain=v1 -uall` | 0 | 78 entries. Versus the 76-entry baseline, added: ` M .github/workflows/ci.yml` (A11 actual `changed_files`) and `?? …/48-02-BASELINE.md` (Main Task 0, baseline §d). Removed: none. Unexplained: none. |
-| `sha256sum pyproject.toml requirements-lock.txt omes/tests/test_deps_matrix.py omes/tools/discord.py` | 0 | All four equal the baseline: `ea4763a7…a4d8`, `9c285986…b575`, `9d784f92…545c`, `fdc18221…ffddb` |
+| `sha256sum pyproject.toml requirements-lock.txt omega_prime/tests/test_deps_matrix.py omega_prime/tools/discord.py` | 0 | All four equal the baseline: `ea4763a7…a4d8`, `9c285986…b575`, `9d784f92…545c`, `fdc18221…ffddb` |
 | `test "$(… grep -c 'fail-fast: false')" -eq 3` | 0 | added-line count 3 |
 | `test "$(… grep -c 'python3 -m pip')" -gt 0` | 0 | added-line count 12 |
 
@@ -119,7 +119,7 @@ Static checks:
 - Each job's `STAGES` list equals its step ids.
 
 Execute-phase gates:
-- Post-merge build gate exited 0. The language-sniffed `py_compile` picked 20 files from the read-only `oh-my-pi/` clone; it ran with `PYTHONPYCACHEPREFIX` outside the repo, so it gives no Omes signal.
+- Post-merge build gate exited 0. The language-sniffed `py_compile` picked 20 files from the read-only `oh-my-pi/` clone; it ran with `PYTHONPYCACHEPREFIX` outside the repo, so it gives no Omega Prime signal.
 - Post-merge test gate: `python -m pytest -x -q --tb=short` passed 344 tests with 12 warnings and exit 0. This is the local `.venv` Python 3.12.3 run on the current dirty candidate only.
 - `execute:wave:post` gates `verify.schema-drift`, `verify.codebase-drift` and `ui.safety-gate` all returned `block: false`.
 
@@ -205,7 +205,7 @@ certify this continuation.
 
 - `P48ReceiptDedup` addressed the existing WR-01/IN-01 findings in
   `.github/workflows/ci.yml` and the new stdlib-only
-  `omes/scripts/ci_receipt.py`. The workflow is now 169 lines; identity,
+  `omega_prime/scripts/ci_receipt.py`. The workflow is now 169 lines; identity,
   command exit recording, and receipt summaries share the helper.
 - Main ran `actionlint -no-color -oneline .github/workflows/ci.yml`: exit 0.
 - Main ran Ruff lint on the helper: exit 0. The format check reported one

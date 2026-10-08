@@ -1,5 +1,5 @@
 [project]
-name = "omes-bot"
+name = "omega-prime"
 version = "0.1.0"
 description = "One Grok programming bot. Hermes and oh-my-pi agent logic in one Python process."
 readme = "README.md"
@@ -37,21 +37,21 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/swcstudiospace/omes-bot"
-Repository = "https://github.com/swcstudiospace/omes-bot"
-Documentation = "https://github.com/swcstudiospace/omes-bot/tree/main/docs"
-Issues = "https://github.com/swcstudiospace/omes-bot/issues"
-Changelog = "https://github.com/swcstudiospace/omes-bot/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/swcstudiospace/omega-prime"
+Repository = "https://github.com/swcstudiospace/omega-prime"
+Documentation = "https://github.com/swcstudiospace/omega-prime/tree/main/docs"
+Issues = "https://github.com/swcstudiospace/omega-prime/issues"
+Changelog = "https://github.com/swcstudiospace/omega-prime/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["omes*"]
+include = ["omega_prime*"]
 
 [tool.setuptools.package-data]
-omes = ["**/*.md", "**/*.yaml", "**/*.yml", "**/*.json", "**/*.xml", "**/*.sh"]
+omega_prime = ["**/*.md", "**/*.yaml", "**/*.yml", "**/*.json", "**/*.xml", "**/*.sh"]
 
 [tool.pytest.ini_options]
-testpaths = ["omes/tests"]
+testpaths = ["omega_prime/tests"]
 pythonpath = ["."]
 
 [tool.ruff]
@@ -63,7 +63,7 @@ select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
 ignore = ["E501"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["omes"]
+known-first-party = ["omega_prime"]
 
 [tool.mypy]
 python_version = "3.11"

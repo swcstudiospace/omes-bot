@@ -24,10 +24,10 @@ created: "2026-10-07"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omes/tests`) |
+| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omega_prime/tests`) |
 | **Config file** | `pyproject.toml` |
-| **Quick run command** | `.venv/bin/python -m pytest omes/tests/test_transports.py omes/tests/test_providers.py omes/tests/test_loop.py -q` |
-| **Full suite command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
+| **Quick run command** | `.venv/bin/python -m pytest omega_prime/tests/test_transports.py omega_prime/tests/test_providers.py omega_prime/tests/test_loop.py -q` |
+| **Full suite command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
 | **Estimated runtime** | ~26 seconds |
 
 ---
@@ -45,9 +45,9 @@ created: "2026-10-07"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 50-01-01 | 01 | 1 | PCUR-03 | — | `OpenAIProvider.api_mode` auto/responses/chat_completions: auto → Responses on api.openai.com, chat elsewhere (`openai.py:27-36`); stateless `store: false`; transcript → input items; failed raises, incomplete parses | unit | `.venv/bin/python -m pytest omes/tests/test_providers.py -q` | ✅ | ✅ green (hist. routing + round-trip + failed/empty/incomplete tests) |
+| 50-01-01 | 01 | 1 | PCUR-03 | — | `OpenAIProvider.api_mode` auto/responses/chat_completions: auto → Responses on api.openai.com, chat elsewhere (`openai.py:27-36`); stateless `store: false`; transcript → input items; failed raises, incomplete parses | unit | `.venv/bin/python -m pytest omega_prime/tests/test_providers.py -q` | ✅ | ✅ green (hist. routing + round-trip + failed/empty/incomplete tests) |
 | 50-01-02 | 01 | 1 | PCUR-03 | — | xAI/compatibles stay on chat_completions (Grok pins `api_mode`); one-shot chat fallback on 404/scope-denied with `last_fallback`; 400 and chat-mode errors surface (`base.py:69,177-182`; `openai.py:97`) | unit | fallback ×3 + routing-pin tests in suite | ✅ | ✅ green (hist. exit 0) |
-| 50-01-03 | 01 | 1 | PCUR-04 | — | `Transport.stream` yields text lines; `HttpTransport` SSE iteration (retries end at first byte); `FakeTransport` replays scripted lines; per-provider `stream_request` + `parse_stream` → (row, usage?) incl. usage chunks | unit | `.venv/bin/python -m pytest omes/tests/test_transports.py -q` | ✅ | ✅ green (hist. per-provider wire shapes, HTTP stream ×2, no-retry-after-first-byte, no-stream error) |
+| 50-01-03 | 01 | 1 | PCUR-04 | — | `Transport.stream` yields text lines; `HttpTransport` SSE iteration (retries end at first byte); `FakeTransport` replays scripted lines; per-provider `stream_request` + `parse_stream` → (row, usage?) incl. usage chunks | unit | `.venv/bin/python -m pytest omega_prime/tests/test_transports.py -q` | ✅ | ✅ green (hist. per-provider wire shapes, HTTP stream ×2, no-retry-after-first-byte, no-stream error) |
 | 50-01-04 | 01 | 1 | PCUR-04 | — | Loop consumes streamed output end to end: `run_conversation` over `stream=True` `ProviderModel`; all five adapters accumulate | unit | `test_loop_consumes_streamed_output_end_to_end` (`test_transports.py:363`) + loop tests | ✅ | ✅ green (hist. exit 0; 4 streaming-accumulation tests) |
 | 50-01-05 | 01 | 1 | PCUR-03, PCUR-04 | — | Full gates green; no live calls (commit `cafcf5f`); Responses streaming + reasoning continuity explicitly deferred in code | unit/eval | suite + evals + assemble + ruff + mypy | ✅ | ✅ green (hist. 344 passed / 23 evals; final suite 344 green) |
 

@@ -14,8 +14,8 @@
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 281 passed.
-- `.venv/bin/python -m pytest omes/tests/test_substrate_session.py -q` → exit 0, 9 passed.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 281 passed.
+- `.venv/bin/python -m pytest omega_prime/tests/test_substrate_session.py -q` → exit 0, 9 passed.
 
 ## Requirements
 

@@ -28,7 +28,7 @@ Initial supplied receipts passed 354 tests; after removing ten incidental proxy 
 | Threat ID | Category | Component | Severity | Disposition | Mitigation / Evidence | Status |
 |-----------|----------|-----------|----------|-------------|-----------------------|--------|
 | T-47-01 | Tampering | Missing/bypassed CI lint/type checks | medium | mitigate | `pyproject.toml:33-36,57-72` declares pinned gates; `.github/workflows/ci.yml:26-56` installs dev dependencies and invokes checks without failure suppression. Final parent Ruff lint/format and mypy commands exit 0. Obsolete source/configuration-copy tests were removed; no CI execution or branch-protection claim. | closed, L1 |
-| T-47-02 | Tampering / Repudiation | MCP canonicalization loses schema/refusal flags | high | mitigate | `omes/mcp_server.py:190-203,220-241` uses canonical SDK fields and decoded error semantics. `omes/tests/test_mcp_server.py:40-82,96-115` exercises actual SDK schema and unknown/approval/roster refusals, green in the final 344-test suite. Source-spelling proxy removed. | closed, L1 |
+| T-47-02 | Tampering / Repudiation | MCP canonicalization loses schema/refusal flags | high | mitigate | `omega_prime/mcp_server.py:190-203,220-241` uses canonical SDK fields and decoded error semantics. `omega_prime/tests/test_mcp_server.py:40-82,96-115` exercises actual SDK schema and unknown/approval/roster refusals, green in the final 344-test suite. Source-spelling proxy removed. | closed, L1 |
 
 Only open high/critical threats count toward `threats_open`; threshold is high. Closed entries carry their stated L1/source/runtime limits, not an implied deeper certification.
 

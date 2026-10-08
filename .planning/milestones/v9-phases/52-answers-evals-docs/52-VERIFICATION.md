@@ -12,15 +12,15 @@ covered_files: [
   "docs/tool-catalog.md",
   "docs/tool-host.md",
   "docs/user-guide.md",
-  "omes/evals/cases/golden.json",
-  "omes/evals/cases/redteam.json",
-  "omes/evals/runner.py",
-  "omes/tests/test_deps_matrix.py",
-  "omes/tests/test_docs.py",
-  "omes/tests/test_evals.py",
-  "omes/tests/test_mcp_server.py",
-  "omes/tests/test_substrate_session.py",
-  "omes/tools/substrate_tools.py"
+  "omega_prime/evals/cases/golden.json",
+  "omega_prime/evals/cases/redteam.json",
+  "omega_prime/evals/runner.py",
+  "omega_prime/tests/test_deps_matrix.py",
+  "omega_prime/tests/test_docs.py",
+  "omega_prime/tests/test_evals.py",
+  "omega_prime/tests/test_mcp_server.py",
+  "omega_prime/tests/test_substrate_session.py",
+  "omega_prime/tools/substrate_tools.py"
 ]
 covered_digest: "v1:sha256:447e681f3d0f096c735491fb94ea75244f3a7a977d28e40176616ac1000c4f40"
 behavior_unverified: 0
@@ -41,10 +41,10 @@ shell-outage stub previously in this file; that stub's "pending" status and
 - **Runtime receipts:** `local://omes-v9-gate-evidence.md` (parent-exercised gates,
   all exit 0). Per task contract no gates were re-run by this verifier; the table
   below cites supplied results honestly as supplied, not personal runs.
-- **Code-backed checks:** this verifier read `omes/tools/substrate_tools.py`
-  (`docs_search`, `_raw_chunks`, `_chunks`, tool description), `omes/evals/runner.py`
-  (`_run_ultrathink_family_case`), `omes/tests/test_substrate_session.py`,
-  `omes/tests/test_mcp_server.py`, `omes/tests/test_evals.py`, the mark eval cases,
+- **Code-backed checks:** this verifier read `omega_prime/tools/substrate_tools.py`
+  (`docs_search`, `_raw_chunks`, `_chunks`, tool description), `omega_prime/evals/runner.py`
+  (`_run_ultrathink_family_case`), `omega_prime/tests/test_substrate_session.py`,
+  `omega_prime/tests/test_mcp_server.py`, `omega_prime/tests/test_evals.py`, the mark eval cases,
   the four prose docs, `docs/tool-catalog.md`, and `52-REVIEW-FIX.md` directly.
 - **Review provenance:** original CR-01/CR-02/WR-01/WR-02/WR-03 findings supplied
   at resume are recorded with their resolutions in `52-REVIEW-FIX.md`. Current
@@ -62,8 +62,8 @@ shell-outage stub previously in this file; that stub's "pending" status and
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | `docs_search` returns extracted chunks, never the raw retrieval payload (SC-1, DPT-04) | ✓ VERIFIED | `docs_search` returns only `{"chunks": _chunks(raw)}` or `{"error": …}` (`omes/tools/substrate_tools.py:113`); no `retrieval` key is constructed anywhere in the file (grep-confirmed). Whole-result tests assert `"retrieval" not in payload` plus serialized-secret/sentinel absence (`test_substrate_session.py:200-268`), MCP boundary test asserts the same over the wire (`test_mcp_server.py:165-215`). Supplied smoke: decoder → registry → MCP → next-model loop shows no raw retrieval, no supported synthetic secret, no beyond-cap text (`live_calls=0`). |
-| 2 | New golden + red-team cases cover v9 refusal/contract behavior, all passing (SC-2, EVAL-01) | ✓ VERIFIED | `golden-ultrathink-mark-approved` / `redteam-ultrathink-mark-unapproved` (+ `redteam-policy-empty-deny`) dispatch through real `register_ultrathink_tools` with a hermetic runner; approvals derive from production `APPROVAL_TOOLS`, never the case stub (`omes/evals/runner.py:_run_ultrathink_family_case`). Sensitivity regression `test_mark_approval_removal_breaks_redteam_eval` fails the red-team eval when mark approval is removed (`test_evals.py`). Supplied: eval CLI 26 passed, 0 failed. |
+| 1 | `docs_search` returns extracted chunks, never the raw retrieval payload (SC-1, DPT-04) | ✓ VERIFIED | `docs_search` returns only `{"chunks": _chunks(raw)}` or `{"error": …}` (`omega_prime/tools/substrate_tools.py:113`); no `retrieval` key is constructed anywhere in the file (grep-confirmed). Whole-result tests assert `"retrieval" not in payload` plus serialized-secret/sentinel absence (`test_substrate_session.py:200-268`), MCP boundary test asserts the same over the wire (`test_mcp_server.py:165-215`). Supplied smoke: decoder → registry → MCP → next-model loop shows no raw retrieval, no supported synthetic secret, no beyond-cap text (`live_calls=0`). |
+| 2 | New golden + red-team cases cover v9 refusal/contract behavior, all passing (SC-2, EVAL-01) | ✓ VERIFIED | `golden-ultrathink-mark-approved` / `redteam-ultrathink-mark-unapproved` (+ `redteam-policy-empty-deny`) dispatch through real `register_ultrathink_tools` with a hermetic runner; approvals derive from production `APPROVAL_TOOLS`, never the case stub (`omega_prime/evals/runner.py:_run_ultrathink_family_case`). Sensitivity regression `test_mark_approval_removal_breaks_redteam_eval` fails the red-team eval when mark approval is removed (`test_evals.py`). Supplied: eval CLI 26 passed, 0 failed. |
 | 3 | Setup, model defaults, and tool catalog read true against v9 code (SC-3, EVAL-02) | ✓ VERIFIED | Prose now states 109 rostered tools (`setup.md:37`, `user-guide.md:36`, `build-aesthetics.md:20`) and 108 MCP-served tools with the `delegate_task` exclusion (`tool-host.md:12-14`) — grep-confirmed, no stale 104/103 remains. `build-aesthetics.md:45-53` no longer pins test/eval totals; prose defers to CI. Catalog description matches the fixed contract (`tool-catalog.md:838-844`); supplied `catalog --check` and `setup_check` (108 served tools) both exit 0. No contradictory model-ID/max-token claim exists in the four scoped pages (pre-fix review confirms; Anthropic cap 8192 current). |
 | 4 | Full gates green: suite, evals, assemble, lint, types, catalog --check (SC-4) | ✓ VERIFIED | Final parent receipts, all exit 0: pytest 344 passed / no skips; evals 26 passed / 0 failed; assembly up to date; Ruff lint clean / format 205 files; mypy 0 errors in 174 files; setup OK (108 served tools); catalog up to date; pip check no broken requirements. Earlier decoder-to-MCP/next-model smoke passed with `live_calls=0`; runtime code was unchanged by the subsequent removal of ten incidental proxy tests. |
 
@@ -75,12 +75,12 @@ green per supplied receipts).
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `omes/tools/substrate_tools.py` | Chunk-only, redacted, bounded `docs_search` | ✓ VERIFIED | Substantive (333 lines), wired (registry + MCP dispatch), data flows from real client result through `_raw_chunks`/`_chunks` to `redact_value` output |
-| `omes/evals/runner.py` | Real-registration mark family path | ✓ VERIFIED | `_run_ultrathink_family_case` calls production registration with injected hermetic runner; wired from `_run_registry_case` via `family == "ultrathink"` |
-| `omes/evals/cases/golden.json` + `redteam.json` | Approved/unapproved mark cases | ✓ VERIFIED | Both mark cases present with `family: ultrathink`; empty-allowlist deny case present |
-| `omes/tests/test_substrate_session.py` | Whole-result redaction/cap/malformed coverage | ✓ VERIFIED | Excerpts-without-raw, entire-payload redaction, metadata types + zero preservation, every-error-branch redaction, malformed-vs-empty matrix (451 lines, no debt markers) |
-| `omes/tests/test_mcp_server.py` | MCP boundary no-raw-secret regression | ✓ VERIFIED | `test_call_tool_substrate_docs_search_exports_no_raw_secret` incl. malformed-error flag |
-| `omes/tests/test_evals.py` | Approval-removal sensitivity | ✓ VERIFIED | `test_mark_approval_removal_breaks_redteam_eval` + shipped-cases green |
+| `omega_prime/tools/substrate_tools.py` | Chunk-only, redacted, bounded `docs_search` | ✓ VERIFIED | Substantive (333 lines), wired (registry + MCP dispatch), data flows from real client result through `_raw_chunks`/`_chunks` to `redact_value` output |
+| `omega_prime/evals/runner.py` | Real-registration mark family path | ✓ VERIFIED | `_run_ultrathink_family_case` calls production registration with injected hermetic runner; wired from `_run_registry_case` via `family == "ultrathink"` |
+| `omega_prime/evals/cases/golden.json` + `redteam.json` | Approved/unapproved mark cases | ✓ VERIFIED | Both mark cases present with `family: ultrathink`; empty-allowlist deny case present |
+| `omega_prime/tests/test_substrate_session.py` | Whole-result redaction/cap/malformed coverage | ✓ VERIFIED | Excerpts-without-raw, entire-payload redaction, metadata types + zero preservation, every-error-branch redaction, malformed-vs-empty matrix (451 lines, no debt markers) |
+| `omega_prime/tests/test_mcp_server.py` | MCP boundary no-raw-secret regression | ✓ VERIFIED | `test_call_tool_substrate_docs_search_exports_no_raw_secret` incl. malformed-error flag |
+| `omega_prime/tests/test_evals.py` | Approval-removal sensitivity | ✓ VERIFIED | `test_mark_approval_removal_breaks_redteam_eval` + shipped-cases green |
 | `docs/setup.md`, `user-guide.md`, `build-aesthetics.md`, `tool-host.md` | True 109/108 counts, no brittle totals | ✓ VERIFIED | Grep-confirmed; substrate family named where families are listed |
 | `docs/tool-catalog.md` | Regenerated after description fix | ✓ VERIFIED | Shaped-excerpts description at 838-844; `--check` green per receipt |
 | `CHANGELOG.md` | v9 changes recorded | ✓ VERIFIED | Chunk provenance, mark-eval contract, doc-count lines present |
@@ -93,7 +93,7 @@ green per supplied receipts).
 | `ToolRegistry.dispatch` | MCP `TextContent` | `call_tool_handler` in `mcp_server.py` | ✓ WIRED | Boundary test proves no-raw-secret end to end |
 | Registry result | next model request | `turn_tool_round.py` / `conversation_loop.py` | ✓ WIRED | Supplied smoke shows safe citations survive, secrets/caps hold |
 | Eval cases | production approval contract | `_run_ultrathink_family_case` → `register_ultrathink_tools` | ✓ WIRED | Sensitivity test proves the link (removal breaks red-team eval) |
-| Tool description | `docs/tool-catalog.md` | `omes.tooling.catalog` generator | ✓ WIRED | `--check` green per receipt |
+| Tool description | `docs/tool-catalog.md` | `omega_prime.tooling.catalog` generator | ✓ WIRED | `--check` green per receipt |
 
 ### Data-Flow Trace (Level 4)
 

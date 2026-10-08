@@ -28,10 +28,10 @@ Locked boundaries:
 | `.github/workflows/ci.yml` | Modify, sole CI-writer product path | config | event-driven → batch gates → log/file-I/O receipts | `.github/workflows/ci.yml` | exact: extend the existing workflow in place |
 | `pyproject.toml` | Retain; read-only installation/configuration contract | config | dependency resolution; batch tool configuration | `pyproject.toml` | exact retained reference |
 | `requirements-lock.txt` | Retain; read-only 3.12 reproduction snapshot | config | file-I/O → dependency installation | `requirements-lock.txt` | exact retained reference, not cross-version outcome evidence |
-| `omes/tests/test_deps_matrix.py` | Retain; execute existing named regression only under Main's final union | test | request-response through a real-interpreter subprocess | `omes/tests/test_deps_matrix.py` | exact semantic guard reference |
-| `omes/tools/discord.py` | Retain; read-only import/factory/error boundary | service | request-response; guarded import and controlled failure | `omes/tools/discord.py` | exact service/guard reference |
+| `omega_prime/tests/test_deps_matrix.py` | Retain; execute existing named regression only under Main's final union | test | request-response through a real-interpreter subprocess | `omega_prime/tests/test_deps_matrix.py` | exact semantic guard reference |
+| `omega_prime/tools/discord.py` | Retain; read-only import/factory/error boundary | service | request-response; guarded import and controlled failure | `omega_prime/tools/discord.py` | exact service/guard reference |
 
-All five analog paths were printed by the single read-only command `git ls-files -- .github/workflows/ci.yml pyproject.toml requirements-lock.txt omes/tests/test_deps_matrix.py omes/tools/discord.py` from this repository's root. No ignored/runtime mirror is an analog.
+All five analog paths were printed by the single read-only command `git ls-files -- .github/workflows/ci.yml pyproject.toml requirements-lock.txt omega_prime/tests/test_deps_matrix.py omega_prime/tools/discord.py` from this repository's root. No ignored/runtime mirror is an analog.
 
 No new product helper, test, receipt package, dependency manager, or workflow family is implied. `48-CONTEXT.md`, `48-VALIDATION.md`, and `48-VERIFICATION.md` are planning/config evidence with transform data flow: they are mapper inputs, not this CI writer's write scope. Later Main-owned canonical refresh must reflect actual receipts and preserve history. This map itself is the sole new planning artifact, also a transform, and is not counted as a product target.
 
@@ -64,11 +64,11 @@ jobs:
       - name: install
         run: pip install -e . pytest
       - name: test suite
-        run: python3 -m pytest omes/tests -q
+        run: python3 -m pytest omega_prime/tests -q
       - name: evals
-        run: python3 -m omes.evals.runner omes/evals/cases
+        run: python3 -m omega_prime.evals.runner omega_prime/evals/cases
       - name: assemble check
-        run: bash omes/scripts/assemble-prompts.sh --check
+        run: bash omega_prime/scripts/assemble-prompts.sh --check
 ```
 
 Copy the checkout/setup-python order and preserve the push/PR triggers, requested interpreter values, editable package plus pytest input, suite, evals, and assembly. Change pip invocation to interpreter-bound `python3 -m pip`; do not replace the install with the 3.12 snapshot lock. Add real identity, installation/consistency/import receipts and suite reporting inline in this existing job, not in an unrelated new job.
@@ -89,9 +89,9 @@ Copy the checkout/setup-python order and preserve the push/PR triggers, requeste
       - name: install
         run: pip install -e .[dev]
       - name: ruff check
-        run: python3 -m ruff check omes/
+        run: python3 -m ruff check omega_prime/
       - name: ruff format check
-        run: python3 -m ruff format --check omes/
+        run: python3 -m ruff format --check omega_prime/
   types:
     runs-on: ubuntu-latest
     strategy:
@@ -105,7 +105,7 @@ Copy the checkout/setup-python order and preserve the push/PR triggers, requeste
       - name: install
         run: pip install -e .[dev]
       - name: mypy
-        run: python3 -m mypy omes/
+        run: python3 -m mypy omega_prime/
 ```
 
 Preserve the independent job environments and dev-extra input. The minimal delta is `python3 -m pip install -e '.[dev]'`, plus identity, actual install exits, resolved distributions, same-environment pip check, command exit markers, and final outcome summaries. Add `strategy.fail-fast: false` to **each of verify, lint, and types** to retain sibling evidence when one combination fails; this does not make any failed lane acceptable.
@@ -123,9 +123,9 @@ Preserve the independent job environments and dev-extra input. The minimal delta
       - name: install
         run: pip install -e . pytest
       - name: docs link tests
-        run: python3 -m pytest omes/tests/test_docs.py omes/tests/test_public_repo.py -q
+        run: python3 -m pytest omega_prime/tests/test_docs.py omega_prime/tests/test_public_repo.py -q
       - name: tool catalog currency
-        run: python3 -m omes.tooling.catalog --check
+        run: python3 -m omega_prime.tooling.catalog --check
 ```
 
 Keep this separate 3.12 job and its existing gates. Inspect its real job/step outcomes and the overall workflow conclusion during hosted collection; it is not an extra 3.13/3.14 lane. Its referenced tests/catalog implementation are outside this mapper's product-read bounds; no internal pattern claim is made for them.
@@ -194,7 +194,7 @@ dev = [
 
 ```toml
 [tool.pytest.ini_options]
-testpaths = ["omes/tests"]
+testpaths = ["omega_prime/tests"]
 pythonpath = ["."]
 ```
 
@@ -223,9 +223,9 @@ Use these as the exact unchanged installation/tool contract. Running tools under
 **Snapshot and CI-input convention — lines 1–4:**
 
 ```text
-# Omes Bot verified lockfile (Python 3.12, 2026-10-07).
+# Omega Prime verified lockfile (Python 3.12, 2026-10-07).
 # Exact reproduction: pip install -r requirements-lock.txt
-# Regenerate after dependency changes: .venv/bin/pip freeze | grep -vE '^-e |^omes-bot' | sort -f > requirements-lock.txt
+# Regenerate after dependency changes: .venv/bin/pip freeze | grep -vE '^-e |^omega-prime' | sort -f > requirements-lock.txt
 # CI installs from pyproject floors instead, to catch fresh-resolve drift.
 ```
 
@@ -235,7 +235,7 @@ The regeneration text is a historical source excerpt, not an instruction to exec
 
 Keep the distinction between the 3.12 reproduction input and the existing matrix's editable fresh resolution from `pyproject.toml`. Record each real environment's actual install inputs and `pip list --format=json`; do not manufacture 3.13/3.14 resolved distributions by copying this file. A successful pip check is installed consistency, not proof of a fresh or noneditable clean installation.
 
-### `omes/tests/test_deps_matrix.py` — retained test, real-interpreter subprocess
+### `omega_prime/tests/test_deps_matrix.py` — retained test, real-interpreter subprocess
 
 **Analog:** this exact tracked regression; no new proxy/configuration-copy test is needed.
 
@@ -248,8 +248,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-OMES = Path(__file__).resolve().parents[1]
-ROOT = OMES.parent
+OMEGA_PRIME = Path(__file__).resolve().parents[1]
+ROOT = OMEGA_PRIME.parent
 ```
 
 **Named guard and subprocess/error evidence — lines 13–34:**
@@ -260,7 +260,7 @@ def test_discord_module_imports_without_the_library() -> None:
         [
             "import sys",
             "sys.modules['discord'] = None",
-            "import omes.tools.discord as d",
+            "import omega_prime.tools.discord as d",
             "try:",
             "    d._default_client()",
             "except d.DiscordError:",
@@ -279,11 +279,11 @@ def test_discord_module_imports_without_the_library() -> None:
     assert proc.returncode == 0, proc.stderr[-2000:]
 ```
 
-**Required testcase identity:** `omes/tests/test_deps_matrix.py::test_discord_module_imports_without_the_library`.
+**Required testcase identity:** `omega_prime/tests/test_deps_matrix.py::test_discord_module_imports_without_the_library`.
 
 The subprocess uses the actual parent interpreter and deliberately makes the library unavailable. It tests the import/factory controlled-failure branch, not a Python version label or a live Discord session. Capture this named case as **passed** from the final real full suite's reporting/JUnit; pytest exit 0 alone cannot show the case was executed rather than skipped or deselected. Preserve the assertion and bounded stderr evidence. Do not monkeypatch `sys.version`, add a historical audioop plugin, rerun a duplicate full suite, or replace this regression with source/configuration assertions.
 
-### `omes/tools/discord.py` — retained service, guarded import/request-response
+### `omega_prime/tools/discord.py` — retained service, guarded import/request-response
 
 **Analog:** current tracked 240-line service; no write is assigned.
 
@@ -301,7 +301,7 @@ try:
 except ImportError:  # Python 3.13+: audioop removal breaks discord.py's import
     discord = None  # type: ignore[assignment]
 
-from omes.tools.registry import ToolRegistry
+from omega_prime.tools.registry import ToolRegistry
 ```
 
 **Error type — lines 32–33; factory guard — lines 44–47:**
@@ -318,7 +318,7 @@ def _default_client() -> Any:
     return discord.Client(intents=discord.Intents.default())
 ```
 
-The retained audioop comment explains the historical guard, not a current observed failure: installed Discord and ordinary product imports already passed on the supplied actual CPython 3.13.14 and 3.14.6 diagnostic environments. Leave source/history intact. In verify receipts, ordinary `import discord` and ordinary `import omes.tools.discord` are separate required observations; the guard passing must never mask a failed installed-library import.
+The retained audioop comment explains the historical guard, not a current observed failure: installed Discord and ordinary product imports already passed on the supplied actual CPython 3.13.14 and 3.14.6 diagnostic environments. Leave source/history intact. In verify receipts, ordinary `import discord` and ordinary `import omega_prime.tools.discord` are separate required observations; the guard passing must never mask a failed installed-library import.
 
 **Core cleanup and operation-specific error boundary — lines 99–118:**
 
@@ -393,7 +393,7 @@ These are retained behavior boundaries, not requests to add an auth/validation f
 
 ### Same-Environment Interpreter and Installation Identity
 
-**Sources:** `.github/workflows/ci.yml:14–21,32–41,48–55`; `pyproject.toml:21–37`; `omes/tests/test_deps_matrix.py:27–34`; accepted preparation's `receipt_contract` and `minimal_ci_writer_contract`.
+**Sources:** `.github/workflows/ci.yml:14–21,32–41,48–55`; `pyproject.toml:21–37`; `omega_prime/tests/test_deps_matrix.py:27–34`; accepted preparation's `receipt_contract` and `minimal_ci_writer_contract`.
 **Apply to:** Every local real lane and every hosted verify/lint/types job, independently.
 
 1. Keep checkout → setup-python → install → gates. Immediately after setup, record the requested major/minor and actual `sys.version`, complete `sys.version_info`, `sys.executable` and realpath, `sys.prefix`, `sys.base_prefix`, `platform.platform()`, Python implementation, machine, and source root. Assert requested major/minor matches the actual interpreter; record actual patch/build rather than pinning a speculative hosted patch.
@@ -414,14 +414,14 @@ No environment dumps, `pip freeze` output containing private direct URLs, creden
 
 ### Ordinary Imports and the Actual Named Guard Are Different Evidence
 
-**Sources:** `omes/tools/discord.py:16–21,44–47`; `omes/tests/test_deps_matrix.py:13–34`; diagnostic receipt.
+**Sources:** `omega_prime/tools/discord.py:16–21,44–47`; `omega_prime/tests/test_deps_matrix.py:13–34`; diagnostic receipt.
 **Apply to:** Each real local verify lane and each hosted verify job.
 
 The accepted preparation's separate ordinary-import commands are unexecuted examples for final receipts:
 
 ```sh
 python3 -c 'import importlib.metadata as m; print(m.version("discord.py")); import discord; print(discord.__file__)'
-python3 -c 'import omes.tools.discord as d; print(d.__file__); print(d.DiscordError.__name__)'
+python3 -c 'import omega_prime.tools.discord as d; print(d.__file__); print(d.DiscordError.__name__)'
 ```
 
 The full suite must independently report `test_discord_module_imports_without_the_library` as passed. Report actual suite totals, skips and reasons, failures/errors, xfail/xpass, and deselection where supplied; never prefill historical totals or zero skips. Required imports, the named guard, and required stages cannot be accepted if missing, failed, skipped, cancelled, or unexecuted. Test-level skips must remain visible and cannot substitute for a required observation.
@@ -435,7 +435,7 @@ The source has no custom exit-marker analog. Use the accepted capture-and-propag
 
 ```sh
 set +e
-python3 -m pytest omes/tests -q -rA --junitxml="$RUNNER_TEMP/phase48-suite.xml"
+python3 -m pytest omega_prime/tests -q -rA --junitxml="$RUNNER_TEMP/phase48-suite.xml"
 rc=$?
 printf 'stage=suite exit_code=%s\n' "$rc"
 exit "$rc"
@@ -462,7 +462,7 @@ Null means only **no command exit was observed**, not "assume zero" or "infer on
 
 ### Logging, JUnit, Summaries, and Hosted Identity
 
-**Source:** all existing `.github/workflows/ci.yml` steps; `omes/tests/test_deps_matrix.py:27–34`; accepted preparation's hosted collection and metadata allowlist.
+**Source:** all existing `.github/workflows/ci.yml` steps; `omega_prime/tests/test_deps_matrix.py:27–34`; accepted preparation's hosted collection and metadata allowlist.
 **Apply to:** CI inline receipt additions and Main's later evidence collection.
 
 - Existing gates emit ordinary stdout/stderr to Actions logs; there is no current uploaded receipt artifact. Keep logs plus job/step API results as receipt carriers. Do not invent an artifact ID/URL or add an uploader/new workflow family just to supply this map.
@@ -475,7 +475,7 @@ Null means only **no command exit was observed**, not "assume zero" or "infer on
 
 ### Authentication, Errors, and Validation Stay at Existing Boundaries
 
-**Sources:** `omes/tools/discord.py:44–47,99–130,157–166,192–198`; `omes/tests/test_deps_matrix.py:13–34`.
+**Sources:** `omega_prime/tools/discord.py:44–47,99–130,157–166,192–198`; `omega_prime/tests/test_deps_matrix.py:13–34`.
 **Apply to:** Interpretation of retained product behavior, not new CI/product auth code.
 
 The factory raises `DiscordError` when the library is unavailable; operational calls preserve `DiscordError`, wrap other exceptions with operation context, and close the client. Credential resolution refuses a blank/broker-refused token; sends require registry approval. Manual validation rejects invalid limits/text. CI import/guard evidence must not bypass those boundaries, inject production credentials, or initiate network calls. No new auth middleware, logging framework, retry, telemetry, or validation abstraction is needed for the focused gap.
@@ -520,7 +520,7 @@ Final candidate-bound **installation evidence, full suites, evals, assembly, Ruf
 
 ## Metadata
 
-- **Analog search/read scope:** Only `.github/workflows/ci.yml`, `pyproject.toml`, `requirements-lock.txt`, `omes/tests/test_deps_matrix.py`, and `omes/tools/discord.py`. Five strong existing tracked references were sufficient; no broader product search or reference-clone/runtime-mirror read was needed.
+- **Analog search/read scope:** Only `.github/workflows/ci.yml`, `pyproject.toml`, `requirements-lock.txt`, `omega_prime/tests/test_deps_matrix.py`, and `omega_prime/tools/discord.py`. Five strong existing tracked references were sufficient; no broader product search or reference-clone/runtime-mirror read was needed.
 - **Files scanned:** 5 product files, 564 lines total: CI 68; pyproject 72; lock 150; guard test 34; Discord service 240. Source ranges were loaded once; a bounded symbol search supplied exact excerpt anchors. No source range was reloaded for validation.
 - **Control/planning inputs:** Required Phase 48 context/validation/historical verification, complete accepted A11 preparation, supplied real diagnostic receipt, accepted brief, correction route, and execution contract. No AGENTS/CLAUDE/context-file discovery, public documentation lookup, or historical 48-01 plan/summary read/edit was performed.
 - **Tracking origins:** All five named source analogs passed the read-only `git ls-files` tracked-source check; no Git mutation, candidate-HEAD lookup, commit, or push was performed.

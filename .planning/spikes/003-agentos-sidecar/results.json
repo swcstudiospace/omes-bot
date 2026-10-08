@@ -343,7 +343,7 @@
       {
         "pid": 1967122,
         "rss_kb": 53268,
-        "cmd": "/root/src/repos/Omes-Bot/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
+        "cmd": "/root/src/repos/omega/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
       }
     ]
   },
@@ -380,7 +380,7 @@
       {
         "pid": 1967122,
         "rss_kb": 504256,
-        "cmd": "/root/src/repos/Omes-Bot/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
+        "cmd": "/root/src/repos/omega/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
       }
     ]
   },

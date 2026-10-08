@@ -30,7 +30,7 @@ are refreshed by hand to the true numbers.
 ## Existing Code Insights
 
 Substrate `docs_search` returns the raw payload today (deferred in v7).
-Eval cases live in `omes/evals/cases/*.json` (23 passing). Known prose
+Eval cases live in `omega_prime/evals/cases/*.json` (23 passing). Known prose
 drift: setup says 104 roster tools, tool-host says 103, setup_check says
 108 — reconcile to truth in this phase.
 

@@ -25,10 +25,10 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/agent/magic_keywords.py`
-- `omes/agent/conversation_loop.py:164-168`
-- `omes/mcp_server.py:246-253`
-- `omes/grokbot/`
+- `omega_prime/agent/magic_keywords.py`
+- `omega_prime/agent/conversation_loop.py:164-168`
+- `omega_prime/mcp_server.py:246-253`
+- `omega_prime/grokbot/`
 
 ## Notes
 

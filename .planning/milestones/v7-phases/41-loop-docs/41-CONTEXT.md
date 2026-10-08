@@ -10,7 +10,7 @@
 The loop lives on the substrate: brief-on-open injected into the system
 prompt, turn/tool/file/session events with surface + graph_id provenance,
 and a `substrate_docs_search` tool answering from RAGflow via substrate MCP
-(SUB-03, RAG-01). Ground truth: `omes/agent/conversation_loop.py` +
+(SUB-03, RAG-01). Ground truth: `omega_prime/agent/conversation_loop.py` +
 `turn_tool_round.py` seams, the `register_*_tools` family pattern with the
 roster-exactness test, and upstream `docs_search` (`mcp.ts`).
 

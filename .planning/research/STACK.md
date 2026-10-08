@@ -5,7 +5,7 @@
 
 ## Current landscape (verified 2026-10-07)
 
-| Piece | Omes today | SOTA (Oct 2026) | Action |
+| Piece | Omega Prime today | SOTA (Oct 2026) | Action |
 |---|---|---|---|
 | Python | `>=3.11`, CI on 3.12 | 3.14.8 stable; 3.15 RC; 3.10 EOL Oct 2026; 3.11 security-only to Oct 2027 | CI matrix incl. 3.13/3.14; keep floor 3.11 |
 | Linter/formatter | none | Ruff 0.16.9 is the standard (`ruff check` + `ruff format`, config in pyproject) | Add `[tool.ruff]`, pin exact in dev extra, CI job |
@@ -16,7 +16,7 @@
 | xAI/Grok | chat_completions at api.x.ai/v1 | Still correct; current models grok-4.5/4.6/4.7 | Refresh documented defaults; no wire change |
 | OpenAI | chat_completions only | Responses API is default/recommended; chat_completions for compatibles | Add Responses mode for api.openai.com |
 | Anthropic | header 2023-06-01, max 4096 | Header still valid; 4096 max is low | Keep header; raise default max_tokens |
-| discord.py + 3.13 | top-level `import discord` | audioop removed in 3.13 → import breaks | Lazy/guard import (Omes is REST-only) |
+| discord.py + 3.13 | top-level `import discord` | audioop removed in 3.13 → import breaks | Lazy/guard import (Omega Prime is REST-only) |
 
 ## What NOT to add
 

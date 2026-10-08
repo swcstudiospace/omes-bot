@@ -11,7 +11,7 @@
   enforcement), SECURITY (private advisories), CHANGELOG (Keep-a-Changelog,
   Unreleased + 0.1.0), .editorconfig, .gitattributes, issue/PR templates,
   public-complete pyproject (license/readme/urls/authors/classifiers).
-- Hygiene: `.gitignore` covers `omes/sessions.db` + `.substrate/`;
+- Hygiene: `.gitignore` covers `omega_prime/sessions.db` + `.substrate/`;
   docs front page carries the banner.
 - `test_public_repo.py`: 7 tests (files, links, SVGs, packaging, no
   placeholders, changelog). CODEOWNERS/FUNDING.yml skipped: no confirmed
@@ -19,5 +19,5 @@
 
 ## Verification
 
-`.venv/bin/python -m pytest omes/tests -q` → exit 0, 301 passed
+`.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 301 passed
 (294 carried + 7 new). No network in tests. No new dependencies.

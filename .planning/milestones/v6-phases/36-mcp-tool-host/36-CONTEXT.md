@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Installs can attach real Omes tools over MCP: the registry served
+Installs can attach real Omega Prime tools over MCP: the registry served
 over MCP stdio, roster-gated, plus an OpenShell profile and
 AgentOS host notes for running the host.
 Requirements: MCP-01, MCP-02.

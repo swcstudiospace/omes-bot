@@ -22,7 +22,7 @@ is cut, and credit reporters who want credit.
 
 ## Secrets posture
 
-Omes is built to keep secrets out of reach:
+Omega Prime is built to keep secrets out of reach:
 
 - Keys resolve from the environment through the credential broker and are
   redacted from transcripts, events, errors, and eval output.
@@ -42,4 +42,4 @@ Network operations and browser sessions enforce fail-closed egress boundaries:
 - Browser sandbox confinement: `GuardedBrowserFactory` validates accounting receipts,
   cgroup lifecycle, and socket tracking. Unverified sandbox environments fail closed.
 - Test coverage and evidence are validated through hermetic test suites and runtime
-  verifications (`omes/tests/test_web.py` and `omes/tests/test_browser_egress.py`).
+  verifications (`omega_prime/tests/test_web.py` and `omega_prime/tests/test_browser_egress.py`).

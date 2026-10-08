@@ -2,7 +2,7 @@
 
 ## What shipped
 
-`omes/tools/x_tweepy.py`: `TweepyTransport` speaks the fake/stdlib transport
+`omega_prime/tools/x_tweepy.py`: `TweepyTransport` speaks the fake/stdlib transport
 shape (`get(url, headers, params)` / `post(url, headers, body)`), routing v2
 reads and writes to `tweepy.Client` (`get_me`, `get_users_mentions`,
 `get_tweet`, `create_tweet`, all `user_auth=False`) and media upload plus
@@ -17,12 +17,12 @@ No new tools, no roster change, no `x.py` change.
 
 ## Verification
 
-- `.venv/bin/python -m pytest omes/tests/test_x_tweepy.py -q` → exit 0, 9 passed
+- `.venv/bin/python -m pytest omega_prime/tests/test_x_tweepy.py -q` → exit 0, 9 passed
   (mapping for all five operations, fallback routing, error/refusal paths,
   real-client construction without network).
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 135 passed (126 prior + 9).
-- `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed.
-- `bash omes/scripts/assemble-prompts.sh --check` → exit 0.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 135 passed (126 prior + 9).
+- `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 6 passed.
+- `bash omega_prime/scripts/assemble-prompts.sh --check` → exit 0.
 
 ## Follow-ups
 

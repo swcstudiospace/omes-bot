@@ -14,7 +14,7 @@ status: complete
 
 ## What was built
 
-- **DPT-01**: `omes/tests/conftest.py` redirects `XDG_DATA_HOME` into tmp
+- **DPT-01**: `omega_prime/tests/conftest.py` redirects `XDG_DATA_HOME` into tmp
   before any pyrit import (pyrit mkdirs/touches its data dir at import).
   Suite collects and passes with no `HOME=` workaround; the pre-existing
   Oct 4 `~/.local/share/dbdata/logs.txt` untouched.

@@ -14,7 +14,7 @@ A turn emits `turn_start`, one `message` per appended row, and `turn_end` with t
 
 ## Verification
 
-Command: `python3 -m pytest omes/tests -q`
+Command: `python3 -m pytest omega_prime/tests -q`
 
 Exit code: 0
 

@@ -14,7 +14,7 @@ Milestone-scoped. v3 requirements are archived in `milestones/v3-REQUIREMENTS.md
 
 ## Red-team depth
 
-- [x] **RT-01**: The Omes agent is exposed as a PyRIT target so scripted adversarial batteries run against `run_conversation` and the registry.
+- [x] **RT-01**: The Omega Prime agent is exposed as a PyRIT target so scripted adversarial batteries run against `run_conversation` and the registry.
 - [x] **RT-02**: The adversarial battery runs in CI with no model keys and asserts refusals structurally.
 
 ## Scheduler backend

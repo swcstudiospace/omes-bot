@@ -24,17 +24,17 @@ created: "2026-10-07"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omes/tests`) |
-| **Config file** | `pyproject.toml` + `omes/tests/conftest.py` (XDG redirect pre-pyrit-import) |
-| **Quick run command** | `.venv/bin/python -m pytest omes/tests/test_pyrit_target.py -q` |
-| **Full suite command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
+| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omega_prime/tests`) |
+| **Config file** | `pyproject.toml` + `omega_prime/tests/conftest.py` (XDG redirect pre-pyrit-import) |
+| **Quick run command** | `.venv/bin/python -m pytest omega_prime/tests/test_pyrit_target.py -q` |
+| **Full suite command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
 | **Estimated runtime** | ~26 seconds |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `.venv/bin/python -m pytest omes/tests/test_pyrit_target.py -q`
+- **After every task commit:** Run `.venv/bin/python -m pytest omega_prime/tests/test_pyrit_target.py -q`
 - **After every plan wave:** Run full suite with NO `HOME=` redirect (proves DPT-01) + evals + assemble + ruff + mypy
 - **Before `/gsd-verify-work`:** Full suite must be green; real-HOME `dbdata` mtime unchanged
 - **Max feedback latency:** 60 seconds
@@ -45,16 +45,16 @@ created: "2026-10-07"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 51-01-01 | 01 | 1 | DPT-01 | — | `conftest.py` redirects `XDG_DATA_HOME` into tmp before any pyrit import (import-time mkdir/touch from `pyrit/common/path.py` via appdirs); suite collects/passes with no `HOME=` workaround (`conftest.py:16-19`) | unit | `.venv/bin/python -m pytest omes/tests/test_pyrit_target.py -q` | ✅ | ✅ green (hist. redirect-mechanism + Linux-gated `DB_DATA_PATH`-under-redirect tests; `test_pyrit_data_dir_is_redirected_out_of_home`) |
-| 51-01-02 | 01 | 1 | DPT-02 | — | `OmesPromptTarget` declares multi-turn capability, answers latest turn (single-prompt behavior identical); `run_campaign` drives one `MultiPromptSendingAttack`, pairs turns from memory, rejects empty campaigns (`pyrit_target.py:126-148`) | unit | campaign tests in `test_pyrit_target.py` | ✅ | ✅ green (hist. state-chaining + cross-turn injection campaigns) |
+| 51-01-01 | 01 | 1 | DPT-01 | — | `conftest.py` redirects `XDG_DATA_HOME` into tmp before any pyrit import (import-time mkdir/touch from `pyrit/common/path.py` via appdirs); suite collects/passes with no `HOME=` workaround (`conftest.py:16-19`) | unit | `.venv/bin/python -m pytest omega_prime/tests/test_pyrit_target.py -q` | ✅ | ✅ green (hist. redirect-mechanism + Linux-gated `DB_DATA_PATH`-under-redirect tests; `test_pyrit_data_dir_is_redirected_out_of_home`) |
+| 51-01-02 | 01 | 1 | DPT-02 | — | `OmegaPrimePromptTarget` declares multi-turn capability, answers latest turn (single-prompt behavior identical); `run_campaign` drives one `MultiPromptSendingAttack`, pairs turns from memory, rejects empty campaigns (`pyrit_target.py:126-148`) | unit | campaign tests in `test_pyrit_target.py` | ✅ | ✅ green (hist. state-chaining + cross-turn injection campaigns) |
 | 51-01-03 | 01 | 1 | DPT-03 | — | Per-turn judging with case-sensitive `SubStringScorer`s (`ExactTextMatching(case_sensitive=True)`); optional objective scorer via `AttackScoringConfig`; missing responses fail (`pyrit_target.py:47-51,203-209`) | unit | objective-outcome ×2 tests in `test_pyrit_target.py` | ✅ | ✅ green (hist. SUCCESS/FAILURE outcome marking) |
 | 51-01-04 | 01 | 1 | DPT-01, DPT-02, DPT-03 | — | Full gates green; PyRIT memory in-memory/file-isolated; pre-existing `~/.local/share/dbdata/logs.txt` untouched (commit `36fd803`) | unit/eval | historical suite (no HOME redirect) + evals + assemble + ruff + mypy | ✅ | ✅ green (hist. 350 passed / 23 evals; final 344-passed suite used an isolated HOME/XDG) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
-Evidence grounding: `omes/tests/conftest.py` (XDG redirect) and
-`omes/tests/test_pyrit_target.py` (isolation + campaign + scorer tests)
-exist; scorer/campaign wiring re-confirmed in `omes/evals/pyrit_target.py`
+Evidence grounding: `omega_prime/tests/conftest.py` (XDG redirect) and
+`omega_prime/tests/test_pyrit_target.py` (isolation + campaign + scorer tests)
+exist; scorer/campaign wiring re-confirmed in `omega_prime/evals/pyrit_target.py`
 (`SubStringScorer`, `MultiPromptSendingAttack`, `AttackScoringConfig`,
 `run_campaign`). macOS appdirs-XDG caveat is documented in the plan, not a
 hidden gap. No new tests were generated for this reconstruction.
@@ -65,9 +65,9 @@ hidden gap. No new tests were generated for this reconstruction.
 
 Existing infrastructure covers all phase requirements — no Wave 0 needed.
 
-- [x] `omes/tests/conftest.py` — XDG redirect before pyrit import
-- [x] `omes/tests/test_pyrit_target.py` — isolation + campaign + objective-outcome tests (keyless, deterministic)
-- [x] `omes/evals/pyrit_target.py` — target + `run_campaign` + case-sensitive judging
+- [x] `omega_prime/tests/conftest.py` — XDG redirect before pyrit import
+- [x] `omega_prime/tests/test_pyrit_target.py` — isolation + campaign + objective-outcome tests (keyless, deterministic)
+- [x] `omega_prime/evals/pyrit_target.py` — target + `run_campaign` + case-sensitive judging
 
 ---
 

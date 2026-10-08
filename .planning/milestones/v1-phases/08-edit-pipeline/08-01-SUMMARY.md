@@ -14,7 +14,7 @@ affects: [09-lsp-and-dap]
 
 ## Verification
 
-Command: `python3 -m pytest omes/tests -q`
+Command: `python3 -m pytest omega_prime/tests -q`
 
 Exit code: 0
 

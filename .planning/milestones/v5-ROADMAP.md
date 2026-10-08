@@ -1,11 +1,11 @@
-# Roadmap: Omes Bot v5
+# Roadmap: Omega Prime v5
 
 ## Overview
 
 v4 wired third-party libraries (see `milestones/v4-ROADMAP.md`). v5 absorbs
-the entire Programming Desk into Omes as the Lead with domain packs: desk
+the entire Programming Desk into Omega Prime as the Lead with domain packs: desk
 seats become skill dirs + tool families + routines + roster entries in the
-one Omes agent, and interactive browser/device review lands behind the
+one Omega Prime agent, and interactive browser/device review lands behind the
 vision and browser transports. Numbering continues. A phase is done when
 its parity checks pass.
 
@@ -24,14 +24,14 @@ its parity checks pass.
 
 ### Phase 26: Lead pack
 
-**Goal**: Omes works like the desk Lead: intake in, tickets out, dispatched and consolidated.
+**Goal**: Omega Prime works like the desk Lead: intake in, tickets out, dispatched and consolidated.
 **Depends on**: v4 complete
 **Requirements**: LEAD-01, LEAD-02, LEAD-03
 **Success Criteria** (what must be TRUE):
 
   1. An intake routine produces tickets, dispatches through delegate/todo, and consolidates receipts into a report.
   2. Core+lead desk tools are registry families with roster/policy entries and fake-backed tests.
-  3. Memory and receipt checks reuse Omes memory/receipts (no parallel stores).
+  3. Memory and receipt checks reuse Omega Prime memory/receipts (no parallel stores).
 
 **Plans**: 2 plans
 
@@ -42,7 +42,7 @@ Plans:
 
 ### Phase 27: Systems pack
 
-**Goal**: Backend seat capability as an Omes pack.
+**Goal**: Backend seat capability as an Omega Prime pack.
 **Depends on**: Phase 26
 **Requirements**: SYS-01, SYS-02
 **Success Criteria** (what must be TRUE):
@@ -92,7 +92,7 @@ Plans:
 
 ### Phase 30: Infra pack
 
-**Goal**: Infra seat capability as an Omes pack.
+**Goal**: Infra seat capability as an Omega Prime pack.
 **Depends on**: Phase 29
 **Requirements**: INF-01, INF-02
 **Success Criteria** (what must be TRUE):
@@ -108,13 +108,13 @@ Plans:
 
 ### Phase 31: Quality pack
 
-**Goal**: Quality seat capability as an Omes pack; desk gates mirrored.
+**Goal**: Quality seat capability as an Omega Prime pack; desk gates mirrored.
 **Depends on**: Phase 30
 **Requirements**: QUA-01, QUA-02, QUA-03
 **Success Criteria** (what must be TRUE):
 
   1. Quality tools are a registry family with roster/policy entries and fake-backed tests.
-  2. Desk CI gates are mirrored as Omes eval cases and CI checks.
+  2. Desk CI gates are mirrored as Omega Prime eval cases and CI checks.
   3. Code-review, debugging, and security skills exist and the template can name them.
 
 **Plans**: 1 plan
@@ -125,14 +125,14 @@ Plans:
 
 ### Phase 32: Packs + skills remainder
 
-**Goal**: Everything else in the desk lands in Omes.
+**Goal**: Everything else in the desk lands in Omega Prime.
 **Depends on**: Phase 31
 **Requirements**: REM-01, REM-02, REM-03
 **Success Criteria** (what must be TRUE):
 
   1. App tool-pack tools are a registry family with roster/policy entries and fake-backed tests.
-  2. All remaining desk skills exist in `omes/skills/`.
-  3. Seat prompts, templates, roster JSON, ownership, and contract versions are merged into Omes contracts.
+  2. All remaining desk skills exist in `omega_prime/skills/`.
+  3. Seat prompts, templates, roster JSON, ownership, and contract versions are merged into Omega Prime contracts.
 
 **Plans**: 1 plan
 

@@ -8,11 +8,11 @@
 - Four graph tools (`claim`/`release`/`complete`/`heartbeat`) in the
   substrate family with schemas, error mapping, and approval flags on the
   three shared-state mutations; roster + policy extended (109 tools).
-- `omes/tests/test_store_lock.py`: import guard (no DB/redis drivers) +
+- `omega_prime/tests/test_store_lock.py`: import guard (no DB/redis drivers) +
   endpoint guard (no backing-store hosts/URLs/ports) + assertion that the
   `systems.py` injected seams stay `None` by default.
 
 ## Verification
 
-`.venv/bin/python -m pytest omes/tests -q` → exit 0, 288 passed
+`.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 288 passed
 (281 carried + 7 new). No network in tests. No new dependencies.

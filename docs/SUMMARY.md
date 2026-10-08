@@ -1,6 +1,6 @@
 # Summary
 
-- [Omes Bot](README.md)
+- [Omega Prime](README.md)
 
 ## Install
 

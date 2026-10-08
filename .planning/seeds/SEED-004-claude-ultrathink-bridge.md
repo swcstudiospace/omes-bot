@@ -11,7 +11,7 @@ scope: Medium
 
 ## Why This Matters
 
-claude-ultrathink is AGPL; Omes reaches it only through seven CLI bridge tools and last-plan.json. Gaps: no live planning link (planner host ids exclude grok-bot), ship tools run without --cwd/state-dir, and exit-0 JSON errors are reported as success. Native uplift must stay independently authored (no AGPL copying) while the bridge is fixed at the process edge.
+claude-ultrathink is AGPL; Omega Prime reaches it only through seven CLI bridge tools and last-plan.json. Gaps: no live planning link (planner host ids exclude grok-bot), ship tools run without --cwd/state-dir, and exit-0 JSON errors are reported as success. Native uplift must stay independently authored (no AGPL copying) while the bridge is fixed at the process edge.
 
 ## When to Surface
 
@@ -27,7 +27,7 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 - `/root/src/repos/claude-ultrathink/ultrathink.discovery.json`
 - `/root/src/repos/claude-ultrathink/hooks/engine.ts`
-- `omes/skills/gotxcot-uplift/SKILL.md`
+- `omega_prime/skills/gotxcot-uplift/SKILL.md`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutUltrathink.json`
 
 ## Notes

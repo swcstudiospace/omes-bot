@@ -6,16 +6,16 @@ files_reviewed: 16
 independent_feature_scope: 13
 parent_cleanup_scope: 3
 files_reviewed_list:
-  - omes/tools/substrate_tools.py
-  - omes/evals/runner.py
-  - omes/evals/cases/golden.json
-  - omes/evals/cases/redteam.json
-  - omes/tests/test_substrate_session.py
-  - omes/tests/test_mcp_server.py
-  - omes/tests/test_evals.py
-  - omes/tests/test_deps_matrix.py
-  - omes/tests/test_docs.py
-  - omes/tests/test_lint_types.py
+  - omega_prime/tools/substrate_tools.py
+  - omega_prime/evals/runner.py
+  - omega_prime/evals/cases/golden.json
+  - omega_prime/evals/cases/redteam.json
+  - omega_prime/tests/test_substrate_session.py
+  - omega_prime/tests/test_mcp_server.py
+  - omega_prime/tests/test_evals.py
+  - omega_prime/tests/test_deps_matrix.py
+  - omega_prime/tests/test_docs.py
+  - omega_prime/tests/test_lint_types.py
   - docs/setup.md
   - docs/user-guide.md
   - docs/build-aesthetics.md
@@ -55,18 +55,18 @@ performed by this reviewer.
 
 ### CR-01 (raw retrieval leak) — CLOSED
 
-- `omes/tools/substrate_tools.py:79-83` — success returns only
+- `omega_prime/tools/substrate_tools.py:79-83` — success returns only
   `redact_value({"chunks": _chunks(raw)})`; the raw retrieval body is never
   exported. The docstring at lines 81-82 states this explicitly.
 - Tests pin the absence at the dispatch boundary
-  (`omes/tests/test_substrate_session.py:219,257`) and at the MCP boundary
-  (`omes/tests/test_mcp_server.py:203`), asserting `"retrieval" not in`
+  (`omega_prime/tests/test_substrate_session.py:219,257`) and at the MCP boundary
+  (`omega_prime/tests/test_mcp_server.py:203`), asserting `"retrieval" not in`
   the decoded payload/text on both success paths.
-- Tool description (`omes/tools/substrate_tools.py:274-278`) promises only
+- Tool description (`omega_prime/tools/substrate_tools.py:274-278`) promises only
   "redacted excerpt chunks with provenance", and the regenerated catalog
   (`docs/tool-catalog.md:844`) carries the same contract. No source
   consumer references a `retrieval` key on the shaped result (grep
-  `omes/` confirms only docstrings and the negative test assertions).
+  `omega_prime/` confirms only docstrings and the negative test assertions).
 - Citation provenance survives without the raw branch: explicit
   `chunk_id`/`document_id` (`substrate_tools.py:181-184`) and bounded
   `positions` (`186-199`) are asserted end-to-end
@@ -78,7 +78,7 @@ performed by this reviewer.
   `_LABEL_CAP` on `document`/`dataset_id`/IDs (`substrate_tools.py:143-184`),
   and a final recursive `redact_value` over the whole success
   (`113`) and every error branch (`91-112`). `redact_value` recurses
-  through dicts/lists/tuples (`omes/credentials/redact.py:52-60`).
+  through dicts/lists/tuples (`omega_prime/credentials/redact.py:52-60`).
 - `score` keeps only finite numbers (`substrate_tools.py:165-170`):
   `bool`/strings rejected, non-finite floats become `None`, zero survives
   as `0`. Pinned by `test_docs_tool_validates_metadata_types_and_preserves_zero`
@@ -88,7 +88,7 @@ performed by this reviewer.
   (`substrate_tools.py:89-110`); whole-serialized assertions cover all
   three with a `ghp_`-shaped marker
   (`test_substrate_session.py:305-341`). MCP error flagging derives from
-  the `"error"` key (`omes/mcp_server.py:238`), exercised for both success
+  the `"error"` key (`omega_prime/mcp_server.py:238`), exercised for both success
   and malformed paths (`test_mcp_server.py:199-214`).
 - Positions admit only `type(coordinate) is int` (excludes `bool`),
   `coordinate >= 0`, shape 1-5, first 32 entries
@@ -109,16 +109,16 @@ performed by this reviewer.
 
 ### WR-02 (self-declared mark approval) — CLOSED
 
-- `omes/evals/runner.py:147-187` dispatches mark cases through production
+- `omega_prime/evals/runner.py:147-187` dispatches mark cases through production
   `register_ultrathink_tools` (which derives `requires_approval` from
-  `APPROVAL_TOOLS`, `omes/tools/ultrathink.py:31-38,173-174`) with an
+  `APPROVAL_TOOLS`, `omega_prime/tools/ultrathink.py:31-38,173-174`) with an
   injected hermetic CLI runner; `calls` records one entry per runner
   invocation, proving handler execution on approval and zero calls on
   refusal.
 - Case files carry `family: ultrathink` with no `requires_approval`
   self-declaration (`golden.json:150-161`, `redteam.json:170-181`).
 - Sensitivity regression
-  (`omes/tests/test_evals.py:64-85`) removes `ult_session_mark` from the
+  (`omega_prime/tests/test_evals.py:64-85`) removes `ult_session_mark` from the
   real `APPROVAL_TOOLS` set and requires the red-team case to fail
   (via missing `approval required` refusal / unexpected call), then
   confirms both cases pass with production approval restored.
@@ -136,16 +136,16 @@ performed by this reviewer.
 ## Deep cross-file checks (no new findings)
 
 - Registry `dispatch` JSON-encodes the handler dict unchanged
-  (`omes/tools/registry.py:83-84,163-164`); MCP wraps that string with
-  `is_error = "error" in decoded` (`omes/mcp_server.py:237-241`). Since
+  (`omega_prime/tools/registry.py:83-84,163-164`); MCP wraps that string with
+  `is_error = "error" in decoded` (`omega_prime/mcp_server.py:237-241`). Since
   the shaped result contains no raw copy and all strings are pre-redacted,
   neither layer reintroduces the leak.
-- `ApprovalLog.approve` is name-based (`omes/tools/approvals.py:19-44`),
+- `ApprovalLog.approve` is name-based (`omega_prime/tools/approvals.py:19-44`),
   so the sensitivity test's mechanism (scrubbing `APPROVAL_TOOLS` flips
   the registered `requires_approval` flag while the golden `approve:true`
   still records) is coherent: removal breaks the unapproved red-team case
   while the approved golden case keeps passing.
-- `omes/tests/test_substrate.py:218-221` asserts raw-envelope passthrough
+- `omega_prime/tests/test_substrate.py:218-221` asserts raw-envelope passthrough
   at the transport-client layer (`client.docs_search`), not at the
   model-facing tool layer — correct layering, not a CR-01 recurrence.
 - Caps compose safely: redaction shortens secret-shaped values to
@@ -171,11 +171,11 @@ performed by this reviewer.
   empty distinct, error redacted, `live_calls=0`). Per the assignment
   contract, gates were not rerun mid-flight; `52-REVIEW-FIX.md` is
   retained as provenance for the fix slices.
-- **Own work (static only):** full read of `omes/tools/substrate_tools.py`
-  (1-333), `omes/evals/runner.py`, the mark-case JSON extracts, the
+- **Own work (static only):** full read of `omega_prime/tools/substrate_tools.py`
+  (1-333), `omega_prime/evals/runner.py`, the mark-case JSON extracts, the
   substrate/MCP/eval test bodies cited above, plus consumer tracing
-  through `omes/tools/registry.py`, `omes/mcp_server.py`,
-  `omes/credentials/redact.py`, and `omes/tools/ultrathink.py`
+  through `omega_prime/tools/registry.py`, `omega_prime/mcp_server.py`,
+  `omega_prime/credentials/redact.py`, and `omega_prime/tools/ultrathink.py`
   (APPROVAL_TOOLS/registration). Test sensitivity and boundary coverage
   were inspected statically; their green status is taken from the
   supplied evidence. No probes, builds, linters, or live calls were run.

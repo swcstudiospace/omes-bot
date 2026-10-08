@@ -11,7 +11,7 @@ scope: Medium
 
 ## Why This Matters
 
-agent-swarm (no LICENSE file) exposes a Python TaskStore, signed swarm.v1 envelopes and orch_plan/orch_status/swarm_run scripts, but no MCP server; Omes has zero swarm references. A minimal native connection reuses the omp python-bridge pattern: controller role via orch_plan/orch_status and a worker entry for swarm_run --runtime grok. Signing material must never reach Omega or its model context.
+agent-swarm (no LICENSE file) exposes a Python TaskStore, signed swarm.v1 envelopes and orch_plan/orch_status/swarm_run scripts, but no MCP server; Omega Prime has zero swarm references. A minimal native connection reuses the omp python-bridge pattern: controller role via orch_plan/orch_status and a worker entry for swarm_run --runtime grok. Signing material must never reach Omega or its model context.
 
 ## When to Surface
 

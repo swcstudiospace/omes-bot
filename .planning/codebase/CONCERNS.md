@@ -6,7 +6,7 @@
    simctl, scrcpy, Playwright screenshots → vision) is greenfield in both
    repos — the highest-uncertainty work.
 2. **Async→sync façade.** Gateway tools are `async def` on `ToolContext`;
-   Omes tools are sync. The v4 messaging precedent (`asyncio.run` per call,
+   Omega Prime tools are sync. The v4 messaging precedent (`asyncio.run` per call,
    peer created + closed inside) applies, but 61 tools need consistent
    error-shape mapping (`failure(code, reason)` → `{"error"}`).
 3. **Upstream credentials.** 8+ credentialed upstreams (Vercel, Play, ASC,

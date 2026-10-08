@@ -3,10 +3,10 @@
 **Date:** 2026-10-07
 **Mode:** Inline (GSD research agents unavailable in this runtime)
 
-## Table stakes (SOTA agents have these; Omes lacks them)
+## Table stakes (SOTA agents have these; Omega Prime lacks them)
 
 - **Lint + format enforced**: `ruff check` / `ruff format --check` in CI.
-- **Types enforced**: a checker in CI with zero errors on `omes/`.
+- **Types enforced**: a checker in CI with zero errors on `omega_prime/`.
 - **Pinned dependencies**: floors at verified versions + a committed lockfile.
 - **Provider retries**: transient-failure retry with backoff (base.py docstring admits none).
 - **Usage accounting**: tokens/cost per turn visible (docstring admits none).

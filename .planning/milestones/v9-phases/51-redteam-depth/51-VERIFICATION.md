@@ -24,9 +24,9 @@ score: 4/4 success criteria verified
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 350 passed (no redirect).
-- `omes.evals.runner` → 23 passed. `assemble-prompts.sh --check` → exit 0.
-- `ruff check`, `ruff format --check`, `mypy omes/` → clean.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 350 passed (no redirect).
+- `omega_prime.evals.runner` → 23 passed. `assemble-prompts.sh --check` → exit 0.
+- `ruff check`, `ruff format --check`, `mypy omega_prime/` → clean.
 
 ## Requirements
 

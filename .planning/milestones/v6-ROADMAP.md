@@ -1,8 +1,8 @@
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Milestones
 
-- ✅ **v1 One Omes agent** — Phases 1-12 (shipped 2026-10-03)
+- ✅ **v1 One Omega Prime agent** — Phases 1-12 (shipped 2026-10-03)
 - ✅ **v2 Enterprise hardening** — Phases 13-16 (shipped 2026-10-03)
 - ✅ **v3 Grok Bot** — Phases 17-20 (shipped 2026-10-03)
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)
@@ -15,17 +15,17 @@ with phase directories under `milestones/v1-phases/` through
 
 ## v6 Overview
 
-v5 absorbed the desk (see `milestones/v5-ROADMAP.md`). v6 ships Omes
+v5 absorbed the desk (see `milestones/v5-ROADMAP.md`). v6 ships Omega Prime
 as a Grok Bot Add-Bot product: magic keywords ported from Omp,
 ultrathink natively integrated (prompt routines + CLI bridge, no
-AGPL vendoring), an MCP tool host for installs that want real Omes
+AGPL vendoring), an MCP tool host for installs that want real Omega Prime
 tools, a clean template + setup flow, and docs structured for
 GitBook Git Sync. Numbering continues. A phase is done when its
 parity checks pass.
 
 ## Phases
 
-- [x] **Phase 34: Magic keywords** - ultrathink/orchestrate/workflowz in the Omes loop. (completed 2026-10-03)
+- [x] **Phase 34: Magic keywords** - ultrathink/orchestrate/workflowz in the Omega Prime loop. (completed 2026-10-03)
 - [x] **Phase 35: Ultrathink native** - Grok-host routines + CLI bridge tools. (completed 2026-10-03)
 - [x] **Phase 36: MCP tool host** - Registry over MCP stdio + host profiles. (completed 2026-10-03)
 - [x] **Phase 37: Template + setup** - Add-Bot template, setup flow, MIT license. (completed 2026-10-03)
@@ -35,7 +35,7 @@ parity checks pass.
 
 ### Phase 34: Magic keywords
 
-**Goal**: Omp's three magic words work in Omes prompts.
+**Goal**: Omp's three magic words work in Omega Prime prompts.
 **Depends on**: v5 complete
 **Requirements**: KEY-01, KEY-02
 **Success Criteria** (what must be TRUE):
@@ -49,12 +49,12 @@ Plans:
 
 ### Phase 35: Ultrathink native
 
-**Goal**: Ultrathink plan/track/ship flows run natively in Omes Bot.
+**Goal**: Ultrathink plan/track/ship flows run natively in Omega Prime.
 **Depends on**: Phase 34
 **Requirements**: ULT-01, ULT-02
 **Success Criteria** (what must be TRUE):
 
-  1. Ultrathink Grok-host flow exists as Omes skills/routines with no new dependency.
+  1. Ultrathink Grok-host flow exists as Omega Prime skills/routines with no new dependency.
   2. Bridge tools invoke the bun ultrathink CLI behind injected runners with fake-backed tests, and no AGPL source is vendored.
 
 Plans:
@@ -63,7 +63,7 @@ Plans:
 
 ### Phase 36: MCP tool host
 
-**Goal**: Installs can attach real Omes tools over MCP.
+**Goal**: Installs can attach real Omega Prime tools over MCP.
 **Depends on**: Phase 35
 **Requirements**: MCP-01, MCP-02
 **Success Criteria** (what must be TRUE):
@@ -91,7 +91,7 @@ Plans:
 
 ### Phase 38: Docs + GitBook
 
-**Goal**: Omes is documented for builders and users, ready for GitBook sync.
+**Goal**: Omega Prime is documented for builders and users, ready for GitBook sync.
 **Depends on**: Phase 37
 **Requirements**: DOC-01, DOC-02, DOC-03
 **Success Criteria** (what must be TRUE):

@@ -1,6 +1,6 @@
 # Spike 002 verification-gate policy for NVIDIA OpenShell 0.1.2.
 #
-# Derived from omes/hosting/openshell/sandbox-policy.yaml (same filesystem
+# Derived from omega_prime/hosting/openshell/sandbox-policy.yaml (same filesystem
 # lists, same empty network map). Two deliberate differences for a
 # verification gate:
 #   - landlock.compatibility is hard_requirement, so a host that cannot

@@ -1,7 +1,7 @@
-# Requirements: Omes Bot v9 SOTA upgrade
+# Requirements: Omega Prime v9 SOTA upgrade
 
 **Defined:** 2026-10-07
-**Core Value:** One Omes agent runs both agents' logic — v9 brings that same
+**Core Value:** One Omega Prime agent runs both agents' logic — v9 brings that same
 product to state-of-the-art engineering and agent standards without changing
 its one-agent, one-process architecture.
 
@@ -20,7 +20,7 @@ its one-agent, one-process architecture.
 - [x] **HYG-01**: Contributor gets a clean `ruff check` over the repo, enforced
   in CI with ruff pinned exactly in a dev extra
 - [x] **HYG-02**: Contributor gets a clean `ruff format --check`, enforced in CI
-- [x] **HYG-03**: Contributor gets zero typechecker errors on `omes/`,
+- [x] **HYG-03**: Contributor gets zero typechecker errors on `omega_prime/`,
   enforced in CI via a pip-installable checker (no Node, no new toolchain)
 - [x] **HYG-04**: Contributor installs reproducible floors: dependency minima
   raised to verified versions plus a committed lockfile

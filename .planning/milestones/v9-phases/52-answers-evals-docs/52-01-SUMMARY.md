@@ -8,15 +8,15 @@ completed: 2026-10-07
 status: complete
 key-files:
   modified:
-    - omes/tools/substrate_tools.py
-    - omes/evals/runner.py
-    - omes/evals/cases/golden.json
-    - omes/evals/cases/redteam.json
-    - omes/tests/test_substrate_session.py
-    - omes/tests/test_mcp_server.py
-    - omes/tests/test_evals.py
-    - omes/tests/test_deps_matrix.py
-    - omes/tests/test_docs.py
+    - omega_prime/tools/substrate_tools.py
+    - omega_prime/evals/runner.py
+    - omega_prime/evals/cases/golden.json
+    - omega_prime/evals/cases/redteam.json
+    - omega_prime/tests/test_substrate_session.py
+    - omega_prime/tests/test_mcp_server.py
+    - omega_prime/tests/test_evals.py
+    - omega_prime/tests/test_deps_matrix.py
+    - omega_prime/tests/test_docs.py
     - docs/setup.md
     - docs/user-guide.md
     - docs/build-aesthetics.md
@@ -24,7 +24,7 @@ key-files:
     - docs/tool-catalog.md
     - CHANGELOG.md
   removed:
-    - omes/tests/test_lint_types.py
+    - omega_prime/tests/test_lint_types.py
 ---
 
 # Summary 52-01: Chunked answers + eval growth + truthful docs

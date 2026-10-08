@@ -1,6 +1,6 @@
 # Milestone v3 archive — ROADMAP (completed 2026-10-03)
 
-# Roadmap: Omes Bot v3
+# Roadmap: Omega Prime v3
 
 ## Overview
 

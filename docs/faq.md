@@ -43,7 +43,7 @@ servers — those stay in the repo or on your host. See `grokbot/SETUP.md`.
 
 **Why does the bot say a tool isn't available?**
 The roster is the truth: the bot claims only tools in
-`contracts/tool-rosters/omes.yaml`. Anything else is a gap — file it.
+`contracts/tool-rosters/omega-prime.yaml`. Anything else is a gap — file it.
 
 ## Substrate and memory
 

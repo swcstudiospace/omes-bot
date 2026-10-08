@@ -24,9 +24,9 @@ score: 4/4 success criteria verified
 
 ## Commands
 
-- `HOME=/tmp/fakehome .venv/bin/python -m pytest omes/tests -q` → exit 0, 330 passed.
-- `omes.evals.runner` → 23 passed. `assemble-prompts.sh --check` → exit 0.
-- `ruff check`, `ruff format --check`, `mypy omes/` → clean.
+- `HOME=/tmp/fakehome .venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 330 passed.
+- `omega_prime.evals.runner` → 23 passed. `assemble-prompts.sh --check` → exit 0.
+- `ruff check`, `ruff format --check`, `mypy omega_prime/` → clean.
 
 ## Requirements
 

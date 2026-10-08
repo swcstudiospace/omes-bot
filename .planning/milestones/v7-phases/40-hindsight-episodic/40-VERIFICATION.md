@@ -15,8 +15,8 @@
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 270 passed.
-- `.venv/bin/python -m pytest omes/tests/test_hindsight_service.py -q` → exit 0, 13 passed.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 270 passed.
+- `.venv/bin/python -m pytest omega_prime/tests/test_hindsight_service.py -q` → exit 0, 13 passed.
 
 ## Requirements
 

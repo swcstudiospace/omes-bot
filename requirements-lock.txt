@@ -1,6 +1,6 @@
-# Omes Bot verified lockfile (Python 3.12, 2026-10-07).
+# Omega Prime verified lockfile (Python 3.12, 2026-10-07).
 # Exact reproduction: pip install -r requirements-lock.txt
-# Regenerate after dependency changes: .venv/bin/pip freeze | grep -vE '^-e |^omes-bot' | sort -f > requirements-lock.txt
+# Regenerate after dependency changes: .venv/bin/pip freeze | grep -vE '^-e |^omega-prime' | sort -f > requirements-lock.txt
 # CI installs from pyproject floors instead, to catch fresh-resolve drift.
 aiofiles==25.1.0
 aiogram==3.31.0

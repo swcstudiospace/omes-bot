@@ -21,7 +21,7 @@ status: complete
   raising DiscordError; library-failure test decoupled from discord.py;
   real-client test skips when unimportable.
 - MCP 2026-07-28 conformance note in `docs/tool-host.md`.
-- `omes/tests/test_deps_matrix.py`: 5 gate tests (floors, installed,
+- `omega_prime/tests/test_deps_matrix.py`: 5 gate tests (floors, installed,
   lockfile, matrix, subprocess import-guard proof). +1 discord branch test.
 
 ## Verification

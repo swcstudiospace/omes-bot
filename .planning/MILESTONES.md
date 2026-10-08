@@ -13,9 +13,9 @@ accounting, Responses mode with chat-completions fallback and streamed turns,
 PyRIT multi-turn attack campaigns with scorer judging in hermetic isolation,
 extracted chunk docs answers, and 26 golden/red-team evals with truthful docs.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 372 passed.
-`.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 26 passed.
-`assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 372 passed.
+`.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 26 passed.
+`assemble-prompts.sh --check` → exit 0. `omega_prime.setup_check` → exit 0.
 `catalog --check` → exit 0. `pip check` → exit 0. All 19 requirements satisfied.
 
 **Archive:** `milestones/v9-ROADMAP.md`, `milestones/v9-REQUIREMENTS.md`, `milestones/v9-MILESTONE-AUDIT.md`, `milestones/v9-phases/`.
@@ -32,7 +32,7 @@ tool catalog kept fresh by CI, Greptile review standards in-repo, and a KB
 sync pipeline (script + scheduled workflow) publishing Greptile's knowledge
 base into `kb/`.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 310 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0. Workflows parse; catalog `--check` green.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 310 passed. `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omega_prime.setup_check` → exit 0. Workflows parse; catalog `--check` green.
 
 **Archive:** `milestones/v8-ROADMAP.md`, `milestones/v8-REQUIREMENTS.md`, `milestones/v8-MILESTONE-AUDIT.md`, `milestones/v8-phases/`.
 
@@ -46,9 +46,9 @@ base into `kb/`.
 
 **Status:** Complete. 5/5 phases, 5/5 plans, 10/10 requirements Done.
 
-**Core value delivered:** Omes Bot as a first-class substrate surface — a fail-open substrate-mcp client (brief/events/shared memory/docs/graph), episodic retain/recall/reflect on the shared `ultrathink` Hindsight bank with local fallback, brief-on-open + turn/tool/file trail with graph provenance in the loop, five rostered substrate tools with approval-gated graph mutations, and a test-enforced ban on direct GreptimeDB/TimescaleDB/DragonflyDB clients.
+**Core value delivered:** Omega Prime as a first-class substrate surface — a fail-open substrate-mcp client (brief/events/shared memory/docs/graph), episodic retain/recall/reflect on the shared `ultrathink` Hindsight bank with local fallback, brief-on-open + turn/tool/file trail with graph provenance in the loop, five rostered substrate tools with approval-gated graph mutations, and a test-enforced ban on direct GreptimeDB/TimescaleDB/DragonflyDB clients.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 294 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0. Live probes + audit E2E prove fail-open against the real (degraded) local substrate.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 294 passed. `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 23 passed. `assemble-prompts.sh --check` → exit 0. `omega_prime.setup_check` → exit 0. Live probes + audit E2E prove fail-open against the real (degraded) local substrate.
 
 **Archive:** `milestones/v7-ROADMAP.md`, `milestones/v7-REQUIREMENTS.md`, `milestones/v7-MILESTONE-AUDIT.md`, `milestones/v7-phases/`.
 
@@ -62,9 +62,9 @@ base into `kb/`.
 
 **Status:** Complete. 5/5 phases, 5/5 plans, 11/11 requirements Done.
 
-**Core value delivered:** Omes as a Grok Bot Add-Bot product — Omp magic keywords in the loop (differential-clean vs Omp), ultrathink natively integrated (skill + turn routine + 7 CLI bridge tools, zero AGPL vendored), the registry served over MCP stdio with OpenShell/AgentOS host profiles, a polished template + four-step setup flow with a runnable smoke check, MIT license, and a six-page docs set structured for GitBook Git Sync.
+**Core value delivered:** Omega Prime as a Grok Bot Add-Bot product — Omp magic keywords in the loop (differential-clean vs Omp), ultrathink natively integrated (skill + turn routine + 7 CLI bridge tools, zero AGPL vendored), the registry served over MCP stdio with OpenShell/AgentOS host profiles, a polished template + four-step setup flow with a runnable smoke check, MIT license, and a six-page docs set structured for GitBook Git Sync.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 235 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 235 passed. `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0. `omega_prime.setup_check` → exit 0.
 
 **Archive:** `milestones/v6-ROADMAP.md`, `milestones/v6-REQUIREMENTS.md`, `milestones/v6-MILESTONE-AUDIT.md`, `milestones/v6-phases/`.
 
@@ -72,23 +72,23 @@ base into `kb/`.
 
 **Deferred:** Grok marketplace listing (staff-added, no self-serve); GitBook/GitHub Sync connection (dashboard action); Greptile connection for the new repo (dashboard action).
 
-**Tech debt / known limits:** ultrathink max-effort override not ported (no Omes knob); workflowz eval-kernel contract rewritten for delegate batches; delegate excluded from the MCP server (needs a live parent); AgentOS cannot host CPython (actor-calls-host pattern documented).
+**Tech debt / known limits:** ultrathink max-effort override not ported (no Omega Prime knob); workflowz eval-kernel contract rewritten for delegate batches; delegate excluded from the MCP server (needs a live parent); AgentOS cannot host CPython (actor-calls-host pattern documented).
 
 ## v5 — Desk packs (2026-10-03)
 
 **Status:** Complete. 8/8 phases, 9/9 plans, 21/21 requirements Done.
 
-**Core value delivered:** the entire Programming Desk absorbed into Omes as Lead with domain packs — intake/dispatch/consolidate routines plus core/lead tools, systems/web/mobile/infra/quality tool families with platform skills, a real Playwright browser transport and Appium/adb/simctl device seams behind vision review, the 9 app-pack tools with pack load/unload and the 20-tool ceiling, all 24 desk skills, and the seat prompts/templates/roster/ownership/contract versions merged into Omes contracts, guarded by per-pack evals and a receipts E2E.
+**Core value delivered:** the entire Programming Desk absorbed into Omega Prime as Lead with domain packs — intake/dispatch/consolidate routines plus core/lead tools, systems/web/mobile/infra/quality tool families with platform skills, a real Playwright browser transport and Appium/adb/simctl device seams behind vision review, the 9 app-pack tools with pack load/unload and the 20-tool ceiling, all 24 desk skills, and the seat prompts/templates/roster/ownership/contract versions merged into Omega Prime contracts, guarded by per-pack evals and a receipts E2E.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 219 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 219 passed. `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 21 passed. `assemble-prompts.sh --check` → exit 0.
 
 **Archive:** `milestones/v5-ROADMAP.md`, `milestones/v5-REQUIREMENTS.md`.
 
-**Decisions:** one Omes Lead with packs over a 7-seat port, entire-desk scope, interactive device review (user chose all three); sync clients with injected seams and fakes only in tests; Omes `{"error": "code: reason"}` shape; approval on desk write kinds; template Enabled-skills/Routines sections stay empty per contract; pack evals assert approval/policy machinery while pack logic stays in unit tests; receipts E2E runs hermetic local commands only.
+**Decisions:** one Omega Prime Lead with packs over a 7-seat port, entire-desk scope, interactive device review (user chose all three); sync clients with injected seams and fakes only in tests; Omega Prime `{"error": "code: reason"}` shape; approval on desk write kinds; template Enabled-skills/Routines sections stay empty per contract; pack evals assert approval/policy machinery while pack logic stays in unit tests; receipts E2E runs hermetic local commands only.
 
 **Deferred:** live browser/device runs (Playwright/Appium seams exist, tests use fakes); YAML contract-ack consumers (no YAML parser — JSON only); desk changes/events contracts (outside REM-03 scope).
 
-**Tech debt / known limits:** no live-endpoint verification (fake transports/peers + scripted servers only, as in v1–v4); pack eval cases stub the tools so they assert machinery, not pack logic; ownership merge keeps the single Omes owner with desk patterns recorded.
+**Tech debt / known limits:** no live-endpoint verification (fake transports/peers + scripted servers only, as in v1–v4); pack eval cases stub the tools so they assert machinery, not pack logic; ownership merge keeps the single Omega Prime owner with desk patterns recorded.
 
 ## v4 — Third-party integrations (2026-10-03)
 
@@ -96,7 +96,7 @@ base into `kb/`.
 
 **Core value delivered:** the Grok Bot wired to third-party libraries as real pip dependencies — a tweepy X transport behind the existing connector, an official-SDK MCP session client beside the one-shot caller, a PyRIT target with a keyless adversarial battery, an APScheduler backend driving JobStore jobs, and Telegram + Discord connector families in the Phase 17 shape with roster and policy entries.
 
-**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 167 passed. `.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
+**Verification:** `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 167 passed. `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
 
 **Archive:** `milestones/v4-ROADMAP.md`, `milestones/v4-REQUIREMENTS.md`.
 
@@ -112,7 +112,7 @@ base into `kb/`.
 
 **Core value delivered:** the hardened agent as a working Grok Bot — an X connector family (mentions, posts, threads, media) with approval-gated publishing and brokered credentials, an engagement sweep producing queued drafts with per-mention checkpoints, nightly learning through the curator, and a deterministic eval harness (golden + red-team) with CI.
 
-**Verification:** `python3 -m pytest omes/tests -q` → exit 0, 126 passed. `python3 -m omes.evals.runner omes/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
+**Verification:** `python3 -m pytest omega_prime/tests -q` → exit 0, 126 passed. `python3 -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 6 passed. `assemble-prompts.sh --check` → exit 0.
 
 **Archive:** `milestones/v3-ROADMAP.md`, `milestones/v3-REQUIREMENTS.md`.
 
@@ -128,7 +128,7 @@ base into `kb/`.
 
 **Core value delivered:** the v1 agent, hardened OpenShell/AgentOS-style — a declarative seat policy enforced at dispatch with advisor diffs and a persisted audit log, a credential broker that keeps keys out of transcripts with secret redaction, durable runs (SQLite turn journal, cron history, checkpointed workflows), and a real stdlib HTTP transport with structured trace export. Still one in-process Python agent with one seat.
 
-**Verification:** `python3 -m pytest omes/tests -q` → exit 0, 113 passed. `assemble-prompts.sh --check` → exit 0. v2 stack E2E probe (policy + broker + HTTP + audit + trace + journal in one turn) passes.
+**Verification:** `python3 -m pytest omega_prime/tests -q` → exit 0, 113 passed. `assemble-prompts.sh --check` → exit 0. v2 stack E2E probe (policy + broker + HTTP + audit + trace + journal in one turn) passes.
 
 **Archive:** `milestones/v2-ROADMAP.md`, `milestones/v2-REQUIREMENTS.md`.
 
@@ -138,13 +138,13 @@ base into `kb/`.
 
 **Tech debt / known limits:** secret redaction is pattern-based; journal is single-process SQLite; no live-endpoint verification (fake transports + scripted peers only); no streaming, usage accounting, or secret managers beyond the environment.
 
-## v1 — One Omes agent (2026-10-03)
+## v1 — One Omega Prime agent (2026-10-03)
 
 **Status:** Complete. 12/12 phases, 12/12 plans, 49/49 requirements Done.
 
-**Core value delivered:** one Omes agent runs both Hermes and Omp agent logic — loops, subagents, tools, skills, memory, and the rest of each runtime.
+**Core value delivered:** one Omega Prime agent runs both Hermes and Omp agent logic — loops, subagents, tools, skills, memory, and the rest of each runtime.
 
-**Verification:** `python3 -m pytest omes/tests -q` → exit 0, 94 passed. `bash omes/scripts/assemble-prompts.sh --check` → exit 0. Provider→loop→registry E2E probe passes. No fixture process left running.
+**Verification:** `python3 -m pytest omega_prime/tests -q` → exit 0, 94 passed. `bash omega_prime/scripts/assemble-prompts.sh --check` → exit 0. Provider→loop→registry E2E probe passes. No fixture process left running.
 
 **Archive:** `milestones/v1-ROADMAP.md`, `milestones/v1-REQUIREMENTS.md`.
 

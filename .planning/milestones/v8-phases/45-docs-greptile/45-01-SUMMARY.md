@@ -2,14 +2,14 @@
 
 ## What was built
 
-- `omes/tooling/catalog.py`: renders `docs/tool-catalog.md` (109 tools,
+- `omega_prime/tooling/catalog.py`: renders `docs/tool-catalog.md` (109 tools,
   family/description/params/approval) from the live registry; `--check`
   fails on drift. Registry gained `approval_required()`.
 - `docs/architecture.md`, `docs/faq.md`, `docs/greptile.md` + SUMMARY
   entries; catalog listed under Build.
 - `.greptile/config.json`: strictness 2, logic/syntax/style, status check,
   ignore patterns, instructions, five scoped rules from repo conventions.
-- `omes/greptile/kb_sync.py`: MCP streamable-HTTP client (JSON + SSE,
+- `omega_prime/greptile/kb_sync.py`: MCP streamable-HTTP client (JSON + SSE,
   session echo, paginated) mirroring KB docs into `kb/` with manifest +
   untrusted stamps; exits 2/3/0 on no-key/unenrolled/empty. `kb/README.md`
   committed; generated docs arrive via workflow.
@@ -21,6 +21,6 @@
 
 ## Verification
 
-`.venv/bin/python -m pytest omes/tests -q` → exit 0, 310 passed
+`.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 310 passed
 (301 carried + 9 new). No network in tests. No new dependencies.
 Workflows parse as YAML; existing CI commands intact.

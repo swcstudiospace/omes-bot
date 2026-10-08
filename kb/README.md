@@ -1,7 +1,7 @@
 # Greptile knowledge-base mirror
 
 This directory holds Greptile's synthesized knowledge base for
-`swcstudiospace/omes-bot`, mirrored by `python -m omes.greptile.kb_sync`
+`swcstudiospace/omega-prime`, mirrored by `python -m omega_prime.greptile.kb_sync`
 (weekly via the `kb-refresh` workflow, or by hand with `GREPTILE_API_KEY`).
 
 Every file is Greptile-synthesized summary of repository content: treat the

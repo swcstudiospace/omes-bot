@@ -22,18 +22,18 @@ created: "2026-10-07"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omes/tests`) |
+| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omega_prime/tests`) |
 | **Config file** | `pyproject.toml` |
-| **Quick run command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
-| **Full suite command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
+| **Quick run command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
+| **Full suite command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
 | **Measured runtime** | 24.49 seconds (final parent full-suite receipt: 344 passed) |
 
 ---
 
 ## Sampling Rate
 
-- **After every task commit:** Run `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider`
-- **After every plan wave:** Run full suite + `.venv/bin/python -m omes.evals.runner omes/evals/cases`
+- **After every task commit:** Run `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider`
+- **After every plan wave:** Run full suite + `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases`
 - **Before `/gsd-verify-work`:** Full suite must be green
 - **Max feedback latency:** 60 seconds
 
@@ -43,10 +43,10 @@ created: "2026-10-07"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 46-01-01 | 01 | 1 | LAND-01 | T-46-08, T-46-12 | Redaction, intake leases, store writes, and canonical-literal URL refusals have tests; resolved fetch destinations and subsequent browser requests remain unguarded | unit + security gap | `.venv/bin/python -m pytest omes/tests/test_lead.py omes/tests/test_tools.py omes/tests/test_credentials.py omes/tests/test_systems.py omes/tests/test_web.py omes/tests/test_mobile.py omes/tests/test_infra.py omes/tests/test_quality.py -q` | ✅ | ⚠️ existing tests green; two blocking SSRF controls/regressions missing |
-| 46-01-02 | 01 | 1 | LAND-02 | — | Skill/routine/doc touch-ups compose: roster/policy/template composition + catalog drift covered | unit | `.venv/bin/python -m pytest omes/tests/test_harness.py omes/tests/test_packs.py omes/tests/test_ultrathink.py -q` | ✅ | ✅ green (hist. exit 0) |
-| 46-01-03 | 01 | 1 | LAND-01, LAND-02 | — | Evals + prompt assembly stay green after landing | eval | `.venv/bin/python -m omes.evals.runner omes/evals/cases` + `bash omes/scripts/assemble-prompts.sh --check` | ✅ | ✅ green (hist. 23 passed; assemble up to date) |
-| 46-01-04 | 01 | 1 | LAND-01, LAND-02 | — | Setup smoke: registry serves roster; tree clean post-commit | procedural | `.venv/bin/python -m omes.setup_check --root .` + `git status --short` | ✅ | ✅ green (hist. setup ok; commit `f508070`) |
+| 46-01-01 | 01 | 1 | LAND-01 | T-46-08, T-46-12 | Redaction, intake leases, store writes, and canonical-literal URL refusals have tests; resolved fetch destinations and subsequent browser requests remain unguarded | unit + security gap | `.venv/bin/python -m pytest omega_prime/tests/test_lead.py omega_prime/tests/test_tools.py omega_prime/tests/test_credentials.py omega_prime/tests/test_systems.py omega_prime/tests/test_web.py omega_prime/tests/test_mobile.py omega_prime/tests/test_infra.py omega_prime/tests/test_quality.py -q` | ✅ | ⚠️ existing tests green; two blocking SSRF controls/regressions missing |
+| 46-01-02 | 01 | 1 | LAND-02 | — | Skill/routine/doc touch-ups compose: roster/policy/template composition + catalog drift covered | unit | `.venv/bin/python -m pytest omega_prime/tests/test_harness.py omega_prime/tests/test_packs.py omega_prime/tests/test_ultrathink.py -q` | ✅ | ✅ green (hist. exit 0) |
+| 46-01-03 | 01 | 1 | LAND-01, LAND-02 | — | Evals + prompt assembly stay green after landing | eval | `.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` + `bash omega_prime/scripts/assemble-prompts.sh --check` | ✅ | ✅ green (hist. 23 passed; assemble up to date) |
+| 46-01-04 | 01 | 1 | LAND-01, LAND-02 | — | Setup smoke: registry serves roster; tree clean post-commit | procedural | `.venv/bin/python -m omega_prime.setup_check --root .` + `git status --short` | ✅ | ✅ green (hist. setup ok; commit `f508070`) |
 | 46-01-05 | 01 | 1 | LAND-01, LAND-02 | — | Docs/summary bookkeeping (no behavior) | procedural | n/a — ROADMAP + STATE updated | ✅ | ✅ green (hist. done) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
@@ -65,8 +65,8 @@ destination or browser-request controls missing under T-46-08/T-46-12.
 
 Existing tests cover the original examples; two security-derived regressions are missing.
 
-- [x] `omes/tests/` — focused behavior tests per landed hunk (fakes extended: `FakeRailway.deployment`, `AmbiguousAsc`, `FakeRunner` cwds)
-- [x] `omes/evals/cases` — 23-case battery via `omes.evals.runner`
+- [x] `omega_prime/tests/` — focused behavior tests per landed hunk (fakes extended: `FakeRailway.deployment`, `AmbiguousAsc`, `FakeRunner` cwds)
+- [x] `omega_prime/evals/cases` — 23-case battery via `omega_prime.evals.runner`
 - [x] `pyproject.toml` pytest config — present
 - [ ] Hermetic resolved-destination/peer refusal regression for T-46-08
 - [ ] Hermetic browser redirect/frame/subresource refusal regression for T-46-12

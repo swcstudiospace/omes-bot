@@ -11,7 +11,7 @@ scope: Medium
 
 ## Why This Matters
 
-OpenShell (Apache-2.0; installed here as /usr/bin/openshell 0.1.2) provides policy-enforced sandboxes. Omes ships only a hand-maintained sandbox-policy.yaml that nothing generates or tests; execute/verification paths do not run inside a sandbox, and sandbox writable paths do not match Omes home/root defaults. Integration should run verification inside OpenShell sandboxes with a policy generated from the seat policy and provider-based credentials.
+OpenShell (Apache-2.0; installed here as /usr/bin/openshell 0.1.2) provides policy-enforced sandboxes. Omega Prime ships only a hand-maintained sandbox-policy.yaml that nothing generates or tests; execute/verification paths do not run inside a sandbox, and sandbox writable paths do not match Omega Prime home/root defaults. Integration should run verification inside OpenShell sandboxes with a policy generated from the seat policy and provider-based credentials.
 
 ## When to Surface
 
@@ -25,9 +25,9 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/hosting/openshell/sandbox-policy.yaml`
-- `omes/policy/policy.py`
-- `omes/credentials/broker.py`
+- `omega_prime/hosting/openshell/sandbox-policy.yaml`
+- `omega_prime/policy/policy.py`
+- `omega_prime/credentials/broker.py`
 - `https://github.com/NVIDIA/OpenShell`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutOmesSurface.json`
 

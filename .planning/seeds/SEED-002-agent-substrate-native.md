@@ -11,7 +11,7 @@ scope: Medium
 
 ## Why This Matters
 
-Omes already has SubstrateClient, SubstrateSession, five substrate tools, HindsightService/Bridge and a store-lock test. Research shows the live connection is broken: MCP posts lack the Streamable HTTP Accept header and parse SSE as JSON (406 risk), memory_search shape mismatch, isError ignored, the session trail and Hindsight are only built in tests, and endpoints default to loopback. User decision: keep substrate mediation for Greptime/Timescale/Dragonfly.
+Omega Prime already has SubstrateClient, SubstrateSession, five substrate tools, HindsightService/Bridge and a store-lock test. Research shows the live connection is broken: MCP posts lack the Streamable HTTP Accept header and parse SSE as JSON (406 risk), memory_search shape mismatch, isError ignored, the session trail and Hindsight are only built in tests, and endpoints default to loopback. User decision: keep substrate mediation for Greptime/Timescale/Dragonfly.
 
 ## When to Surface
 
@@ -25,10 +25,10 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/substrate/client.py`
-- `omes/substrate/session.py`
-- `omes/tools/substrate_tools.py`
-- `omes/mcp_server.py:178-186`
+- `omega_prime/substrate/client.py`
+- `omega_prime/substrate/session.py`
+- `omega_prime/tools/substrate_tools.py`
+- `omega_prime/mcp_server.py:178-186`
 - `/root/src/repos/agent-substrate/packages/mcp-server/src/server.ts`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutSubstrate.json`
 

@@ -14,7 +14,7 @@
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 301 passed.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 301 passed.
 
 ## Requirements
 

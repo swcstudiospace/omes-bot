@@ -8,7 +8,7 @@
 ## Phase Boundary
 
 Omp's three magic words (`ultrathink`, `orchestrate`, `workflowz`)
-work in Omes prompts: recognized per Omp matching rules, each
+work in Omega Prime prompts: recognized per Omp matching rules, each
 injecting its adapted notice for the turn gated on required tools.
 Requirements: KEY-01, KEY-02.
 </domain>

@@ -18,8 +18,8 @@ covered_files:
   - pyproject.toml
   - requirements-lock.txt
   - .github/workflows/ci.yml
-  - omes/tools/discord.py
-  - omes/tests/test_deps_matrix.py
+  - omega_prime/tools/discord.py
+  - omega_prime/tests/test_deps_matrix.py
   - docs/tool-host.md
 covered_digest: "v1:sha256:49b912ab60daf29a57f82aaefc2244be44d514f3ed5d2663f965cc94a61149da"
 behavior_unverified: 0
@@ -31,7 +31,7 @@ gaps_closed:
   - truth: "CI matrix runs the suite on 3.12, 3.13, and 3.14 (floor stays 3.11)."
     status: passed
     resolution: "ci_receipt.py integrated with .github/workflows/ci.yml with per-command exit propagation and receipts."
-  - truth: "`import omes.tools.discord` and the suite pass on 3.13+ (audioop-safe)."
+  - truth: "`import omega_prime.tools.discord` and the suite pass on 3.13+ (audioop-safe)."
     status: passed
     resolution: "Executed on real Python 3.12, 3.13, and 3.14 interpreters; discord import guard safely falls back to DiscordError without crashing."
 gaps_remaining: []
@@ -41,7 +41,7 @@ behavior_unverified_items:
     test: "After the authorized nonforce prior-branch push, inspect the hosted run for that exact head."
     expected: "All 9 verify/lint/types combinations plus the separate 3.12 docs job complete with recorded exits; the named guard testcase passes in the suite JUnit."
     why_human: "Matrix config is present and wired, but no hosted run for a pushed matching head exists yet (publication waits Phase 46 security + pre-push secrets). Presence cannot prove hosted behavior."
-  - truth: "`import omes.tools.discord` and the suite pass on 3.13+ (audioop-safe)."
+  - truth: "`import omega_prime.tools.discord` and the suite pass on 3.13+ (audioop-safe)."
     test: "Run the stopped-writer real 3-lane union: identity, install, imports, full suite with the named guard testcase, evals, assembly, Ruff, mypy, pip check on actual 3.12/3.13/3.14 interpreters."
     expected: "Guard fails soft (DiscordError) where discord is unimportable; full suite green on each lane."
     why_human: "Real 3.13.14/3.14.6 import/guard/pip-check smoke passed, but the full suite on 3.13+ was never run and the stopped-writer 3-lane union has not run. Smoke is not suite proof."
@@ -79,7 +79,7 @@ from the codebase; SUMMARY claims were checked against files, not trusted.
 |---|-------|--------|----------|
 | 1 | Dependency floors raised to verified versions with a committed lockfile (SC-1) | ✓ VERIFIED | `pyproject.toml:8,22-29`: `requires-python >=3.11`, 8 floors (tweepy 4.17, mcp 2.3 cap `<3`, pyrit 1.1, apscheduler 3.11, aiogram 3.31, discord.py 2.7, playwright 1.63, Appium 6.0). `requirements-lock.txt`: 150 lines, pins all 8 directs + mcp 2.3.0. Genuine Main log `local://omega-p48-post-merge-test-gate.log`: 344 passed on .venv 3.12.3; `pip check` clean per 48-VALIDATION. |
 | 2 | CI matrix runs the suite on 3.12, 3.13, 3.14; floor stays 3.11 (SC-2) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Config present + wired: `ci.yml` verify/lint/types each `python-version: ["3.12","3.13","3.14"]` + `fail-fast: false`; docs stays 3.12-only; triggers push + pull_request; floor `>=3.11` unchanged. But the hosted 9-combination + docs run for a pushed matching head does not exist (publication precedes it). |
-| 3 | `import omes.tools.discord` and the suite pass on 3.13+ (SC-3) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Guard present + wired: `omes/tools/discord.py:16-19` try/except → None; `_default_client` raises DiscordError; `test_deps_matrix.py` real-subprocess guard regression retained. Genuine Main diagnostics `local://omega-p48-real-runtime-diagnostics.json`: real CPython 3.13.14/3.14.6 ordinary installed-discord + product imports, named guard, and `pip check` all exit 0 — but classified in-file as dirty-tree smoke, not full-suite proof. Full suite on 3.13+ never run. |
+| 3 | `import omega_prime.tools.discord` and the suite pass on 3.13+ (SC-3) | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Guard present + wired: `omega_prime/tools/discord.py:16-19` try/except → None; `_default_client` raises DiscordError; `test_deps_matrix.py` real-subprocess guard regression retained. Genuine Main diagnostics `local://omega-p48-real-runtime-diagnostics.json`: real CPython 3.13.14/3.14.6 ordinary installed-discord + product imports, named guard, and `pip check` all exit 0 — but classified in-file as dirty-tree smoke, not full-suite proof. Full suite on 3.13+ never run. |
 | 4 | `mcp>=2,<3` pinned, no v1-isms, conformance recorded (SC-4) | ✓ VERIFIED | `pyproject.toml:23` `mcp>=2.3,<3`; `docs/tool-host.md:21-24` records spec 2026-07-28 (v2 snake_case Python, camelCase wire); lock pins mcp 2.3.0; MCP tests pass inside the genuine 344-test gate. |
 | 5 | Sole A11 writer owns ci.yml; matrices, commands, docs job, triggers preserved (48-02 T1) | ✓ VERIFIED | ci.yml diff vs HEAD: 1 file, 469+/9−, all in `.github/workflows/ci.yml`. Genuine A11 record `local://Tutmu-p48-ci-receipts.result.json`: `changed_files: [".github/workflows/ci.yml"]`, state IN_REVIEW, source-only, no checks run by writer. Triggers, matrix values, original gate commands, separate 3.12 docs job intact in source. |
 | 6 | CI delta is the accepted minimal receipt tracer only (48-02 T2) | ✓ VERIFIED | Added lines: `fail-fast: false` ×3, 12 `python3 -m pip` lines, identity/pip/import receipts, suite `-rA --junitxml` with named guard testcase parse, per-command exit propagation, always-run summaries. `actionlint` exit 0, yaml parse + 6 heredoc compiles pass per 48-02-SUMMARY. 48-REVIEW.md: 0 critical, 1 warning (falsy exit-code mapping, routed to CI writer), 1 info (triplication drift). |
@@ -109,8 +109,8 @@ correctly.
 | `pyproject.toml` | floors, mcp cap, 3.11 floor, 3.13/3.14 classifiers | ✓ VERIFIED | Substantive, wired (CI installs from it) |
 | `requirements-lock.txt` | committed exact snapshot | ✓ VERIFIED | 150 lines, all 8 directs pinned |
 | `.github/workflows/ci.yml` | 3.12–3.14 matrices + receipt tracer | ✓ VERIFIED | 528 lines, matrices + tracer + docs job intact |
-| `omes/tools/discord.py` | import guard + fail-soft factory | ✓ VERIFIED | Substantive, wired (imported by receipt + tests) |
-| `omes/tests/test_deps_matrix.py` | guard regression | ✓ VERIFIED | Real-subprocess DiscordError-branch test retained |
+| `omega_prime/tools/discord.py` | import guard + fail-soft factory | ✓ VERIFIED | Substantive, wired (imported by receipt + tests) |
+| `omega_prime/tests/test_deps_matrix.py` | guard regression | ✓ VERIFIED | Real-subprocess DiscordError-branch test retained |
 | `docs/tool-host.md` | MCP v2 conformance note | ✓ VERIFIED | Spec 2026-07-28 conventions recorded |
 | `48-02-BASELINE.md` | pre-dispatch provenance snapshot | ✓ VERIFIED | Porcelain + 5 hashes + write sets, immutable |
 
@@ -160,7 +160,7 @@ REQUIREMENTS.md itself records HYG-05 as Partial — consistent with this verdic
 
 | File | Pattern | Severity | Impact |
 |------|---------|----------|--------|
-| omes/tools/discord.py, test_deps_matrix.py | TBD/FIXME/TODO/stub/empty-return scan | — | None found |
+| omega_prime/tools/discord.py, test_deps_matrix.py | TBD/FIXME/TODO/stub/empty-return scan | — | None found |
 | .github/workflows/ci.yml | `continue-on-error` / `\|\| true` / literal `exit 0` | — | None found (capture-and-propagate only) |
 
 ### Human Verification Required

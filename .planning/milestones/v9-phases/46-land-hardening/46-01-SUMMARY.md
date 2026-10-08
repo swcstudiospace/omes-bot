@@ -20,15 +20,15 @@ status: complete
   secret-scan hardening, SQL + SSRF guards, screenshot confinement,
   `ult_session_mark` approval, stale-plan refusal, skill headers, env names.
 - Fixed the one gate failure found: catalog drift from the approval change
-  (regenerated via `omes.tooling.catalog --out`).
+  (regenerated via `omega_prime.tooling.catalog --out`).
 
 ## Verification
 
-`HOME=/tmp/fakehome .venv/bin/python -m pytest omes/tests -q` → exit 0,
+`HOME=/tmp/fakehome .venv/bin/python -m pytest omega_prime/tests -q` → exit 0,
 310 passed (305 carried + 5 new). HOME redirect is a sandbox workaround for
 the PyRIT home-dir write; the real fix is DPT-01 (Phase 51).
-`omes.evals.runner` → exit 0, 23 passed. `assemble-prompts.sh --check` →
-exit 0. `omes.setup_check` → exit 0. `git status` clean under `omes/`,
+`omega_prime.evals.runner` → exit 0, 23 passed. `assemble-prompts.sh --check` →
+exit 0. `omega_prime.setup_check` → exit 0. `git status` clean under `omega_prime/`,
 `docs/` (only `.planning/` v9 setup edits remain, uncommitted per
 `commit_docs=false`).
 

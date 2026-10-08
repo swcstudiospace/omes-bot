@@ -1,23 +1,23 @@
 # Setup
 
-Get Omes Bot running in Grok in about ten minutes. Only the
+Get Omega Prime running in Grok in about ten minutes. Only the
 optional tool-host step needs a machine of yours.
 
 ## 1. Install from the template
 
-Open the Omes share link in Grok and choose **Add to Grok Bot**.
+Open the Omega Prime share link in Grok and choose **Add to Grok Bot**.
 This creates an independent copy on your account — your chats,
 secrets, and settings stay yours. The bot runs on Grok's cloud
 computer with Grok's default model.
 
-What the template carries: Omes instructions, skills, routines,
+What the template carries: Omega Prime instructions, skills, routines,
 and first-party plugins. What it never carries: secrets, custom
 MCP servers, scripts, or private skills. The steps below re-add
 the ones you want.
 
 ## 2. Secrets
 
-Omes never asks for secrets in chat. Add each value where its
+Omega Prime never asks for secrets in chat. Add each value where its
 connector asks for it:
 
 | Secret | Needed for | Where it goes |
@@ -33,18 +33,18 @@ Skip what you don't use: every unconfigured client reports
 
 ## 3. Optional: attach the tool host
 
-Without this step Omes still answers from its prompt, skills, and
-routines. With it, the bot also calls the real Omes tools (109 on
+Without this step Omega Prime still answers from its prompt, skills, and
+routines. With it, the bot also calls the real Omega Prime tools (109 on
 the roster).
 
 On a machine you control (Linux, Mac, or WSL2, Python 3.11+):
 
 ```bash
-git clone https://github.com/swcstudiospace/omes-bot.git
-cd omes-bot
+git clone https://github.com/swcstudiospace/omega-prime.git
+cd omega-prime
 python3 -m venv .venv
 .venv/bin/pip install -e .
-.venv/bin/python -m omes.mcp_server --root .
+.venv/bin/python -m omega_prime.mcp_server --root .
 ```
 
 For the exact verified dependency set instead of fresh floors:
@@ -82,14 +82,14 @@ Expect back:
 Builders can also run the local verification:
 
 ```bash
-.venv/bin/python -m omes.setup_check --root .
+.venv/bin/python -m omega_prime.setup_check --root .
 ```
 
 ## Contributor CI
 
 The `verify`, `lint`, and `types` jobs each run on Python 3.12, 3.13,
 and 3.14. They use the stdlib-only
-`omes/scripts/ci_receipt.py` helper to record the actual interpreter,
+`omega_prime/scripts/ci_receipt.py` helper to record the actual interpreter,
 command exit codes, and stage outcomes without masking command
 failures. The verification summary also checks the named Discord
 missing-library guard in the suite's JUnit report.

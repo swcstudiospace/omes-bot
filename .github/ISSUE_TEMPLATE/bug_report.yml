@@ -1,5 +1,5 @@
 name: Bug report
-description: Something in Omes behaves wrong
+description: Something in Omega Prime behaves wrong
 labels: [bug]
 body:
   - type: textarea

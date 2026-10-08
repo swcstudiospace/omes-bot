@@ -1,11 +1,11 @@
 # User guide
 
-How to get the best out of Omes Bot: the magic words, ultrathink
+How to get the best out of Omega Prime: the magic words, ultrathink
 turns, skills, tools, and the approval model.
 
 ## Magic words
 
-Three standalone lowercase words change how Omes works a turn
+Three standalone lowercase words change how Omega Prime works a turn
 (they are ignored inside code and markup):
 
 - `ultrathink` — think hard before answering. Best paired with
@@ -25,7 +25,7 @@ PR. The plan never overrides your words — it organizes them.
 
 ## Skills and routines
 
-Omes carries 26 skills (platform guides, review and debugging
+Omega Prime carries 26 skills (platform guides, review and debugging
 playbooks, security handling, desk flows, ultrathink) and 5
 routines (lead dispatch, intake polling, nightly learning,
 ultrathink turns). Name one to invoke it, or let the bot pick:

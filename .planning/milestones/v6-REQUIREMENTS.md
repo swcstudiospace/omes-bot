@@ -2,22 +2,22 @@
 
 Milestone-scoped. v5 requirements are archived in `milestones/v5-REQUIREMENTS.md`.
 Ground truth: `.planning/research/v6-runtime-spike.md`. User decisions (2026-10-03):
-hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT license
+hybrid architecture (Add-Bot template + optional Omega Prime MCP tool host), MIT license
 (bridge-only ultrathink integration, no AGPL vendoring).
 
 ## Magic keywords
 
 - [x] **KEY-01**: `ultrathink`, `orchestrate`, `workflowz` recognized in prompts per Omp matching rules (lowercase standalone prose; code spans/blocks ignored; per-turn).
-- [x] **KEY-02**: Each word injects its notice for the turn with requires-gates adapted to Omes tools (`orchestrate` needs `delegate_task`; `workflowz` needs `delegate_task` + subagent batching).
+- [x] **KEY-02**: Each word injects its notice for the turn with requires-gates adapted to Omega Prime tools (`orchestrate` needs `delegate_task`; `workflowz` needs `delegate_task` + subagent batching).
 
 ## Ultrathink native
 
-- [x] **ULT-01**: Ultrathink Grok-host flow (plan → kickoff → ship) available as Omes skills/routines (prompt-native, no dependency).
+- [x] **ULT-01**: Ultrathink Grok-host flow (plan → kickoff → ship) available as Omega Prime skills/routines (prompt-native, no dependency).
 - [x] **ULT-02**: Bridge tools to the `bun` ultrathink CLI (uplift/track/ship); no vendored AGPL code in this repo.
 
 ## MCP tool host
 
-- [x] **MCP-01**: Omes tool registry served over MCP (stdio), roster-gated, with fake-backed tests.
+- [x] **MCP-01**: Omega Prime tool registry served over MCP (stdio), roster-gated, with fake-backed tests.
 - [x] **MCP-02**: OpenShell host profile + AgentOS host notes for running the tool host.
 
 ## Template + setup
@@ -27,7 +27,7 @@ hybrid architecture (Add-Bot template + optional Omes MCP tool host), MIT licens
 
 ## Docs + GitBook
 
-- [x] **DOC-01**: Build-aesthetics documentation (how Omes is built: agent, packs, contracts, receipts).
+- [x] **DOC-01**: Build-aesthetics documentation (how Omega Prime is built: agent, packs, contracts, receipts).
 - [x] **DOC-02**: User guide + setup flow docs for Grok Bot installs.
 - [x] **DOC-03**: GitBook Git Sync structure (`docs/`, `SUMMARY.md`) + dashboard connection guide.
 

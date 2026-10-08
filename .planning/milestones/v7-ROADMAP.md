@@ -1,8 +1,8 @@
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Milestones
 
-- ✅ **v1 One Omes agent** — Phases 1-12 (shipped 2026-10-03)
+- ✅ **v1 One Omega Prime agent** — Phases 1-12 (shipped 2026-10-03)
 - ✅ **v2 Enterprise hardening** — Phases 13-16 (shipped 2026-10-03)
 - ✅ **v3 Grok Bot** — Phases 17-20 (shipped 2026-10-03)
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)
@@ -17,8 +17,8 @@ with phase directories under `milestones/v1-phases/` through
 ## v7 Overview
 
 v6 shipped the Add-Bot product (see `milestones/v6-ROADMAP.md`). v7 plugs
-Omes Bot into the Railway substrate plane the way `agent-substrate` defines
-it: Omes becomes a substrate surface — brief-on-open, turn/tool event trail
+Omega Prime into the Railway substrate plane the way `agent-substrate` defines
+it: Omega Prime becomes a substrate surface — brief-on-open, turn/tool event trail
 with graph provenance, shared memory through substrate-mcp, episodic memory
 through the Hindsight service (shared `ultrathink` bank), docs through
 RAGflow-backed `docs_search` — with an explicit, test-enforced ban on direct
@@ -38,7 +38,7 @@ Railway probes are opt-in and read-only.
 
 ### Phase 39: Substrate client
 
-**Goal**: Omes speaks substrate-mcp: brief, events, shared memory.
+**Goal**: Omega Prime speaks substrate-mcp: brief, events, shared memory.
 **Depends on**: v6 complete
 **Requirements**: SUB-01, SUB-02
 **Success Criteria** (what must be TRUE):
@@ -86,7 +86,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
 
   1. claim/release/complete/heartbeat coordinate desk-pack handoffs with lease handling, proven by fake-backed tests.
-  2. A store-lock test fails the build if any GreptimeDB/TimescaleDB/DragonflyDB client exists under `omes/`.
+  2. A store-lock test fails the build if any GreptimeDB/TimescaleDB/DragonflyDB client exists under `omega_prime/`.
 
 Plans:
 

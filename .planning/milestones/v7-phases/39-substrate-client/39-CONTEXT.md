@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Omes speaks substrate-mcp: brief, events, shared memory (SUB-01, SUB-02).
+Omega Prime speaks substrate-mcp: brief, events, shared memory (SUB-01, SUB-02).
 Ground truth: `~/src/repos/agent-substrate/packages/mcp-server/src/`
 (`server.ts` routes, `mcp.ts` tools, `types.ts` kinds/surfaces), the
 grokbot-production-loop doc (brief-on-open, substrate-only, fail-open),
@@ -23,7 +23,7 @@ All implementation choices are at Claude's discretion — discuss phase was skip
 
 Locked by v7 milestone decisions (2026-10-03): substrate-mediated direction,
 shared `ultrathink` Hindsight bank (Phase 40), fakes + opt-in live probes
-(Phase 43). Omes is the `grok-bot` surface (substrate has no `omes` surface;
+(Phase 43). Omega Prime is the `grok-bot` surface (substrate has no `omega_prime` surface;
 adding one is an upstream change, out of scope).
 
 </decisions>

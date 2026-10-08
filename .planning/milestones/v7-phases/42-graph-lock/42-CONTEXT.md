@@ -9,11 +9,11 @@
 
 Task coordination through substrate graph ops (claim/release/complete +
 heartbeat) with lease handling, and a test-enforced ban on direct
-GreptimeDB/TimescaleDB/DragonflyDB clients under `omes/` (GRP-01, LOCK-01).
+GreptimeDB/TimescaleDB/DragonflyDB clients under `omega_prime/` (GRP-01, LOCK-01).
 Ground truth: upstream `graph_claim`/`graph_release`/`graph_complete`/
 `graph_heartbeat` (`mcp.ts`), the family `approvals` convention (x/lead),
 and the existing injected `timescale`/`greptime` seams in
-`omes/tools/systems.py` (dependency inversion, no endpoints — the sanctioned
+`omega_prime/tools/systems.py` (dependency inversion, no endpoints — the sanctioned
 exception the lock test documents).
 
 </domain>

@@ -56,7 +56,7 @@ All phases `complete`, all canonical verifications `passed`.
   anonymous) → turn emits return `stored: false` with the 503 reason
   instead of raising → search degrades to `[]`. Fail-open proven
   against the real local substrate-mcp, not just fakes.
-- Probe + setup flow: `omes.substrate.probes` reports per-probe
+- Probe + setup flow: `omega_prime.substrate.probes` reports per-probe
   ok/FAIL with zero secret values; `setup_check` gains the `substrate`
   row (skip unwired, fail on malformed URLs, names-only detail).
 

@@ -25,8 +25,8 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/skills/trackplan-dispatch/SKILL.md`
-- `omes/skills/gotxcot-uplift/SKILL.md`
+- `omega_prime/skills/trackplan-dispatch/SKILL.md`
+- `omega_prime/skills/gotxcot-uplift/SKILL.md`
 - `https://cursor.com/docs/cloud-agent/api/endpoints`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-integration-decisions.json`
 

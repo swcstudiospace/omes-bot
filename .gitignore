@@ -25,7 +25,7 @@ build/
 .superpowers/
 
 # Runtime artifacts (created on runs, never committed)
-omes/sessions.db
+omega_prime/sessions.db
 .substrate/
 
 .DS_Store

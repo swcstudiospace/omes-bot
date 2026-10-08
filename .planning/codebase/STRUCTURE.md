@@ -1,4 +1,4 @@
-# Structure: desk inventory → Omes landing zones
+# Structure: desk inventory → Omega Prime landing zones
 
 ## Gateway tools by seat file (61 total)
 
@@ -40,11 +40,11 @@ security/{secrets-handling, supply-chain}.
 - CI gates: check_receipt/contracts/desk_integrity/ownership/rollback/secrets
   + run_all; gateway `tests/` (224K).
 
-## Omes landing zones
+## Omega Prime landing zones
 
-- `omes/tools/<pack>.py` + `*_TOOL_NAMES` + `register_*` (pack tools).
-- `omes/skills/<pack>/SKILL.md` (+ platform/security subskills).
-- `omes/routines/<flow>.py|md` (intake/dispatch/consolidate, review flows).
-- `omes/contracts/tool-rosters/omes.yaml` + `policies/omes.json` (extend).
-- `omes/evals/cases/<pack>.json` (pack behaviour + refusal cases).
-- `omes/credentials/` providers per upstream; `pyproject.toml` deps.
+- `omega_prime/tools/<pack>.py` + `*_TOOL_NAMES` + `register_*` (pack tools).
+- `omega_prime/skills/<pack>/SKILL.md` (+ platform/security subskills).
+- `omega_prime/routines/<flow>.py|md` (intake/dispatch/consolidate, review flows).
+- `omega_prime/contracts/tool-rosters/omega-prime.yaml` + `policies/omega-prime.json` (extend).
+- `omega_prime/evals/cases/<pack>.json` (pack behaviour + refusal cases).
+- `omega_prime/credentials/` providers per upstream; `pyproject.toml` deps.

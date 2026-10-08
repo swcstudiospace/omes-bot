@@ -1,10 +1,10 @@
-![Omes Bot banner](assets/banner.svg)
+![Omega Prime banner](assets/banner.svg)
 
-[![ci](https://github.com/swcstudiospace/omes-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/swcstudiospace/omes-bot/actions/workflows/ci.yml)
+[![ci](https://github.com/swcstudiospace/omega-prime/actions/workflows/ci.yml/badge.svg)](https://github.com/swcstudiospace/omega-prime/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.11%2B-blue.svg)](pyproject.toml)
 
-# Omes Bot
+# Omega Prime
 
 One Grok programming bot: the Hermes Agent loop and the oh-my-pi agent
 harness ported into a single Python agent, hardened enterprise-style,
@@ -26,21 +26,21 @@ shipped as a Grok Bot Add-Bot product, and wired into the agent substrate.
 ## Quickstart
 
 ```bash
-git clone https://github.com/swcstudiospace/omes-bot.git
-cd omes-bot
+git clone https://github.com/swcstudiospace/omega-prime.git
+cd omega-prime
 python -m venv .venv && .venv/bin/pip install -e .
-.venv/bin/python -m pytest omes/tests -q
-.venv/bin/python -m omes.setup_check --root .
+.venv/bin/python -m pytest omega_prime/tests -q
+.venv/bin/python -m omega_prime.setup_check --root .
 ```
 
-Using it as a Grok Bot? Follow [grokbot/SETUP.md](omes/grokbot/SETUP.md):
+Using it as a Grok Bot? Follow [grokbot/SETUP.md](omega_prime/grokbot/SETUP.md):
 install, secrets, optional tool host, then the smoke prompt. The Add-Bot
-template is [omes/grokbot/templates/OMES.md](omes/grokbot/templates/OMES.md).
+template is [omega_prime/grokbot/templates/OMEGA_PRIME.md](omega_prime/grokbot/templates/OMEGA_PRIME.md).
 
 To call the real tools from outside the bot:
 
 ```bash
-.venv/bin/python -m omes.mcp_server --root .
+.venv/bin/python -m omega_prime.mcp_server --root .
 ```
 
 ## Docs
@@ -53,8 +53,8 @@ CI — links resolve, generated pages stay current.
 
 | Path | What lives there |
 | --- | --- |
-| `omes/` | The product: agent, tools, skills, memory, routines, evals |
-| `omes/grokbot/` | Add-Bot template, setup guide, rosters |
+| `omega_prime/` | The product: agent, tools, skills, memory, routines, evals |
+| `omega_prime/grokbot/` | Add-Bot template, setup guide, rosters |
 | `docs/` | GitBook docs set (`SUMMARY.md` is the nav) |
 | `assets/` | Icon and banner art |
 | `.planning/` | Milestone history (v1–v8) and the audit trail |

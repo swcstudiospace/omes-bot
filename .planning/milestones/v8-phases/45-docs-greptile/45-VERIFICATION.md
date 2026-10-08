@@ -18,7 +18,7 @@
 
 ## Commands
 
-- `.venv/bin/python -m pytest omes/tests -q` → exit 0, 310 passed.
+- `.venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 310 passed.
 - Workflows parse (`yaml.safe_load` over `.github/workflows/*.yml`).
 
 ## Requirements

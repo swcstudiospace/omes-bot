@@ -7,8 +7,8 @@
 <domain>
 ## Phase Boundary
 
-Ultrathink plan/track/ship flows run natively in Omes Bot: the
-Grok-host flow as Omes skills/routines with no new dependency, and
+Ultrathink plan/track/ship flows run natively in Omega Prime: the
+Grok-host flow as Omega Prime skills/routines with no new dependency, and
 bridge tools to the bun ultrathink CLI behind injected runners.
 No AGPL source is vendored (MIT license decision).
 Requirements: ULT-01, ULT-02.

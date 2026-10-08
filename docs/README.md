@@ -1,11 +1,11 @@
-# Omes Bot
+# Omega Prime
 
-![Omes Bot banner](../assets/banner.svg)
+![Omega Prime banner](../assets/banner.svg)
 
 One Grok programming bot: a single agent that writes and changes
 code using checked-in skills, tools, and prompts. Install it from
 the Add-Bot template, talk to it in Grok, and optionally attach
-the Omes tool host so it can call real tools.
+the Omega Prime tool host so it can call real tools.
 
 **Start here by audience:**
 
@@ -16,6 +16,6 @@ the Omes tool host so it can call real tools.
 - **Running tools?** → [Tool host](tool-host.md): the MCP server,
   OpenShell profile, and AgentOS notes.
 - **Building on it?** → [Build aesthetics](build-aesthetics.md):
-  how Omes is put together.
+  how Omega Prime is put together.
 - **Publishing these docs?** → [GitBook sync](gitbook-sync.md):
   connect this repo to GitBook.

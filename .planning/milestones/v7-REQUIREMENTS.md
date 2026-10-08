@@ -10,7 +10,7 @@ clients), shared `ultrathink` Hindsight bank, fakes + opt-in live probes.
 
 ## Substrate client
 
-- [x] **SUB-01**: Omes speaks substrate-mcp over HTTP (`POST /brief`, `POST /events`,
+- [x] **SUB-01**: Omega Prime speaks substrate-mcp over HTTP (`POST /brief`, `POST /events`,
   `GET /healthz`, `POST /mcp`) on the existing stdlib transport with a brokered
   Bearer token; brief and emit are fail-open (timeouts, never raise into the turn).
 - [x] **SUB-02**: Shared memory bridge: `memory_write` (accepted/conflict/quarantined/
@@ -36,7 +36,7 @@ clients), shared `ultrathink` Hindsight bank, fakes + opt-in live probes.
 - [x] **GRP-01**: Graph coordination ops (`graph_claim`/`graph_release`/`graph_complete`,
   heartbeat) for desk-pack task handoff with lease handling.
 - [x] **LOCK-01**: No direct GreptimeDB/TimescaleDB/DragonflyDB clients anywhere under
-  `omes/`; a store-lock test fails the build on violation (grep + import guard).
+  `omega_prime/`; a store-lock test fails the build on violation (grep + import guard).
 
 ## Evals + ship
 
@@ -50,11 +50,11 @@ clients), shared `ultrathink` Hindsight bank, fakes + opt-in live probes.
 - Signed handoff packets (`graph_handoff` is a Phase 2 stub upstream).
 - Lease steal handling + drift scan (upstream Phase 2).
 - A2A Agent Cards / teachables on Solana (upstream Phase 4/6).
-- OTLP tracing from Omes turns (upstream Phase 1 SLO work).
+- OTLP tracing from Omega Prime turns (upstream Phase 1 SLO work).
 
 ## Out of Scope
 
-- Direct Greptime/Timescale/Dragonfly access from Omes — explicitly forbidden by
+- Direct Greptime/Timescale/Dragonfly access from Omega Prime — explicitly forbidden by
   LOCK-01 and the upstream store lock; those stays behind substrate-mcp.
 - A second Hindsight bank or bank management UI — one shared `ultrathink` bank.
 - Live writes in CI — all committed tests use fakes/scripted peers (PD-1, PD-4).

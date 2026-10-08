@@ -11,15 +11,15 @@
 - Rosters are contracts (versioned, `kind`/`gates`/`backend`/input schema);
   ownership resolves via `ownership.yaml` (last match wins, unowned fails).
 
-## Omes target (user decision: lead + packs, entire desk)
+## Omega Prime target (user decision: lead + packs, entire desk)
 
-- Omes stays ONE agent (the Lead). Each desk seat becomes a domain pack:
+- Omega Prime stays ONE agent (the Lead). Each desk seat becomes a domain pack:
   skill dir(s) + registry tool family + routine(s) + roster entries.
 - Desk LEAD flows (intake → ticket → dispatch → consolidate → report) become
-  Omes routines on top of existing delegate/todo/registry/approval machinery.
+  Omega Prime routines on top of existing delegate/todo/registry/approval machinery.
 - QUALITY flows become eval cases + CI gates + a receipt-approval routine
-  (Omes `receipts.py` already implements PD-1 receipts).
-- Gateway request/response tools become sync Omes tools: async gateway fns
+  (Omega Prime `receipts.py` already implements PD-1 receipts).
+- Gateway request/response tools become sync Omega Prime tools: async gateway fns
   run behind a small `asyncio.run` façade (v4 messaging precedent); errors
   become `{"error"}` dicts; writes require approval.
 - Interactive review (greenfield, both repos): Playwright browser transport

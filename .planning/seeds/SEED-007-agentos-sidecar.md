@@ -25,8 +25,8 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/hosting/agentos/NOTES.md`
-- `omes/mcp_server.py:256-258`
+- `omega_prime/hosting/agentos/NOTES.md`
+- `omega_prime/mcp_server.py:256-258`
 - `https://github.com/rivet-dev/agentos`
 - `https://rivet.dev/agentos/docs/`
 

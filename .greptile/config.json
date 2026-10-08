@@ -3,19 +3,19 @@
   "commentTypes": ["logic", "syntax", "style"],
   "triggerOnUpdates": true,
   "statusCheck": true,
-  "ignorePatterns": ".planning/**\n.venv/**\n__pycache__/**\n*.pyc\nomes_bot.egg-info/**\nkb/**",
-  "instructions": "One Grok programming bot: a single Python agent (omes/) merging the Hermes loop with the oh-my-pi harness. Tools register in families and must match contracts/tool-rosters/omes.yaml exactly; tests are hermetic (fakes/scripted peers, no network); secrets resolve via the credential broker and never appear in code, tests, or docs.",
+  "ignorePatterns": ".planning/**\n.venv/**\n__pycache__/**\n*.pyc\nomega_prime.egg-info/**\nkb/**",
+  "instructions": "One Grok programming bot: a single Python agent (omega_prime/) merging the Hermes loop with the oh-my-pi harness. Tools register in families and must match contracts/tool-rosters/omega-prime.yaml exactly; tests are hermetic (fakes/scripted peers, no network); secrets resolve via the credential broker and never appear in code, tests, or docs.",
   "rules": [
     {
       "id": "roster-exactness",
-      "rule": "New or renamed tools must be registered in their family module, appended to omes/contracts/tool-rosters/omes.yaml in tuple order, and allowed in omes/contracts/policies/omes.json. Flag any of the three drifting.",
-      "scope": ["omes/tools/**", "omes/contracts/**"],
+      "rule": "New or renamed tools must be registered in their family module, appended to omega_prime/contracts/tool-rosters/omega-prime.yaml in tuple order, and allowed in omega_prime/contracts/policies/omega-prime.json. Flag any of the three drifting.",
+      "scope": ["omega_prime/tools/**", "omega_prime/contracts/**"],
       "severity": "high"
     },
     {
       "id": "hermetic-tests",
       "rule": "Tests must not touch the network: fakes and scripted peers only. Flag live HTTP, sockets, or remote URLs in tests.",
-      "scope": ["omes/tests/**"],
+      "scope": ["omega_prime/tests/**"],
       "severity": "high"
     },
     {

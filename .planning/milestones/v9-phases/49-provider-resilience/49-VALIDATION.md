@@ -23,10 +23,10 @@ created: "2026-10-07"
 
 | Property | Value |
 |----------|-------|
-| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omes/tests`) |
+| **Framework** | pytest >= 8.0 (`[tool.pytest.ini_options]`, testpaths `omega_prime/tests`) |
 | **Config file** | `pyproject.toml` |
-| **Quick run command** | `.venv/bin/python -m pytest omes/tests/test_transports.py omes/tests/test_providers.py omes/tests/test_loop.py -q` |
-| **Full suite command** | `.venv/bin/python -m pytest omes/tests -q -p no:cacheprovider` |
+| **Quick run command** | `.venv/bin/python -m pytest omega_prime/tests/test_transports.py omega_prime/tests/test_providers.py omega_prime/tests/test_loop.py -q` |
+| **Full suite command** | `.venv/bin/python -m pytest omega_prime/tests -q -p no:cacheprovider` |
 | **Estimated runtime** | ~26 seconds |
 
 ---
@@ -44,14 +44,14 @@ created: "2026-10-07"
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 49-01-01 | 01 | 1 | PCUR-01 | — | 408 + 429 join the retryable set; `Retry-After` honored up to 60s cap; sleep skipped when `backoff=0`; headers plumbed through `_request` (`omes/providers/http.py:291-319`) | unit | `.venv/bin/python -m pytest omes/tests/test_transports.py -q` | ✅ | ✅ green (hist. 4 retry tests: 408/429 success, Retry-After + cap via recorded sleeps, exhaustion, no-sleep-at-zero) |
-| 49-01-02 | 01 | 1 | PCUR-02 | — | `Provider.parse_usage` per adapter via shared `_usage_from` (ints only, no synthesis); `ProviderModel.complete` stores `last_usage`; loop adds it to `kind="model"` spans (`base.py:54,142,212`; `conversation_loop.py:352-356`) | unit | `.venv/bin/python -m pytest omes/tests/test_providers.py omes/tests/test_loop.py -q` | ✅ | ✅ green (hist. 3 usage + 2 span tests; e.g. `test_complete_records_last_usage`) |
+| 49-01-01 | 01 | 1 | PCUR-01 | — | 408 + 429 join the retryable set; `Retry-After` honored up to 60s cap; sleep skipped when `backoff=0`; headers plumbed through `_request` (`omega_prime/providers/http.py:291-319`) | unit | `.venv/bin/python -m pytest omega_prime/tests/test_transports.py -q` | ✅ | ✅ green (hist. 4 retry tests: 408/429 success, Retry-After + cap via recorded sleeps, exhaustion, no-sleep-at-zero) |
+| 49-01-02 | 01 | 1 | PCUR-02 | — | `Provider.parse_usage` per adapter via shared `_usage_from` (ints only, no synthesis); `ProviderModel.complete` stores `last_usage`; loop adds it to `kind="model"` spans (`base.py:54,142,212`; `conversation_loop.py:352-356`) | unit | `.venv/bin/python -m pytest omega_prime/tests/test_providers.py omega_prime/tests/test_loop.py -q` | ✅ | ✅ green (hist. 3 usage + 2 span tests; e.g. `test_complete_records_last_usage`) |
 | 49-01-03 | 01 | 1 | PCUR-05 | — | Anthropic `max_tokens` 4096 → 8192; `claude-1` fixture → `claude-sonnet-4`; stale base docstring corrected | unit | Anthropic-body assertion test in suite | ✅ | ✅ green (hist. exit 0; no other stale IDs in repo per verification) |
 | 49-01-04 | 01 | 1 | PCUR-01, PCUR-02, PCUR-05 | — | Full gates green; fakes + socketpairs only, no live calls, no real sleeping (commit `efc1d66`) | unit/eval | suite + evals + assemble + ruff + mypy | ✅ | ✅ green (hist. 330 passed / 23 evals; final suite 344 green) |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
-Evidence grounding: `omes/tests/test_transports.py`, `test_providers.py`,
+Evidence grounding: `omega_prime/tests/test_transports.py`, `test_providers.py`,
 and `test_loop.py` exist; retry/usage wiring re-confirmed in current source
 (`http.py` `_check_status`/`_retry_after`, `base.py` `parse_usage`/
 `last_usage`, `conversation_loop.py` usage→span). Cross-phase link: usage

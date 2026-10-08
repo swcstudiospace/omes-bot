@@ -22,10 +22,10 @@ gaps_closed:
 
 ## Success criteria
 
-1. `pytest omes/tests -q` passes with the landed changes (no new skips) —
+1. `pytest omega_prime/tests -q` passes with the landed changes (no new skips) —
    PASS (310 passed, 305 carried + 5 new; HOME redirected for the sandbox
    PyRIT write, real fix in Phase 51).
-2. `omes.evals.runner` passes and `assemble-prompts.sh --check` passes —
+2. `omega_prime.evals.runner` passes and `assemble-prompts.sh --check` passes —
    PASS (23 evals, assemble up to date).
 3. Roster/policy/template composition tests cover every touched name —
    PASS (suite green incl. composition + catalog drift test).
@@ -35,10 +35,10 @@ gaps_closed:
 
 ## Commands
 
-- `HOME=/tmp/fakehome .venv/bin/python -m pytest omes/tests -q` → exit 0, 310 passed.
-- `HOME=/tmp/fakehome .venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 23 passed.
-- `bash omes/scripts/assemble-prompts.sh --check` → exit 0.
-- `HOME=/tmp/fakehome .venv/bin/python -m omes.setup_check --root .` → exit 0.
+- `HOME=/tmp/fakehome .venv/bin/python -m pytest omega_prime/tests -q` → exit 0, 310 passed.
+- `HOME=/tmp/fakehome .venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases` → exit 0, 23 passed.
+- `bash omega_prime/scripts/assemble-prompts.sh --check` → exit 0.
+- `HOME=/tmp/fakehome .venv/bin/python -m omega_prime.setup_check --root .` → exit 0.
 
 ## Historical Requirements
 

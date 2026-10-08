@@ -22,7 +22,7 @@ verify-only CI (no Pages deploy).
 
 - [x] **DOC-04**: Richer docs set: architecture tour, FAQ, and a generated
   tool catalog; every page linked once in SUMMARY.
-- [x] **GRE-01**: `.greptile/` repo config (review standards from Omes
+- [x] **GRE-01**: `.greptile/` repo config (review standards from Omega Prime
   conventions) + `docs/greptile.md` integration guide; workspace
   connection attempted via `greptile init` (blocked on org app install —
   user dashboard step, recorded in the guide).

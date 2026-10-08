@@ -1,8 +1,8 @@
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Milestones
 
-- ✅ **v1 One Omes agent** — Phases 1-12 (shipped 2026-10-03)
+- ✅ **v1 One Omega Prime agent** — Phases 1-12 (shipped 2026-10-03)
 - ✅ **v2 Enterprise hardening** — Phases 13-16 (shipped 2026-10-03)
 - ✅ **v3 Grok Bot** — Phases 17-20 (shipped 2026-10-03)
 - ✅ **v4 Third-party integrations** — Phases 21-25 (shipped 2026-10-03)

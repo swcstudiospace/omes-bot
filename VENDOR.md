@@ -1,6 +1,6 @@
 # Vendored behavior
 
-Omes Bot does not vendor, subtree, or import either upstream checkout at runtime. Both trees sit in this working directory so a port can read them. `.gitignore` keeps them out of this repository. Behavior is reimplemented under `omes/` and this file records the commit the port was read from.
+Omega Prime does not vendor, subtree, or import either upstream checkout at runtime. Both trees sit in this working directory so a port can read them. `.gitignore` keeps them out of this repository. Behavior is reimplemented under `omega_prime/` and this file records the commit the port was read from.
 
 ## Hermes Agent
 
@@ -28,9 +28,9 @@ Omes Bot does not vendor, subtree, or import either upstream checkout at runtime
 - Provider modules adapted: `providers/base.py` (declarative profile) and `packages/ai/src/providers` (`xai-base-url.ts`, `openai-completions.ts`, `anthropic-client.ts`, `google.ts`, `ollama.ts`, `mock.ts`) from commits `1a4508e2aff2db5f50409893a2115be777bd5643` and `0e2411c0df59fce8c56dc03a5f1c9afffcb0d746`.
 - License: MIT
 - Copyright: Copyright Mario Zechner 2025, Can Bölük 2025-2026, Stencil Labs 2026
-- What is adapted: `packages/agent` behavior, the coding-agent tool and edit pipeline, LSP, DAP, sessions, tasks, MCP, capabilities, extensions, modes and plan mode, memories, hindsight, mnemopi, autolearn, goals, advisor, exec job control, agent-side security, and the `packages/ai` provider surface. The port is Python inside the same Omes agent. TypeScript tests are the spec.
+- What is adapted: `packages/agent` behavior, the coding-agent tool and edit pipeline, LSP, DAP, sessions, tasks, MCP, capabilities, extensions, modes and plan mode, memories, hindsight, mnemopi, autolearn, goals, advisor, exec job control, agent-side security, and the `packages/ai` provider surface. The port is Python inside the same Omega Prime agent. TypeScript tests are the spec.
 - What is not adapted: `packages/tui`, collab web, stats site, CLI gallery and install chrome, Rust crates, and bazel or nix packaging. Same exception as Hermes: pull a piece in only when a phase's tests cannot pass without it.
 
 ## Merge rule
 
-One Python process. One `OmesAgent`. Where both upstreams implement the same concern, one Omes implementation has to satisfy both invariants. Temporal is not the merge. It can become a durability adapter after cron and delegation exist.
+One Python process. One `OmegaPrimeAgent`. Where both upstreams implement the same concern, one Omega Prime implementation has to satisfy both invariants. Temporal is not the merge. It can become a durability adapter after cron and delegation exist.

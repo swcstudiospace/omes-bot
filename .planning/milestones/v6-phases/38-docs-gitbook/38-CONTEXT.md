@@ -7,7 +7,7 @@
 <domain>
 ## Phase Boundary
 
-Omes is documented for builders and users, ready for GitBook
+Omega Prime is documented for builders and users, ready for GitBook
 sync: build-aesthetics, user guide, and setup flow docs under
 `docs/`, plus `SUMMARY.md` + sync config with a dashboard
 connection guide. Requirements: DOC-01, DOC-02, DOC-03.

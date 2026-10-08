@@ -1,4 +1,4 @@
-# Roadmap: Omes Bot v4
+# Roadmap: Omega Prime v4
 
 ## Overview
 
@@ -8,7 +8,7 @@ v3 shipped the Grok Bot (see `milestones/v3-ROADMAP.md`). v4 wires in third-part
 
 - [x] **Phase 21: Tweepy X transport** - XClient behind `tweepy.Client`, brokered token, fakes still default.
 - [x] **Phase 22: MCP SDK layer** - Session-based MCP client on the official SDK beside one-shot `mcp_call`.
-- [x] **Phase 23: Red-team depth** - Omes as a PyRIT target with a keyless structural battery in CI.
+- [x] **Phase 23: Red-team depth** - Omega Prime as a PyRIT target with a keyless structural battery in CI.
 - [x] **Phase 24: Scheduler backend** - APScheduler drives JobStore jobs; JSON store stays authoritative.
 - [x] **Phase 25: Messaging connectors** - Telegram (aiogram) and Discord (discord.py) in the Phase 17 shape.
 

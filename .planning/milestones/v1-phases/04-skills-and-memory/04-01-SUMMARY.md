@@ -16,7 +16,7 @@ The roster lists the eleven coding tools, then `skill_manage`, `skill_view`, `me
 
 ## Verification
 
-Command: `python3 -m pytest omes/tests -q`
+Command: `python3 -m pytest omega_prime/tests -q`
 
 Exit code: 0
 

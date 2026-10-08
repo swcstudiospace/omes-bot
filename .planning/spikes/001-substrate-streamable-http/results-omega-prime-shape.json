@@ -1,0 +1,1329 @@
+{
+  "probe": "001-substrate-streamable-http/probe_omega_prime_shape.py",
+  "started_at": "2026-10-07T20:52:22+0000",
+  "base_url": "http://127.0.0.1:7410",
+  "token_supplied": false,
+  "python": "3.12.3",
+  "part1_raw": [
+    {
+      "request": {
+        "method": "GET",
+        "path": "/healthz",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null,
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 503,
+        "reason": "Service Unavailable",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"index\":false,\"greptime\":false,\"appendOnly\":null,\"eventsWritable\":false,\"briefP95\":1,\"eventP95\":3}",
+        "body_truncated": false,
+        "json": {
+          "index": false,
+          "greptime": false,
+          "appendOnly": null,
+          "eventsWritable": false,
+          "briefP95": 1,
+          "eventP95": 3
+        }
+      },
+      "omega_prime_http_transport_verdict": "retryable -> after retries: ProviderError('request to <host> failed after retries: HTTP 503')",
+      "elapsed_ms": 2.6,
+      "case": "A01 GET /healthz (Omega Prime health() headers)"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Content-Type": "application/json",
+          "Content-Length": "135"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 1,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 406,
+        "reason": "Not Acceptable",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Not Acceptable: Client must accept both application/json and text/event-stream\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Not Acceptable: Client must accept both application/json and text/event-stream"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 406 from <url>') (final, no retry)",
+      "elapsed_ms": 144.1,
+      "case": "A02 POST /mcp exact Omega Prime _mcp_post shape: tools/call graph_get, no Accept"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Content-Length": "135"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 2,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 406,
+        "reason": "Not Acceptable",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Not Acceptable: Client must accept both application/json and text/event-stream\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Not Acceptable: Client must accept both application/json and text/event-stream"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 406 from <url>') (final, no retry)",
+      "elapsed_ms": 15.7,
+      "case": "A03 same, Accept: application/json only"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "135"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 3,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 406,
+        "reason": "Not Acceptable",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Not Acceptable: Client must accept both application/json and text/event-stream\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Not Acceptable: Client must accept both application/json and text/event-stream"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 406 from <url>') (final, no retry)",
+      "elapsed_ms": 8.5,
+      "case": "A04 same, Accept: text/event-stream only"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "135"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 4,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"No graph ut-spike001-00000000 in the index.\"}]},\"jsonrpc\":\"2.0\",\"id\":4}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "No graph ut-spike001-00000000 in the index."
+                }
+              ]
+            },
+            "jsonrpc": "2.0",
+            "id": 4
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 41.3,
+      "case": "A05 same, Accept both (spec-compliant), still no initialize"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "129"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 5,
+          "method": "tools/call",
+          "params": {
+            "name": "memory_brief",
+            "arguments": {
+              "repo": "spike/omega-001"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"## Substrate brief: spike/omega-001\\nNo substrate history for this repo yet. You are the first claude-code session here.\"}]},\"jsonrpc\":\"2.0\",\"id\":5}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "## Substrate brief: spike/omega-001\nNo substrate history for this repo yet. You are the first claude-code session here."
+                }
+              ]
+            },
+            "jsonrpc": "2.0",
+            "id": 5
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 10.3,
+      "case": "A06 Accept both, tools/call memory_brief"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "101"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 6,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {}
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"MCP error -32602: Input validation error: Invalid arguments for tool graph_get: Invalid input: expected string, received undefined at graph_id\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":6}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "MCP error -32602: Input validation error: Invalid arguments for tool graph_get: Invalid input: expected string, received undefined at graph_id"
+                }
+              ],
+              "isError": true
+            },
+            "jsonrpc": "2.0",
+            "id": 6
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 15.0,
+      "case": "A07 Accept both, tools/call graph_get with missing graph_id (isError expected)"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "104"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 7,
+          "method": "tools/call",
+          "params": {
+            "name": "no_such_tool",
+            "arguments": {}
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"MCP error -32602: Tool no_such_tool not found\"}],\"isError\":true},\"jsonrpc\":\"2.0\",\"id\":7}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "MCP error -32602: Tool no_such_tool not found"
+                }
+              ],
+              "isError": true
+            },
+            "jsonrpc": "2.0",
+            "id": 7
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 7.5,
+      "case": "A08 Accept both, tools/call unknown tool (isError expected)"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "173"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 8,
+          "method": "initialize",
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "spike-001-raw",
+              "version": "0"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{\"tools\":{\"listChanged\":true}},\"serverInfo\":{\"name\":\"substrate\",\"version\":\"0.1.0\"}},\"jsonrpc\":\"2.0\",\"id\":8}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "protocolVersion": "2025-11-25",
+              "capabilities": {
+                "tools": {
+                  "listChanged": true
+                }
+              },
+              "serverInfo": {
+                "name": "substrate",
+                "version": "0.1.0"
+              }
+            },
+            "jsonrpc": "2.0",
+            "id": 8
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 9.7,
+      "case": "A09 Accept both, initialize"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "MCP-Protocol-Version": "2025-11-25",
+          "Content-Type": "application/json",
+          "Content-Length": "65"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 9,
+          "method": "tools/list",
+          "params": {}
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"tools\":[{\"name\":\"memory_brief\",\"title\":\"Substrate brief\",\"description\":\"The cross-agent session briefing for a repo: this graph's nodes and claims, other open graphs, recent agent actions, decisions in force and warnings. Call this before your first action in a repo.\",\"inputSchema\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"repo\":{\"description\":\"owner/name, e.g. swcstudiospace/autonogrammer\",\"type\":\"string\"},\"branch\":{\"type\":\"string\"},\"graph_id\":{\"description\":\"ut-<ts36>-<8hex> from the ultrathink uplift\",\"type\":\"string\"},\"surface\":{\"description\":\"defaults to the caller's own surface\",\"type\":\"string\",\"enum\":[\"claude-code\",\"cursor\",\"hermes\",\"omp\",\"muse\",\"grok-build\",\"grok-bot\",\"codex\",\"opencode\",\"pi\",\"rivet-agentos\"]}}},\"execution\":{\"taskSupport\":\"forbidden\"}},{\"name\":\"memory_write\",\"title\":\"Write a memory entry\",\"description\":\"Record a decision, fact, warning, handoff or todo at a scope so other agents see it in their brief. Gated by memory policy: returns {status: 'accepted'|'conflict'|'quarantined'|'denied', entry?, reason?, remedy?}.\",\"inputSchema\":{\"$schema\":\"http://json-schema.org/draft-07/schema#\",\"type\":\"object\",\"properties\":{\"scope\":{\"type\":\"string\",\"description\":\"graph:<id> | repo:<name> | global | agent:<surface> | person:<name>\"},\"kind\":{\"type\":\"string\",\"enum\":[\"decision\",\"fact\",\"warning\",\"handoff\",\"todo\"]},\"text\":{\"type\":\"string\"},\"trust\":{\"type\":\"string\",\"enum\":[\"agent-claimed\",\"human-confirmed\",\"verified-by-test\"]},\"ttl\":{\"description\":\"graph | 30d | permanent\",\"type\":\"string\"},\"source_event\":{\"type\":\"string\"},\"surface\":{\"description\":\"defaults to the caller's own surface\",\"type\":\"string\",\"enum\":[\"claude-code\",\"cursor\",\"hermes\",\"omp\",\"muse\",\"grok-build\",\"grok-bot\",\"codex\",\"opencode\",\"pi\",\"rivet-agentos\"]}},\"required\":[\"scope\",\"kind\",\"text\"]},\"annotations\":{\"destructiveHint\":false},\"execution\":{\"taskSupport\":\"forbidden\"}},{\"name\":\"memory_search\",\"title\":\"Search memory\",\"descriptio",
+        "body_truncated": true,
+        "sse_events": [
+          {
+            "result": {
+              "tools": [
+                {
+                  "name": "memory_brief",
+                  "title": "Substrate brief",
+                  "description": "The cross-agent session briefing for a repo: this graph's nodes and claims, other open graphs, recent agent actions, decisions in force and warnings. Call this before your first action in a repo.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "repo": {
+                        "description": "owner/name, e.g. swcstudiospace/autonogrammer",
+                        "type": "string"
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "graph_id": {
+                        "description": "ut-<ts36>-<8hex> from the ultrathink uplift",
+                        "type": "string"
+                      },
+                      "surface": {
+                        "description": "defaults to the caller's own surface",
+                        "type": "string",
+                        "enum": [
+                          "claude-code",
+                          "cursor",
+                          "hermes",
+                          "omp",
+                          "muse",
+                          "grok-build",
+                          "grok-bot",
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "rivet-agentos"
+                        ]
+                      }
+                    }
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "memory_write",
+                  "title": "Write a memory entry",
+                  "description": "Record a decision, fact, warning, handoff or todo at a scope so other agents see it in their brief. Gated by memory policy: returns {status: 'accepted'|'conflict'|'quarantined'|'denied', entry?, reason?, remedy?}.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "scope": {
+                        "type": "string",
+                        "description": "graph:<id> | repo:<name> | global | agent:<surface> | person:<name>"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "decision",
+                          "fact",
+                          "warning",
+                          "handoff",
+                          "todo"
+                        ]
+                      },
+                      "text": {
+                        "type": "string"
+                      },
+                      "trust": {
+                        "type": "string",
+                        "enum": [
+                          "agent-claimed",
+                          "human-confirmed",
+                          "verified-by-test"
+                        ]
+                      },
+                      "ttl": {
+                        "description": "graph | 30d | permanent",
+                        "type": "string"
+                      },
+                      "source_event": {
+                        "type": "string"
+                      },
+                      "surface": {
+                        "description": "defaults to the caller's own surface",
+                        "type": "string",
+                        "enum": [
+                          "claude-code",
+                          "cursor",
+                          "hermes",
+                          "omp",
+                          "muse",
+                          "grok-build",
+                          "grok-bot",
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "rivet-agentos"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "scope",
+                      "kind",
+                      "text"
+                    ]
+                  },
+                  "annotations": {
+                    "destructiveHint": false
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "memory_search",
+                  "title": "Search memory",
+                  "description": "Full-text search over memory entries, optionally narrowed to one scope.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "query": {
+                        "type": "string"
+                      },
+                      "scope": {
+                        "type": "string"
+                      },
+                      "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100
+                      }
+                    },
+                    "required": [
+                      "query"
+                    ]
+                  },
+                  "annotations": {
+                    "readOnlyHint": true
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "events_emit",
+                  "title": "Emit an event",
+                  "description": "Append a normalised event to the substrate's append-only event ledger. Redaction and the hash chain are applied on ingest, and this tool is the only way to write to the ledger. The reply's `stored` says whether the append landed \u2014 false means the event was normalised but not persisted.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "session.start",
+                          "prompt",
+                          "claim",
+                          "tool.call",
+                          "file.edit",
+                          "shell",
+                          "commit",
+                          "pr",
+                          "handoff",
+                          "session.end",
+                          "note",
+                          "warning"
+                        ]
+                      },
+                      "summary": {
+                        "type": "string"
+                      },
+                      "surface": {
+                        "type": "string",
+                        "enum": [
+                          "claude-code",
+                          "cursor",
+                          "hermes",
+                          "omp",
+                          "muse",
+                          "grok-build",
+                          "grok-bot",
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "rivet-agentos"
+                        ]
+                      },
+                      "session_id": {
+                        "type": "string"
+                      },
+                      "graph_id": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      },
+                      "linear_identifier": {
+                        "type": "string"
+                      },
+                      "step": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "repo": {
+                        "type": "string"
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "actor": {
+                        "type": "string",
+                        "enum": [
+                          "agent",
+                          "human"
+                        ]
+                      },
+                      "payload": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "summary"
+                    ]
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "graph_get",
+                  "title": "Get a graph",
+                  "description": "Task, nodes, steps, claims and PR state for a Graph ID.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "graph_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "graph_id"
+                    ]
+                  },
+                  "annotations": {
+                    "readOnlyHint": true
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "graph_register",
+                  "title": "Register a graph",
+                  "description": "Record a Graph ID and its nodes/steps in the index after the Notion and Linear rows exist. Idempotent by Graph ID \u2014 re-running updates in place rather than duplicating.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "graph_id": {
+                        "type": "string"
+                      },
+                      "notion_task_page": {
+                        "type": "string"
+                      },
+                      "repo": {
+                        "type": "string"
+                      },
+                      "branch": {
+                        "type": "string"
+                      },
+                      "surface": {
+                        "type": "string",
+                        "enum": [
+                          "claude-code",
+                          "cursor",
+                          "hermes",
+                          "omp",
+                          "muse",
+                          "grok-build",
+                          "grok-bot",
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "rivet-agentos"
+                        ]
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "pr_url": {
+                        "type": "string"
+                      },
+                      "nodes": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "node_id": {
+                              "type": "string"
+                            },
+                            "linear_issue_id": {
+                              "type": "string"
+                            },
+                            "linear_identifier": {
+                              "type": "string"
+                            },
+                            "notion_page": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "unstarted",
+                                "started",
+                                "started_review",
+                                "completed",
+                                "canceled",
+                                "duplicate"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "node_id"
+                          ]
+                        }
+                      },
+                      "steps": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "node_id": {
+                              "type": "string"
+                            },
+                            "step": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "linear_sub_issue_id": {
+                              "type": "string"
+                            },
+                            "notion_page": {
+                              "type": "string"
+                            },
+                            "state": {
+                              "type": "string",
+                              "enum": [
+                                "backlog",
+                                "unstarted",
+                                "started",
+                                "started_review",
+                                "completed",
+                                "canceled",
+                                "duplicate"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "node_id",
+                            "step"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "graph_id"
+                    ]
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "graph_claim",
+                  "title": "Claim a node",
+                  "description": "Claim a Graph-of-Thought node for this surface. If another agent already holds it, their claim is returned unchanged rather than overwritten.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "graph_id": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      },
+                      "session_id": {
+                        "type": "string"
+                      },
+                      "surface": {
+                        "type": "string",
+                        "enum": [
+                          "claude-code",
+                          "cursor",
+                          "hermes",
+                          "omp",
+                          "muse",
+                          "grok-build",
+                          "grok-bot",
+                          "codex",
+                          "opencode",
+                          "pi",
+                          "rivet-agentos"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "graph_id",
+                      "node_id",
+                      "session_id"
+                    ]
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "graph_release",
+                  "title": "Release a node",
+                  "description": "Drop this surface's claim on a node without marking it complete.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "graph_id": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "graph_id",
+                      "node_id"
+                    ]
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                },
+                {
+                  "name": "graph_complete",
+                  "title": "Complete a node",
+                  "description": "Mark a node completed and drop its claim.",
+                  "inputSchema": {
+                    "$schema": "http://json-schema.org/draft-07/schema#",
+                    "type": "object",
+                    "properties": {
+                      "graph_id": {
+                        "type": "string"
+                      },
+                      "node_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "graph_id",
+                      "node_id"
+                    ]
+                  },
+                  "execution": {
+                    "taskSupport": "forbidden"
+                  }
+                }
+              ]
+            },
+            "jsonrpc": "2.0",
+            "id": 9
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 24.4,
+      "case": "A10 Accept both, tools/list"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "MCP-Protocol-Version": "2026-07-28",
+          "Mcp-Method": "server/discover",
+          "Content-Type": "application/json",
+          "Content-Length": "71"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 10,
+          "method": "server/discover",
+          "params": {}
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 400,
+        "reason": "Bad Request",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 400 from <url>') (final, no retry)",
+      "elapsed_ms": 3.3,
+      "case": "A11 Accept both, server/discover with MCP-Protocol-Version 2026-07-28 (what SDK v2 auto mode probes)"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "MCP-Protocol-Version": "2026-07-28",
+          "Content-Type": "application/json",
+          "Content-Length": "136"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 11,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 400,
+        "reason": "Bad Request",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 400 from <url>') (final, no retry)",
+      "elapsed_ms": 2.8,
+      "case": "A12 Accept both, tools/call with MCP-Protocol-Version 2026-07-28"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "text/plain",
+          "Content-Length": "136"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 12,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 415,
+        "reason": "Unsupported Media Type",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Unsupported Media Type: Content-Type must be application/json\"},\"id\":null}",
+        "body_truncated": false,
+        "json": {
+          "jsonrpc": "2.0",
+          "error": {
+            "code": -32000,
+            "message": "Unsupported Media Type: Content-Type must be application/json"
+          },
+          "id": null
+        }
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 415 from <url>') (final, no retry)",
+      "elapsed_ms": 2.8,
+      "case": "A13 Accept both, Content-Type text/plain"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "text/event-stream"
+        },
+        "body": null,
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 405,
+        "reason": "Method Not Allowed",
+        "content_type": null,
+        "mcp_session_id": null,
+        "allow": "POST",
+        "body": "",
+        "body_truncated": false
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 405 from <url>') (final, no retry)",
+      "elapsed_ms": 0.4,
+      "case": "A14 GET /mcp (server-initiated SSE stream)"
+    },
+    {
+      "request": {
+        "method": "DELETE",
+        "path": "/mcp",
+        "headers": {},
+        "body": null,
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 405,
+        "reason": "Method Not Allowed",
+        "content_type": null,
+        "mcp_session_id": null,
+        "allow": "POST",
+        "body": "",
+        "body_truncated": false
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('HTTP 405 from <url>') (final, no retry)",
+      "elapsed_ms": 0.4,
+      "case": "A15 DELETE /mcp (session termination)"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Authorization": "Bearer [REDACTED]",
+          "Content-Type": "application/json",
+          "Content-Length": "136"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 13,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"No graph ut-spike001-00000000 in the index.\"}]},\"jsonrpc\":\"2.0\",\"id\":13}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "No graph ut-spike001-00000000 in the index."
+                }
+              ]
+            },
+            "jsonrpc": "2.0",
+            "id": 13
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 2.8,
+      "case": "A16 Accept both, bogus bearer token"
+    },
+    {
+      "request": {
+        "method": "GET",
+        "path": "/healthz",
+        "headers": {
+          "Accept": "application/json"
+        },
+        "body": null,
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 503,
+        "reason": "Service Unavailable",
+        "content_type": "application/json",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "{\"index\":false,\"greptime\":false,\"appendOnly\":null,\"eventsWritable\":false,\"briefP95\":1,\"eventP95\":3}",
+        "body_truncated": false,
+        "json": {
+          "index": false,
+          "greptime": false,
+          "appendOnly": null,
+          "eventsWritable": false,
+          "briefP95": 1,
+          "eventP95": 3
+        }
+      },
+      "omega_prime_http_transport_verdict": "retryable -> after retries: ProviderError('request to <host> failed after retries: HTTP 503')",
+      "elapsed_ms": 0.4,
+      "case": "A17 GET /healthz with no Authorization header"
+    },
+    {
+      "request": {
+        "method": "POST",
+        "path": "/mcp",
+        "headers": {
+          "Accept": "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "Content-Length": "136"
+        },
+        "body": {
+          "jsonrpc": "2.0",
+          "id": 14,
+          "method": "tools/call",
+          "params": {
+            "name": "graph_get",
+            "arguments": {
+              "graph_id": "ut-spike001-00000000"
+            }
+          }
+        },
+        "note": "http.client also adds Host and Accept-Encoding: identity"
+      },
+      "response": {
+        "status": 200,
+        "reason": "OK",
+        "content_type": "text/event-stream",
+        "mcp_session_id": null,
+        "allow": null,
+        "body": "event: message\ndata: {\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"No graph ut-spike001-00000000 in the index.\"}]},\"jsonrpc\":\"2.0\",\"id\":14}\n\n",
+        "body_truncated": false,
+        "sse_events": [
+          {
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "No graph ut-spike001-00000000 in the index."
+                }
+              ]
+            },
+            "jsonrpc": "2.0",
+            "id": 14
+          }
+        ]
+      },
+      "omega_prime_http_transport_verdict": "ProviderError('response is not JSON: Expecting value: line 1 column 1 (char 0)')",
+      "elapsed_ms": 2.6,
+      "case": "A18 POST /mcp with no Authorization header, Accept both"
+    }
+  ],
+  "part2_substrate_client": {
+    "B01 health() [default retries=2]": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate health failed: request to 127.0.0.1 failed after retries: HTTP 503",
+      "cause": "ProviderError: request to 127.0.0.1 failed after retries: HTTP 503",
+      "elapsed_ms": 310.8
+    },
+    "B02 brief(repo=...) [REST, fail-open]": {
+      "outcome": "returned",
+      "type": "str",
+      "value": "## Substrate brief: spike/omega-001\nNo substrate history for this repo yet. You are the first grok-bot session here.",
+      "elapsed_ms": 8.1
+    },
+    "B03 _call_tool('graph_get', dummy)": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate graph_get failed: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "cause": "ProviderError: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "elapsed_ms": 5.0
+    },
+    "B04 _call_tool_text('graph_get', dummy)": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate graph_get failed: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "cause": "ProviderError: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "elapsed_ms": 2.8
+    },
+    "B05 memory_search('spike-001-probe') [fail-open]": {
+      "outcome": "returned",
+      "type": "list",
+      "value": [],
+      "elapsed_ms": 2.0
+    },
+    "B06 docs_search('spike-001-probe') [raises]": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate docs_search failed: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "cause": "ProviderError: HTTP 406 from http://127.0.0.1:7410/mcp",
+      "elapsed_ms": 28.5
+    },
+    "B07 substrate down: _call_tool('graph_get') against a closed port": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate graph_get failed: request to 127.0.0.1 failed after retries: [Errno 111] Connection refused",
+      "cause": "ProviderError: request to 127.0.0.1 failed after retries: [Errno 111] Connection refused",
+      "elapsed_ms": 301.2
+    },
+    "B08 substrate down: memory_search [fail-open]": {
+      "outcome": "returned",
+      "type": "list",
+      "value": [],
+      "elapsed_ms": 301.1
+    }
+  },
+  "part3_sse_shim_with_unmodified_client": {
+    "C01 _call_tool('graph_get', dummy)": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate graph_get returned unparsable content: Expecting value: line 1 column 1 (char 0)",
+      "cause": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+      "elapsed_ms": 4.2
+    },
+    "C02 _call_tool_text('graph_get', dummy)": {
+      "outcome": "returned",
+      "type": "str",
+      "value": "No graph ut-spike001-00000000 in the index.",
+      "elapsed_ms": 3.8
+    },
+    "C03 _call_tool('graph_get', {}) -> server isError": {
+      "outcome": "raised",
+      "exception": "omega_prime.substrate.client.SubstrateError",
+      "message": "substrate graph_get returned unparsable content: Expecting value: line 1 column 1 (char 0)",
+      "cause": "JSONDecodeError: Expecting value: line 1 column 1 (char 0)",
+      "elapsed_ms": 3.0
+    },
+    "C04 _call_tool_text('graph_get', {}) -> server isError": {
+      "outcome": "returned",
+      "type": "str",
+      "value": "MCP error -32602: Input validation error: Invalid arguments for tool graph_get: Invalid input: expected string, received undefined at graph_id",
+      "elapsed_ms": 3.2
+    },
+    "C05 _call_tool_text('no_such_tool', {}) -> server isError": {
+      "outcome": "returned",
+      "type": "str",
+      "value": "MCP error -32602: Tool no_such_tool not found",
+      "elapsed_ms": 2.5
+    },
+    "C06 memory_search('spike-001-probe')": {
+      "outcome": "returned",
+      "type": "list",
+      "value": [],
+      "elapsed_ms": 3.3
+    }
+  },
+  "finished_at": "2026-10-07T20:52:23+0000"
+}

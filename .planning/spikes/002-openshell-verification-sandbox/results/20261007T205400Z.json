@@ -106,7 +106,7 @@
         "build",
         "-t",
         "omega-verify-py:spike002",
-        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/image"
+        "/root/src/repos/omega/.planning/spikes/002-openshell-verification-sandbox/image"
       ],
       "rc": 0,
       "elapsed_s": 2.051,
@@ -124,7 +124,7 @@
         "--from",
         "omega-verify-py:spike002",
         "--policy",
-        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/verify-policy.yaml",
+        "/root/src/repos/omega/.planning/spikes/002-openshell-verification-sandbox/verify-policy.yaml",
         "--no-auto-providers",
         "--label",
         "omega-spike=002",

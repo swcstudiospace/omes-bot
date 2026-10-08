@@ -1,4 +1,4 @@
-# Contributing to Omes Bot
+# Contributing to Omega Prime
 
 Thanks for improving the bot. Every change — code, prompts, skills, docs —
 passes the same four gates before it merges.
@@ -6,8 +6,8 @@ passes the same four gates before it merges.
 ## Setup
 
 ```bash
-git clone https://github.com/swcstudiospace/omes-bot.git
-cd omes-bot
+git clone https://github.com/swcstudiospace/omega-prime.git
+cd omega-prime
 python -m venv .venv && .venv/bin/pip install -e .
 ```
 
@@ -19,10 +19,10 @@ Python process.
 Run all four; a PR that skips one does not merge.
 
 ```bash
-.venv/bin/python -m pytest omes/tests -q
-.venv/bin/python -m omes.evals.runner omes/evals/cases
-bash omes/scripts/assemble-prompts.sh --check
-.venv/bin/python -m omes.setup_check --root .
+.venv/bin/python -m pytest omega_prime/tests -q
+.venv/bin/python -m omega_prime.evals.runner omega_prime/evals/cases
+bash omega_prime/scripts/assemble-prompts.sh --check
+.venv/bin/python -m omega_prime.setup_check --root .
 ```
 
 CI runs the same commands on every push and pull request.
@@ -32,11 +32,11 @@ CI runs the same commands on every push and pull request.
 - **Receipts, not claims.** A completion claim cites the command and its exit
   code. Tests prove behavior; prose describes it.
 - **The roster is the truth.** Tools listed in
-  `omes/contracts/tool-rosters/omes.yaml` must be exactly the tools the
+  `omega_prime/contracts/tool-rosters/omega-prime.yaml` must be exactly the tools the
   registry serves, and the seat policy must allow every one. The suite
   enforces both — update all three together.
 - **Hermetic tests.** No network in tests: fakes and scripted peers only.
-  Live services are probed by hand (`omes.substrate.probes`), never in CI.
+  Live services are probed by hand (`omega_prime.substrate.probes`), never in CI.
 - **No secrets, ever.** Keys resolve through the credential broker from the
   environment. Never commit, print, or paste one — see SECURITY.md.
 - **Read-only sources.** `hermes-agent/`, `oh-my-pi/`, and the repos named in

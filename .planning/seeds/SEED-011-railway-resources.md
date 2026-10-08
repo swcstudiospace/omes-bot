@@ -25,9 +25,9 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Breadcrumbs
 
-- `omes/skills/railway-tailscale/SKILL.md`
-- `omes/memory/hindsight_service.py`
-- `omes/tools/infra.py:306-309`
+- `omega_prime/skills/railway-tailscale/SKILL.md`
+- `omega_prime/memory/hindsight_service.py`
+- `omega_prime/tools/infra.py:306-309`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-research-ScoutSubstrate.json`
 - `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-integration-decisions.json`
 

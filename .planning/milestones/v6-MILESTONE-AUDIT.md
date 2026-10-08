@@ -48,7 +48,7 @@ All phases `complete`, all canonical verifications `passed`.
 - Magic-word turn: keyword → notice injection → delegate batch →
   verified result (differential-checked 0 mismatches vs Omp).
 - Install flow: template → secrets → optional MCP host → smoke
-  prompt, with `omes.setup_check` exiting 0 (4 ok, 1 skip).
+  prompt, with `omega_prime.setup_check` exiting 0 (4 ok, 1 skip).
 
 ## Verdict
 

@@ -1,10 +1,10 @@
 # Milestone v1 archive — ROADMAP (completed 2026-10-03)
 
-# Roadmap: Omes Bot
+# Roadmap: Omega Prime
 
 ## Overview
 
-Omes Bot starts as an empty git root beside two ignored upstream checkouts, then grows one Python agent. The first phase is the single-seat Grok shell. The next phases port the Hermes loop, tools, skills, memory, delegation, and cron, then fold Omp's harness, edit pipeline, language servers, modes, and memory into that same agent. The last phase is the provider surface and a Grok Bot template that names only what the agent actually registers. A phase is done when its parity checks pass.
+Omega Prime starts as an empty git root beside two ignored upstream checkouts, then grows one Python agent. The first phase is the single-seat Grok shell. The next phases port the Hermes loop, tools, skills, memory, delegation, and cron, then fold Omp's harness, edit pipeline, language servers, modes, and memory into that same agent. The last phase is the provider surface and a Grok Bot template that names only what the agent actually registers. A phase is done when its parity checks pass.
 
 ## Phases
 
