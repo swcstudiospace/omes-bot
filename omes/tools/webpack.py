@@ -11,10 +11,7 @@ from __future__ import annotations
 
 import contextlib
 import hashlib
-import ipaddress
 import re
-import time
-import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
@@ -22,6 +19,11 @@ from typing import Any
 from urllib.parse import urlparse
 
 from omes.credentials.redact import redact_text
+from omes.providers.destination import (
+    DestinationDenied,
+    DestinationTransport,
+    SafeFetch,
+)
 from omes.tools.playwright_browser import PlaywrightBrowser
 from omes.tools.registry import ToolRegistry
 from omes.tools.vision import vision_analyze
@@ -42,9 +44,6 @@ def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
 
 
-_LOCAL_SUFFIXES = (".localhost", ".local", ".internal", ".invalid")
-
-
 def _safe_shot_name(name: str) -> str | None:
     """`<stem>.png` confined to the artifacts dir, else None."""
     stem = name[:-4] if name.endswith(".png") else name
@@ -55,79 +54,15 @@ def _safe_shot_name(name: str) -> str | None:
     return stem + ".png"
 
 
-def _check_url(url: str, allowed_hosts: tuple[str, ...] | None) -> str | None:
-    """Refusal text for an unfetchable URL, else None.
-
-    http(s) only, with a host; loopback/link-local/private/reserved
-    literal IPs and local names are always refused (no metadata or
-    intranet fetches). When `allowed_hosts` is set the host must
-    also match it exactly or as a subdomain.
-    """
-    try:
-        parsed = urlparse(url)
-    except ValueError:
-        return "invalid_url: unparseable URL"
-    if parsed.scheme not in ("http", "https"):
-        return "invalid_url: only http and https URLs may be fetched"
-    host = (parsed.hostname or "").lower().rstrip(".")
-    if not host:
-        return "invalid_url: URL has no host"
-    if host == "localhost" or host.endswith(_LOCAL_SUFFIXES):
-        return f"forbidden_host: {host} is not fetchable"
-    try:
-        address = ipaddress.ip_address(host)
-    except ValueError:
-        address = None
-    if address is not None and (
-        address.is_loopback
-        or address.is_private
-        or address.is_link_local
-        or address.is_multicast
-        or address.is_reserved
-        or address.is_unspecified
-    ):
-        return f"forbidden_host: {host} is not fetchable"
-    if allowed_hosts is not None and not any(
-        host == allowed.lower() or host.endswith("." + allowed.lower())
-        for allowed in allowed_hosts
-    ):
-        return f"forbidden_host: {host} is not in the fetch allowlist"
-    return None
-
-
-def _default_fetch(url: str, timeout: float = FETCH_TIMEOUT) -> dict[str, Any]:
-    request = urllib.request.Request(
-        url, headers={"User-Agent": "omes-bot/preview-check"}, method="GET"
-    )
-    opener = urllib.request.build_opener(NoRedirects)
-    started = time.monotonic()
-    try:
-        with opener.open(request, timeout=timeout) as response:
-            body = response.read(2_000_000)
-            return {
-                "status": response.status,
-                "headers": dict(response.headers),
-                "body": body,
-                "ms": round((time.monotonic() - started) * 1000, 1),
-            }
-    except Exception as exc:
-        return {"error": f"upstream_error: fetch failed: {type(exc).__name__}"}
-
-
-class NoRedirects(urllib.request.HTTPRedirectHandler):
-    """Refuse redirects so the report shows the original response."""
-
-    def redirect_request(self, req, fp, code, msg, headers, newurl):
-        return None
-
-
 @dataclass
 class WebContext:
     """Everything the web tools need. Clients default to unconfigured."""
 
     root: str | Path = "."
     vercel: Any = None
-    fetch: Any = None
+    fetch: SafeFetch | None = None
+    transport: DestinationTransport | None = None
+    policy: Any = None
     browser_factory: Any = None
     vision: Any = None
     artifacts_dir: str | Path = "artifacts/reviews"
@@ -215,27 +150,77 @@ class WebClient:
             return _error(str(code), str(reason))
         return {"ok": True, "result": result.get("body")}
 
-    def preview_check(self, url: str, expect_status: int = 200) -> dict[str, Any]:
+    def preview_check(
+        self, url: str, expect_status: int = 200, *, operation: Any = None
+    ) -> dict[str, Any]:
         """Fetch one URL: status, latency, content hash, redirect. No redirects followed."""
         if not isinstance(url, str) or url.strip() == "":
             raise ValueError("url must be a non-empty string")
         if isinstance(expect_status, bool) or not isinstance(expect_status, int):
             raise ValueError("expect_status must be an integer")
-        blocked = _check_url(url, self.ctx.allowed_hosts)
-        if blocked is not None:
-            return {"url": url, "error": blocked}
-        host = urlparse(url).hostname or ""
-        fetch = self.ctx.fetch or _default_fetch
-        result = fetch(url, FETCH_TIMEOUT)
-        if not isinstance(result, dict) or result.get("error"):
-            return (
-                result
-                if isinstance(result, dict)
-                else {"error": "upstream_error: no object"}
+        fetch = self.ctx.fetch
+        transport = self.ctx.transport
+        if fetch is None or transport is None:
+            return {
+                "url": url,
+                "error": "not_configured: preview transport is not configured",
+            }
+        if not isinstance(fetch, SafeFetch):
+            return {
+                "url": url,
+                "error": "not_configured: preview transport is not configured",
+            }
+        if fetch.transport is not transport:
+            return {"url": url, "error": "not_configured: preview authority mismatch"}
+        root = operation
+        if root is None:
+            root = transport.current_operation()
+        owned = False
+        if root is None:
+            root = transport.begin_operation(
+                deadline_at=transport._clock.monotonic() + 15.0
             )
+            owned = True
+        else:
+            bound = transport.current_operation()
+            if bound is not None and bound is not root:
+                return {
+                    "url": url,
+                    "error": "not_configured: conflicting bound operation",
+                }
+        if owned:
+            try:
+                binding = transport.bind_operation(root)
+                with binding:
+                    result = fetch(url, FETCH_TIMEOUT, operation=root)
+            except DestinationDenied as exc:
+                result = {"error": f"{exc.refusal.public_code}: {exc.refusal.message}"}
+            finally:
+                with contextlib.suppress(Exception):
+                    transport.finish_operation(
+                        root, deadline_at=transport._clock.monotonic() + 5.0
+                    )
+        else:
+            try:
+                result = fetch(url, FETCH_TIMEOUT, operation=root)
+            except DestinationDenied as exc:
+                result = {"error": f"{exc.refusal.public_code}: {exc.refusal.message}"}
+        if not isinstance(result, dict) or result.get("error"):
+            if isinstance(result, dict) and result.get("error"):
+                return {"url": url, "error": result["error"]}
+            return {"url": url, "error": "upstream_error: no object"}
         body = result.get("body", b"")
         if isinstance(body, str):
             body = body.encode("utf-8")
+        if not isinstance(body, (bytes, bytearray)):
+            return {"url": url, "error": "upstream_error: bad body"}
+        body = bytes(body)
+        try:
+            host = urlparse(url).hostname or ""
+        except ValueError:
+            host = ""
+        headers_dict = result.get("headers")
+        headers = headers_dict if isinstance(headers_dict, dict) else {}
         return {
             "url": url,
             "host": host,
@@ -243,10 +228,10 @@ class WebClient:
             "expected": expect_status,
             "matches": result.get("status") == expect_status,
             "ms": result.get("ms"),
-            "content_type": (result.get("headers") or {}).get("content-type"),
+            "content_type": headers.get("content-type"),
             "body_sha256": hashlib.sha256(body).hexdigest(),
             "bytes": len(body),
-            "redirect": (result.get("headers") or {}).get("location"),
+            "redirect": headers.get("location"),
         }
 
     def bundle_secret_scan(self, paths: list[str]) -> dict[str, Any]:
@@ -279,62 +264,170 @@ class WebClient:
         return {"ok": not findings, "gate": "G-3", "findings": findings}
 
     def review_page(
-        self, url: str, question: str, expect_status: int = 200, name: str | None = None
+        self,
+        url: str,
+        question: str,
+        expect_status: int = 200,
+        name: str | None = None,
+        *,
+        operation: Any = None,
     ) -> dict[str, Any]:
         """Connectivity + rendered screenshot + vision analysis in one report."""
         if not isinstance(question, str) or question == "":
             raise ValueError("question must be a non-empty string")
-        connectivity = self.preview_check(url, expect_status=expect_status)
-        if connectivity.get("error"):
+
+        transport = self.ctx.transport
+        if (
+            transport is not None
+            and getattr(self.ctx, "fetch", None) is not None
+            and getattr(self.ctx.fetch, "transport", None) is not transport
+        ):
+            return {"url": url, "error": "not_configured: preview authority mismatch"}
+        root = operation
+        if root is None and transport is not None:
+            root = transport.current_operation()
+        owned = False
+        if root is None and transport is not None:
+            root = transport.begin_operation(
+                deadline_at=transport._clock.monotonic() + 30.0
+            )
+            owned = True
+        elif transport is not None and root is not None:
+            bound = transport.current_operation()
+            if bound is not None and bound is not root:
+                return {
+                    "url": url,
+                    "error": "not_configured: conflicting bound operation",
+                }
+
+        def _execute_review() -> dict[str, Any]:
+            connectivity = self.preview_check(
+                url, expect_status=expect_status, operation=root
+            )
+            if connectivity.get("error"):
+                return {
+                    "url": url,
+                    "connectivity": connectivity,
+                    "error": "connectivity failed",
+                }
+            factory = self.ctx.browser_factory or PlaywrightBrowser
+            create_session = getattr(factory, "create_session", None)
+            if callable(create_session) and root is not None:
+                browser = create_session(operation=root)
+            elif callable(factory):
+                browser = factory()
+            else:
+                return {"url": url, "error": "invalid browser factory"}
+
+            receipt = None
+            close_outcome = None
+            browser_any: Any = browser
+            try:
+                started = browser_any.start()
+                if started.get("error"):
+                    return {
+                        "url": url,
+                        "connectivity": connectivity,
+                        "error": started["error"],
+                    }
+                navigated = browser_any.navigate(url)
+                if navigated.get("error"):
+                    return {
+                        "url": url,
+                        "connectivity": connectivity,
+                        "error": navigated["error"],
+                    }
+                shot_name = _safe_shot_name(name or f"review-{abs(hash(url)) % 10**8}")
+                if shot_name is None:
+                    return {
+                        "url": url,
+                        "connectivity": connectivity,
+                        "page": navigated,
+                        "error": "invalid_name: screenshot name stays inside the artifacts dir",
+                    }
+                shot = browser_any.screenshot(
+                    str(Path(self.ctx.artifacts_dir) / shot_name)
+                )
+                if shot.get("error"):
+                    return {
+                        "url": url,
+                        "connectivity": connectivity,
+                        "page": navigated,
+                        "error": shot["error"],
+                    }
+            finally:
+                with contextlib.suppress(Exception):
+                    close_outcome = browser_any.close()
+                receipt_getter = getattr(browser_any, "receipt", None)
+                if callable(receipt_getter):
+                    receipt = receipt_getter()
+                elif receipt_getter is not None:
+                    receipt = receipt_getter
+
+            if close_outcome is not None and not close_outcome.get("ok", True):
+                return {
+                    "url": url,
+                    "connectivity": connectivity,
+                    "page": navigated,
+                    "error": "browser close failed",
+                    "close": close_outcome,
+                }
+            owns_fn = getattr(factory, "owns", None)
+            if (
+                callable(owns_fn)
+                and receipt is not None
+                and not owns_fn(browser, receipt)
+            ):
+                return {
+                    "url": url,
+                    "connectivity": connectivity,
+                    "page": navigated,
+                    "error": "foreign browser receipt",
+                }
+            if receipt is not None and not getattr(receipt, "clean", True):
+                return {
+                    "url": url,
+                    "connectivity": connectivity,
+                    "page": navigated,
+                    "error": "browser session was not clean",
+                }
+
+            vision = vision_analyze(self.ctx.vision, shot["path"], question)
             return {
                 "url": url,
                 "connectivity": connectivity,
-                "error": "connectivity failed",
+                "page": navigated,
+                "screenshot": shot,
+                "vision": vision,
             }
-        factory = self.ctx.browser_factory or PlaywrightBrowser
-        browser = factory()
-        try:
-            started = browser.start()
-            if started.get("error"):
-                return {
-                    "url": url,
-                    "connectivity": connectivity,
-                    "error": started["error"],
-                }
-            navigated = browser.navigate(url)
-            if navigated.get("error"):
-                return {
-                    "url": url,
-                    "connectivity": connectivity,
-                    "error": navigated["error"],
-                }
-            shot_name = _safe_shot_name(name or f"review-{abs(hash(url)) % 10**8}")
-            if shot_name is None:
-                return {
-                    "url": url,
-                    "connectivity": connectivity,
-                    "page": navigated,
-                    "error": "invalid_name: screenshot name stays inside the artifacts dir",
-                }
-            shot = browser.screenshot(str(Path(self.ctx.artifacts_dir) / shot_name))
-            if shot.get("error"):
-                return {
-                    "url": url,
-                    "connectivity": connectivity,
-                    "page": navigated,
-                    "error": shot["error"],
-                }
-        finally:
-            with contextlib.suppress(Exception):
-                browser.close()
-        vision = vision_analyze(self.ctx.vision, shot["path"], question)
-        return {
-            "url": url,
-            "connectivity": connectivity,
-            "page": navigated,
-            "screenshot": shot,
-            "vision": vision,
-        }
+
+        if owned and transport is not None and root is not None:
+            drain_error = None
+            try:
+                binding = transport.bind_operation(root)
+                with binding:
+                    outcome = _execute_review()
+            finally:
+                try:
+                    drain = transport.finish_operation(
+                        root, deadline_at=transport._clock.monotonic() + 5.0
+                    )
+                    if not getattr(drain, "complete", True) or bool(
+                        getattr(drain, "pending_scopes", 0)
+                    ):
+                        drain_error = {
+                            "url": url,
+                            "error": "operation drain incomplete",
+                        }
+                except Exception as exc:
+                    drain_error = {
+                        "url": url,
+                        "error": f"operation drain failed: {exc}",
+                    }
+            if drain_error is not None:
+                return drain_error
+            return outcome
+        return _execute_review()
 
     def _project_allowed(self, project: Any) -> dict[str, Any] | None:
         if not isinstance(project, str) or project == "":

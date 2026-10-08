@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import contextlib
 import json
 import os
 import sys
+import threading
+import weakref
 from pathlib import Path
 from typing import Any
 
@@ -23,6 +26,7 @@ from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
 from omes.policy.policy import SeatPolicy
+from omes.providers.destination import DestinationTransport, SafeFetch
 from omes.substrate.client import DEFAULT_BASE_URL as SUBSTRATE_DEFAULT_URL
 from omes.substrate.client import SubstrateClient
 from omes.tools.approvals import ApprovalLog
@@ -158,7 +162,13 @@ def default_registry(
     )
     register_lead_tools(registry, LeadClient(LeadContext(root=root)))
     register_systems_tools(registry, SystemsClient(SystemsContext(root=root)))
-    register_web_tools(registry, WebClient(WebContext(root=root)))
+    transport = DestinationTransport(policy)
+    safe_fetch = SafeFetch(transport)
+    web_ctx = WebContext(
+        root=root, policy=policy, transport=transport, fetch=safe_fetch
+    )
+    register_web_tools(registry, WebClient(web_ctx))
+    bind_dispatch_transport(registry, transport)
     register_mobile_tools(registry, MobileClient(MobileContext(root=root)))
     register_infra_tools(registry, InfraClient(InfraContext()))
     register_quality_tools(registry, QualityClient(QualityContext(root=root)))
@@ -185,6 +195,91 @@ def default_registry(
         ),
     )
     return registry
+
+
+_BOUND_TRANSPORTS: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
+_BOUND_TRANSPORTS_LOCK = threading.Lock()
+
+_DISPATCH_ROOT_TOOLS = (
+    "web_preview_check",
+    "web_review_page",
+    "browser_navigate",
+    "browser_snapshot",
+)
+
+_DISPATCH_DEADLINES = {
+    "web_preview_check": 15.0,
+    "browser_snapshot": 15.0,
+    "web_review_page": 60.0,
+    "browser_navigate": 60.0,
+}
+
+
+class _SerialCoordinator:
+    """Serial dispatch gate for one registry's shared transport."""
+
+    def __init__(self, transport: DestinationTransport) -> None:
+        self.transport = transport
+        self.lock = threading.Lock()
+        self.pending = 0
+
+
+def _coordinator_for(registry: ToolRegistry) -> _SerialCoordinator | None:
+    with _BOUND_TRANSPORTS_LOCK:
+        return _BOUND_TRANSPORTS.get(registry)
+
+
+def bind_dispatch_transport(
+    registry: ToolRegistry, transport: DestinationTransport
+) -> None:
+    """Bind one shared transport to a registry's dispatch path."""
+    with _BOUND_TRANSPORTS_LOCK:
+        existing = _BOUND_TRANSPORTS.get(registry)
+        if existing is not None:
+            if existing.transport is not transport:
+                raise ValueError("registry is already bound to a different transport")
+            return
+        _BOUND_TRANSPORTS[registry] = _SerialCoordinator(transport)
+    inner = registry.dispatch
+
+    def _bound_dispatch(name: str, arguments: Any = None) -> str:
+        if name not in _DISPATCH_ROOT_TOOLS:
+            return inner(name, arguments)
+        coordinator = _coordinator_for(registry)
+        if coordinator is None or coordinator.transport is not transport:
+            return json.dumps(
+                {"error": "not_configured: no preview transport is bound"}
+            )
+        with coordinator.lock:
+            if coordinator.pending >= 16:
+                return json.dumps({"error": "upstream_error: dispatch queue is full"})
+            coordinator.pending += 1
+        try:
+            cap = _DISPATCH_DEADLINES.get(name, 15.0)
+            try:
+                root = transport.begin_operation(
+                    deadline_at=transport._clock.monotonic() + cap
+                )
+            except Exception:
+                return json.dumps({"error": "upstream_error: cannot begin operation"})
+            if root.abort_handle.reason is not None:
+                transport.finish_operation(
+                    root, deadline_at=transport._clock.monotonic() + 5.0
+                )
+                return json.dumps({"error": "upstream_error: operation was cancelled"})
+            binding = transport.bind_operation(root)
+            with binding:
+                payload = inner(name, arguments)
+            with contextlib.suppress(Exception):
+                transport.finish_operation(
+                    root, deadline_at=transport._clock.monotonic() + 5.0
+                )
+            return payload
+        finally:
+            with coordinator.lock:
+                coordinator.pending -= 1
+
+    registry.dispatch = _bound_dispatch  # type: ignore[method-assign]
 
 
 def _mcp_tools(registry: ToolRegistry, roster: list[str] | None) -> list[Tool]:

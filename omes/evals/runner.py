@@ -123,7 +123,6 @@ def _run_loop_case(case: dict, workdir: Path) -> dict:
 
 
 def _run_registry_case(case: dict, workdir: Path) -> dict:
-    calls: list[str] = []
     log = ApprovalLog()
     policy = None
     if isinstance(case.get("policy"), dict):
@@ -133,6 +132,11 @@ def _run_registry_case(case: dict, workdir: Path) -> dict:
         approved = log.approve(case["tool"], case.get("approved_by", "ada"))
         if not approved.get("approved"):
             raise ValueError("eval setup could not approve the tool")
+    if case.get("family") == "ultrathink":
+        return _run_ultrathink_family_case(case, workdir, registry)
+    if "family" in case:
+        raise ValueError(f"case {case['id']}: unknown family {case['family']!r}")
+    calls: list[str] = []
     canned = case.get("returns", "ok")
     registry.register(
         case["tool"],
@@ -142,6 +146,50 @@ def _run_registry_case(case: dict, workdir: Path) -> dict:
         requires_approval=bool(case.get("requires_approval")),
     )
     payload = json.loads(registry.dispatch(case["tool"], case.get("arguments", {})))
+    return {"payload": payload, "calls": calls, "workdir": workdir}
+
+
+def _run_ultrathink_family_case(
+    case: dict, workdir: Path, registry: ToolRegistry
+) -> dict:
+    """Dispatch through real ultrathink registration with a hermetic runner.
+
+    Approval flags come from production ``register_ultrathink_tools`` (which
+    reads ``APPROVAL_TOOLS``), never from the case's ``requires_approval``.
+    The injected CLI runner records argv, returns deterministic JSON echoing
+    the dispatched state/mark, and never spawns a subprocess or network call.
+    ``calls`` maps one entry per runner invocation so ``tool_called`` proves
+    the handler ran and ``tool_not_called`` proves zero runner calls on
+    refusal.
+    """
+    from omes.tools.ultrathink import (
+        UltrathinkClient,
+        UltrathinkContext,
+        register_ultrathink_tools,
+    )
+
+    runner_argv: list[list[str]] = []
+
+    def _fake_run(argv: list[str], timeout: int = 120) -> dict[str, Any]:
+        items = list(argv)
+        runner_argv.append(items)
+        try:
+            state_value = items[items.index("--state") + 1]
+        except (ValueError, IndexError):
+            state_value = ""
+        mark_value = items[-1] if items else ""
+        return {
+            "exit_code": 0,
+            "stdout": json.dumps(
+                {"ok": True, "state": state_value, "mark": mark_value}
+            ),
+            "stderr": "",
+        }
+
+    client = UltrathinkClient(UltrathinkContext(root="eval-hermetic", run=_fake_run))
+    register_ultrathink_tools(registry, client)
+    payload = json.loads(registry.dispatch(case["tool"], case.get("arguments", {})))
+    calls = [case["tool"] for _ in runner_argv]
     return {"payload": payload, "calls": calls, "workdir": workdir}
 
 
@@ -208,6 +256,10 @@ def _check(expectation: Any, outcome: dict) -> str | None:
         if expectation["text"] in str(payload.get("error", "")):
             return None
         return f"no refusal mentions {expectation['text']!r}"
+    if kind == "payload_contains":
+        blob = json.dumps(payload, ensure_ascii=False)
+        wanted = expectation.get("text", "")
+        return None if wanted in blob else f"payload lacks {wanted!r}"
     if kind == "tool_rows":
         count = sum(
             1 for row in messages if isinstance(row, dict) and row.get("role") == "tool"

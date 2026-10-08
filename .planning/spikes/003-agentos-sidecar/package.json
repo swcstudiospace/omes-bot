@@ -1,0 +1,17 @@
+{
+  "name": "spike-003-agentos-sidecar",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Spike 003: optional AgentOS TypeScript sidecar that Omega calls over HTTP",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node sidecar.mjs"
+  },
+  "dependencies": {
+    "@rivet-dev/agentos-core": "0.2.22"
+  }
+}

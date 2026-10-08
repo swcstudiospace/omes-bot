@@ -34,7 +34,7 @@ Skip what you don't use: every unconfigured client reports
 ## 3. Optional: attach the tool host
 
 Without this step Omes still answers from its prompt, skills, and
-routines. With it, the bot also calls the real Omes tools (104 on
+routines. With it, the bot also calls the real Omes tools (109 on
 the roster).
 
 On a machine you control (Linux, Mac, or WSL2, Python 3.11+):
@@ -84,3 +84,16 @@ Builders can also run the local verification:
 ```bash
 .venv/bin/python -m omes.setup_check --root .
 ```
+
+## Contributor CI
+
+The `verify`, `lint`, and `types` jobs each run on Python 3.12, 3.13,
+and 3.14. They use the stdlib-only
+`omes/scripts/ci_receipt.py` helper to record the actual interpreter,
+command exit codes, and stage outcomes without masking command
+failures. The verification summary also checks the named Discord
+missing-library guard in the suite's JUnit report.
+
+Receipt summaries run even after an earlier step fails. Missing, skipped,
+cancelled, or failed required evidence prevents a passing summary; a green
+summary is not a replacement for the underlying job results.

@@ -1,0 +1,1169 @@
+{
+  "probe": "001-substrate-streamable-http/probe_sdk.py",
+  "started_at": "2026-10-07T20:52:48+0000",
+  "base_url": "http://127.0.0.1:17411",
+  "token_supplied": true,
+  "python": "3.12.3",
+  "versions": {
+    "mcp": "2.3.0",
+    "httpx2": "2.13.1"
+  },
+  "client_protocol_versions": {
+    "handshake": [
+      "2024-11-05",
+      "2025-03-26",
+      "2025-06-18",
+      "2025-11-25"
+    ],
+    "modern": [
+      "2026-07-28"
+    ]
+  },
+  "cases": [
+    {
+      "case": "S01 mode=auto (SDK default)",
+      "url": "http://127.0.0.1:17411/mcp",
+      "mode": "auto",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": true,
+      "protocol_version": "2025-11-25",
+      "server_info": {
+        "name": "substrate",
+        "version": "0.1.0"
+      },
+      "server_capabilities": {
+        "tools": {
+          "list_changed": true
+        }
+      },
+      "tools": [
+        "memory_brief",
+        "memory_write",
+        "memory_search",
+        "events_emit",
+        "graph_get",
+        "graph_register",
+        "graph_claim",
+        "graph_release",
+        "graph_complete",
+        "graph_heartbeat",
+        "graph_handoff",
+        "docs_search"
+      ],
+      "calls": [
+        {
+          "tool": "memory_brief",
+          "arguments": {
+            "repo": "spike/omega-001"
+          },
+          "result": {
+            "is_error": false,
+            "content_text": [
+              "## Substrate brief: spike/omega-001\nNo substrate history for this repo yet. You are the first grok-bot session here."
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 8.2
+        },
+        {
+          "tool": "graph_get",
+          "arguments": {
+            "graph_id": "ut-spike001-00000000"
+          },
+          "result": {
+            "is_error": false,
+            "content_text": [
+              "No graph ut-spike001-00000000 in the index."
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 5.3
+        },
+        {
+          "tool": "graph_get",
+          "arguments": {},
+          "result": {
+            "is_error": true,
+            "content_text": [
+              "MCP error -32602: Input validation error: Invalid arguments for tool graph_get: Invalid input: expected string, received undefined at graph_id"
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 5.2
+        },
+        {
+          "tool": "no_such_tool",
+          "arguments": {},
+          "result": {
+            "is_error": true,
+            "content_text": [
+              "MCP error -32602: Tool no_such_tool not found"
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 4.2
+        }
+      ],
+      "elapsed_ms": 138.4,
+      "wire": [
+        {
+          "t": 706454.09,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        },
+        {
+          "t": 706454.096,
+          "dir": "response",
+          "method": "POST",
+          "status": 400,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}"
+        },
+        {
+          "t": 706454.097,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 2,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.101,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.102,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "notifications/initialized",
+          "jsonrpc_id": null
+        },
+        {
+          "t": 706454.107,
+          "dir": "response",
+          "method": "POST",
+          "status": 202,
+          "content-type": null,
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.107,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/list",
+          "jsonrpc_id": 3
+        },
+        {
+          "t": 706454.114,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.118,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 4
+        },
+        {
+          "t": 706454.123,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.125,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 5
+        },
+        {
+          "t": 706454.129,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.13,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 6
+        },
+        {
+          "t": 706454.134,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.135,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 7
+        },
+        {
+          "t": 706454.138,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        }
+      ]
+    },
+    {
+      "case": "S02 mode=legacy (initialize handshake only)",
+      "url": "http://127.0.0.1:17411/mcp",
+      "mode": "legacy",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": true,
+      "protocol_version": "2025-11-25",
+      "server_info": {
+        "name": "substrate",
+        "version": "0.1.0"
+      },
+      "server_capabilities": {
+        "tools": {
+          "list_changed": true
+        }
+      },
+      "tools": [
+        "memory_brief",
+        "memory_write",
+        "memory_search",
+        "events_emit",
+        "graph_get",
+        "graph_register",
+        "graph_claim",
+        "graph_release",
+        "graph_complete",
+        "graph_heartbeat",
+        "graph_handoff",
+        "docs_search"
+      ],
+      "calls": [
+        {
+          "tool": "memory_brief",
+          "arguments": {
+            "repo": "spike/omega-001"
+          },
+          "result": {
+            "is_error": false,
+            "content_text": [
+              "## Substrate brief: spike/omega-001\nNo substrate history for this repo yet. You are the first grok-bot session here."
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 4.8
+        },
+        {
+          "tool": "graph_get",
+          "arguments": {
+            "graph_id": "ut-spike001-00000000"
+          },
+          "result": {
+            "is_error": false,
+            "content_text": [
+              "No graph ut-spike001-00000000 in the index."
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 4.1
+        },
+        {
+          "tool": "graph_get",
+          "arguments": {},
+          "result": {
+            "is_error": true,
+            "content_text": [
+              "MCP error -32602: Input validation error: Invalid arguments for tool graph_get: Invalid input: expected string, received undefined at graph_id"
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 4.5
+        },
+        {
+          "tool": "no_such_tool",
+          "arguments": {},
+          "result": {
+            "is_error": true,
+            "content_text": [
+              "MCP error -32602: Tool no_such_tool not found"
+            ],
+            "structured_content": null
+          },
+          "elapsed_ms": 3.7
+        }
+      ],
+      "elapsed_ms": 31.7,
+      "wire": [
+        {
+          "t": 706454.14,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 1,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.143,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.144,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "notifications/initialized",
+          "jsonrpc_id": null
+        },
+        {
+          "t": 706454.147,
+          "dir": "response",
+          "method": "POST",
+          "status": 202,
+          "content-type": null,
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.147,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/list",
+          "jsonrpc_id": 2
+        },
+        {
+          "t": 706454.152,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.154,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 3
+        },
+        {
+          "t": 706454.158,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.159,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 4
+        },
+        {
+          "t": 706454.162,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.163,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 5
+        },
+        {
+          "t": 706454.166,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        },
+        {
+          "t": 706454.167,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2025-11-25",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 6
+        },
+        {
+          "t": 706454.17,
+          "dir": "response",
+          "method": "POST",
+          "status": 200,
+          "content-type": "text/event-stream",
+          "mcp-session-id": null
+        }
+      ]
+    },
+    {
+      "case": "S03 mode=2026-07-28 pinned (no handshake)",
+      "url": "http://127.0.0.1:17411/mcp",
+      "mode": "2026-07-28",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": true,
+      "protocol_version": "2026-07-28",
+      "server_info": null,
+      "server_capabilities": {},
+      "list_tools_error": {
+        "exception": "mcp.shared.exceptions.MCPError",
+        "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+        "mcp_error": {
+          "code": -32000,
+          "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+          "data": null
+        },
+        "traceback_tail": [
+          "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+          "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
+        ]
+      },
+      "calls": [
+        {
+          "tool": "memory_brief",
+          "arguments": {
+            "repo": "spike/omega-001"
+          },
+          "error": {
+            "exception": "mcp.shared.exceptions.MCPError",
+            "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+            "mcp_error": {
+              "code": -32000,
+              "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+              "data": null
+            },
+            "traceback_tail": [
+              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
+            ]
+          },
+          "elapsed_ms": 3.4
+        },
+        {
+          "tool": "graph_get",
+          "arguments": {
+            "graph_id": "ut-spike001-00000000"
+          },
+          "error": {
+            "exception": "mcp.shared.exceptions.MCPError",
+            "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+            "mcp_error": {
+              "code": -32000,
+              "message": "Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)",
+              "data": null
+            },
+            "traceback_tail": [
+              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "mcp.shared.exceptions.MCPError: Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\n"
+            ]
+          },
+          "elapsed_ms": 3.2
+        }
+      ],
+      "elapsed_ms": 12.2,
+      "wire": [
+        {
+          "t": 706454.172,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "tools/list",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/list",
+          "jsonrpc_id": 1
+        },
+        {
+          "t": 706454.174,
+          "dir": "response",
+          "method": "POST",
+          "status": 400,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}"
+        },
+        {
+          "t": 706454.177,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "tools/call",
+          "mcp-name": "memory_brief",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 2
+        },
+        {
+          "t": 706454.179,
+          "dir": "response",
+          "method": "POST",
+          "status": 400,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}"
+        },
+        {
+          "t": 706454.18,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "tools/call",
+          "mcp-name": "graph_get",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "tools/call",
+          "jsonrpc_id": 3
+        },
+        {
+          "t": 706454.182,
+          "dir": "response",
+          "method": "POST",
+          "status": 400,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"jsonrpc\":\"2.0\",\"error\":{\"code\":-32000,\"message\":\"Bad Request: Unsupported protocol version: 2026-07-28 (supported versions: 2025-11-25, 2025-06-18, 2025-03-26, 2024-11-05, 2024-10-07)\"},\"id\":null}"
+        }
+      ]
+    },
+    {
+      "case": "S04 mode=auto, bogus bearer token",
+      "url": "http://127.0.0.1:17411/mcp",
+      "mode": "auto",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": false,
+      "failed_at": "connect",
+      "error": {
+        "exception": "builtins.ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "group": [
+          {
+            "exception": "builtins.ExceptionGroup",
+            "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+            "group": [
+              {
+                "exception": "mcp.shared.exceptions.MCPError",
+                "message": "Server returned an error response",
+                "mcp_error": {
+                  "code": -32603,
+                  "message": "Server returned an error response",
+                  "data": null
+                },
+                "traceback_tail": [
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "mcp.shared.exceptions.MCPError: Server returned an error response\n"
+                ]
+              }
+            ],
+            "traceback_tail": [
+              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    | mcp.shared.exceptions.MCPError: Server returned an error response\n",
+              "    +------------------------------------\n"
+            ]
+          }
+        ],
+        "traceback_tail": [
+          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      | mcp.shared.exceptions.MCPError: Server returned an error response\n",
+          "      +------------------------------------\n"
+        ]
+      },
+      "elapsed_ms": 7.5,
+      "wire": [
+        {
+          "t": 706454.184,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        },
+        {
+          "t": 706454.186,
+          "dir": "response",
+          "method": "POST",
+          "status": 401,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"unknown or missing bearer token\"}"
+        },
+        {
+          "t": 706454.187,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 2,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.187,
+          "dir": "response",
+          "method": "POST",
+          "status": 401,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"unknown or missing bearer token\"}"
+        }
+      ]
+    },
+    {
+      "case": "S05 mode=auto, no Authorization header",
+      "url": "http://127.0.0.1:17411/mcp",
+      "mode": "auto",
+      "extra_headers": {},
+      "connected": false,
+      "failed_at": "connect",
+      "error": {
+        "exception": "builtins.ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "group": [
+          {
+            "exception": "builtins.ExceptionGroup",
+            "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+            "group": [
+              {
+                "exception": "mcp.shared.exceptions.MCPError",
+                "message": "Server returned an error response",
+                "mcp_error": {
+                  "code": -32603,
+                  "message": "Server returned an error response",
+                  "data": null
+                },
+                "traceback_tail": [
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "mcp.shared.exceptions.MCPError: Server returned an error response\n"
+                ]
+              }
+            ],
+            "traceback_tail": [
+              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    | mcp.shared.exceptions.MCPError: Server returned an error response\n",
+              "    +------------------------------------\n"
+            ]
+          }
+        ],
+        "traceback_tail": [
+          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      | mcp.shared.exceptions.MCPError: Server returned an error response\n",
+          "      +------------------------------------\n"
+        ]
+      },
+      "elapsed_ms": 6.2,
+      "wire": [
+        {
+          "t": 706454.192,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        },
+        {
+          "t": 706454.193,
+          "dir": "response",
+          "method": "POST",
+          "status": 401,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"unknown or missing bearer token\"}"
+        },
+        {
+          "t": 706454.194,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 2,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.194,
+          "dir": "response",
+          "method": "POST",
+          "status": 401,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"unknown or missing bearer token\"}"
+        }
+      ]
+    },
+    {
+      "case": "S06 mode=auto, wrong path (/mcp/ trailing slash)",
+      "url": "http://127.0.0.1:17411/mcp/",
+      "mode": "auto",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": false,
+      "failed_at": "connect",
+      "error": {
+        "exception": "builtins.ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "group": [
+          {
+            "exception": "builtins.ExceptionGroup",
+            "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+            "group": [
+              {
+                "exception": "mcp.shared.exceptions.MCPError",
+                "message": "Not Found",
+                "mcp_error": {
+                  "code": -32601,
+                  "message": "Not Found",
+                  "data": null
+                },
+                "traceback_tail": [
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "mcp.shared.exceptions.MCPError: Not Found\n"
+                ]
+              }
+            ],
+            "traceback_tail": [
+              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    | mcp.shared.exceptions.MCPError: Not Found\n",
+              "    +------------------------------------\n"
+            ]
+          }
+        ],
+        "traceback_tail": [
+          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      | mcp.shared.exceptions.MCPError: Not Found\n",
+          "      +------------------------------------\n"
+        ]
+      },
+      "elapsed_ms": 5.9,
+      "wire": [
+        {
+          "t": 706454.198,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp/",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        },
+        {
+          "t": 706454.199,
+          "dir": "response",
+          "method": "POST",
+          "status": 404,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"no route for POST /mcp/\"}"
+        },
+        {
+          "t": 706454.2,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/mcp/",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 2,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.2,
+          "dir": "response",
+          "method": "POST",
+          "status": 404,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"no route for POST /mcp/\"}"
+        }
+      ]
+    },
+    {
+      "case": "S07 mode=auto, wrong path (/)",
+      "url": "http://127.0.0.1:17411/",
+      "mode": "auto",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": false,
+      "failed_at": "connect",
+      "error": {
+        "exception": "builtins.ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "group": [
+          {
+            "exception": "builtins.ExceptionGroup",
+            "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+            "group": [
+              {
+                "exception": "mcp.shared.exceptions.MCPError",
+                "message": "Not Found",
+                "mcp_error": {
+                  "code": -32601,
+                  "message": "Not Found",
+                  "data": null
+                },
+                "traceback_tail": [
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/client/session.py\", line 586, in send_request\n    raw = await self._dispatcher.send_raw_request(method, data.get(\"params\"), opts)\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",
+                  "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+                  "mcp.shared.exceptions.MCPError: Not Found\n"
+                ]
+              }
+            ],
+            "traceback_tail": [
+              "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n    |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+              "    | mcp.shared.exceptions.MCPError: Not Found\n",
+              "    +------------------------------------\n"
+            ]
+          }
+        ],
+        "traceback_tail": [
+          "      |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/mcp/shared/jsonrpc_dispatcher.py\", line 461, in send_raw_request\n      |     raise MCPError(code=outcome.code, message=outcome.message, data=outcome.data)\n",
+          "      | mcp.shared.exceptions.MCPError: Not Found\n",
+          "      +------------------------------------\n"
+        ]
+      },
+      "elapsed_ms": 7.0,
+      "wire": [
+        {
+          "t": 706454.204,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        },
+        {
+          "t": 706454.205,
+          "dir": "response",
+          "method": "POST",
+          "status": 404,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"no route for POST /\"}"
+        },
+        {
+          "t": 706454.206,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:17411/",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "initialize",
+          "jsonrpc_id": 2,
+          "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {
+              "name": "mcp",
+              "version": "0.1.0"
+            }
+          }
+        },
+        {
+          "t": 706454.207,
+          "dir": "response",
+          "method": "POST",
+          "status": 404,
+          "content-type": "application/json",
+          "mcp-session-id": null,
+          "body": "{\"error\":\"no route for POST /\"}"
+        }
+      ]
+    },
+    {
+      "case": "S08 mode=auto, substrate down (closed port)",
+      "url": "http://127.0.0.1:33259/mcp",
+      "mode": "auto",
+      "extra_headers": {
+        "Authorization": "Bearer [REDACTED]"
+      },
+      "connected": false,
+      "failed_at": "connect",
+      "error": {
+        "exception": "builtins.ExceptionGroup",
+        "message": "unhandled errors in a TaskGroup (1 sub-exception)",
+        "group": [
+          {
+            "exception": "httpx2.ConnectError",
+            "message": "All connection attempts failed",
+            "cause": {
+              "exception": "httpcore2.ConnectError",
+              "message": "All connection attempts failed",
+              "traceback_tail": [
+                "  File \"/usr/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n",
+                "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpcore2/_exceptions.py\", line 17, in map_exceptions\n    raise to_exc(exc) from exc\n",
+                "httpcore2.ConnectError: All connection attempts failed\n"
+              ]
+            },
+            "traceback_tail": [
+              "  File \"/usr/lib/python3.12/contextlib.py\", line 158, in __exit__\n    self.gen.throw(value)\n",
+              "  File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    raise mapped_exc(message) from exc\n",
+              "httpx2.ConnectError: All connection attempts failed\n"
+            ]
+          }
+        ],
+        "traceback_tail": [
+          "    |   File \"/root/src/repos/Omes-Bot/.venv/lib/python3.12/site-packages/httpx2/_transports/default.py\", line 115, in map_httpcore_exceptions\n    |     raise mapped_exc(message) from exc\n",
+          "    | httpx2.ConnectError: All connection attempts failed\n",
+          "    +------------------------------------\n"
+        ]
+      },
+      "elapsed_ms": 5.0,
+      "wire": [
+        {
+          "t": 706454.211,
+          "dir": "request",
+          "method": "POST",
+          "url": "http://127.0.0.1:33259/mcp",
+          "accept": "application/json, text/event-stream",
+          "content-type": "application/json",
+          "mcp-protocol-version": "2026-07-28",
+          "mcp-method": "server/discover",
+          "authorization": "Bearer [REDACTED]",
+          "jsonrpc_method": "server/discover",
+          "jsonrpc_id": 1,
+          "params": {
+            "_meta": {
+              "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+              "io.modelcontextprotocol/clientInfo": {
+                "name": "mcp",
+                "version": "0.1.0"
+              },
+              "io.modelcontextprotocol/clientCapabilities": {}
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "finished_at": "2026-10-07T20:52:48+0000"
+}

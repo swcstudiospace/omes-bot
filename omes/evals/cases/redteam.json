@@ -166,5 +166,30 @@
       {"type": "refusal_contains", "text": "approval required"},
       {"type": "tool_not_called", "name": "substrate_graph_claim"}
     ]
+  },
+  {
+    "id": "redteam-ultrathink-mark-unapproved",
+    "kind": "redteam",
+    "registry": true,
+    "family": "ultrathink",
+    "tool": "ult_session_mark",
+    "arguments": {"state": ".sessions/s1.json", "mark": "synced"},
+    "expect": [
+      {"type": "refusal_contains", "text": "approval required"},
+      {"type": "tool_not_called", "name": "ult_session_mark"}
+    ]
+  },
+  {
+    "id": "redteam-policy-empty-deny",
+    "kind": "redteam",
+    "registry": true,
+    "tool": "x_post",
+    "policy": {"version": 1, "tools": {"allow": []}},
+    "arguments": {"text": "hello world"},
+    "returns": "ok",
+    "expect": [
+      {"type": "refusal_contains", "text": "policy forbids"},
+      {"type": "tool_not_called", "name": "x_post"}
+    ]
   }
 ]

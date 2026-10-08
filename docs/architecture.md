@@ -49,6 +49,19 @@ Hindsight `retain`/`recall` pair. Skills are `SKILL.md` files under
 `ultrathink_turn`) plus the desk lead routines. The curator folds nightly
 learnings back into memory.
 
+## Destination Transport & Browser Confinement
+
+Egress and browser execution follow strict operational boundaries:
+
+- Destination transport (`omes/providers/destination.py`) manages seat policy
+  enforcement, DNS resolution, numeric dialing, and TLS validation.
+- Composed preview and review orchestration (`omes/tools/webpack.py`) uses
+  registered `RootOperation` scopes to prevent SSRF and unmediated DNS rebinding.
+- Browser egress confinement (`omes/tools/browser_egress.py`) manages sandbox
+  accounting, socket ledger proofs, and terminal close receipts.
+- Vision inspection occurs only after complete session close and verified clean
+  drain receipts.
+
 ## The Grok Bot shell
 
 The same agent, addressed from Grok: `omes/grokbot/templates/OMES.md` is

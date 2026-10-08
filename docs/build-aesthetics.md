@@ -16,8 +16,8 @@ The seven Programming Desk seats were absorbed as domain packs —
 tool families with roster entries, policy entries, and skills —
 inside the one agent: lead (16), systems (6), web (6), mobile
 (13), infra (7), quality (8), app packs (9). Messaging, IDE,
-platform, growth, coding, delegation, and ultrathink bridge tools
-complete the 104-tool roster.
+platform, growth, coding, delegation, substrate, and ultrathink
+bridge tools complete the 109-tool roster.
 
 ## Contracts over code
 
@@ -44,9 +44,11 @@ the receipt and the stamp.
 
 ## Deterministic guards
 
-- 235 pytest tests, including roster/policy/composition
-  agreement and per-pack fake-backed suites.
-- 21 eval cases: per-pack refusal + approved-behaviour pairs.
+- Hermetic pytest coverage for roster/policy/composition agreement,
+  provider protocols, retrieval safety, and per-pack behavior.
+- Deterministic golden and red-team evals, including refusal and approved
+  behavior through real tool registration.
+- CI reports the current test/eval totals; prose does not pin changing counts.
 - `assemble-prompts.sh --check` and `omes.setup_check` verify
   prompts, template, roster, registry, and install health.
 

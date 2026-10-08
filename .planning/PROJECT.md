@@ -22,6 +22,19 @@ v7 milestone: Omes as a substrate surface — the Grok Bot briefs on open, emits
 
 v8 milestone: public launch — branded README, standard public-repo files, richer GitBook docs with a CI-kept tool catalog, Greptile connected with repo review standards, and a KB sync pipeline publishing Greptile's knowledge base into the docs. User decisions (2026-10-03): connect Greptile now, push branch + open PR, GitBook stays the host. Ground truth: Greptile docs corpus (config + KB MCP tools).
 
+v9 milestone: SOTA upgrade — the same one-agent product brought to state-of-the-art engineering and agent standards: in-flight hardening landed, lint + types enforced in CI, pinned dependencies, current provider/protocol wire formats, and a deeper hermetic eval battery. User decisions (2026-10-07): full-SOTA scope, land the dirty tree first, hermetic verification stays (live probes manual opt-in).
+
+## Current Milestone: v9 SOTA upgrade
+
+**Goal:** Bring Omes Bot to state-of-the-art engineering and agent standards while keeping the one-agent, one-process architecture.
+
+**Target features:**
+- Land and verify the in-flight hardening already in the tree
+- Engineering hygiene: linter + typechecker enforced in CI, pinned dependencies, current Python matrix
+- Provider and protocol currency: current wire formats, MCP SDK, streaming/structured output where the loop can use it
+- Agent depth: highest-value deferred items from v1–v8
+- Eval depth: grow the deterministic/adversarial battery, keep everything hermetic
+
 ## Requirements
 
 ### Validated
@@ -66,6 +79,34 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 - **Providers**: A missing xAI key does not fail the milestone. The Grok adapter is tested with a fake transport.
 - **Done means parity**: A phase is done when its parity checks pass, not when a scaffold exists.
 
+## Environment Facts
+
+- Planning root and code repo: `/root/src/repos/Omes-Bot`; current branch
+  `v6-grok-ship`, HEAD `36fd803`. Existing Phase 52 changes are uncommitted;
+  preserve them. Do not git commit, push, merge, or tag during this continuation.
+- GSD CLI: `node /root/.hermes/gsd-core/bin/gsd-tools.cjs`, run from this repo.
+  Existing reports use body-only `**Status:**` fields; the CLI requires leading
+  YAML frontmatter. Repair the artifacts, not the installed GSD tools.
+- Repo virtualenv: `.venv/bin/python` is Python 3.12.3; `.venv/bin/ruff` is
+  0.16.10; `.venv/bin/mypy` is 2.4.0. No install or global toolchain is needed.
+- Parent baseline on 2026-10-07: `.venv/bin/python -m pytest omes/tests -q`
+  passed 352 tests with no skips. `.venv/bin/python -m omes.evals.runner
+  omes/evals/cases` passed 26 evals. Use a fresh HOME and XDG_DATA_HOME beneath
+  `$TMPDIR` (`/root/.hermes/cache/scratch`) for verification; keep real HOME
+  `/root` for GSD/role discovery and do not use `/tmp/fakehome`.
+- Other parent baseline gates, all exit 0: `bash
+  omes/scripts/assemble-prompts.sh --check`, `.venv/bin/ruff check omes/`,
+  `.venv/bin/ruff format --check omes/` (206 files), `.venv/bin/mypy omes/`
+  (175 source files), `.venv/bin/python -m omes.setup_check --root .`, and
+  `.venv/bin/python -m omes.tooling.catalog --check`.
+- Setup smoke check serves 108 roster tools over MCP; optional ultrathink and
+  substrate connections remain unconfigured. The milestone is hermetic;
+  unconfigured live services are not evidence of live verification.
+- Config retains auto_advance=true, skip_discuss=true, text_mode=true,
+  use_worktrees=false, ui_phase=false, ui_review=false, commit_docs=false,
+  and git.create_tag=false. Review, Nyquist, and security hooks are active.
+  Cleanup/moving phase directories requires separate user confirmation.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -86,6 +127,24 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v7 shares the `ultrathink` Hindsight bank | One set of episodic beliefs across the ultrathink system; no silos (user chose 2026-10-03) | ✓ Good |
 | v7 verifies with fakes + opt-in live probes | Committed tests stay hermetic; read-only Railway probes run manually, never in CI (user chose 2026-10-03) | ✓ Good |
 | v8 launches public with Greptile connected | User chose connect-now, push + PR, GitBook + verify CI (2026-10-03); init blocked on org app install (user step), KB enrollment stays a Greptile-contact ask | ✓ Good |
+| v9 upgrades to SOTA in place | User chose full-SOTA scope, land dirty tree first, hermetic verification stays (2026-10-07); one-agent architecture and Add-Bot unwired compat unchanged | — Pending |
+
+## Evolution
+
+This document evolves at phase transitions and milestone boundaries.
+
+**After each phase transition** (via `/gsd-transition`):
+1. Requirements invalidated? → Move to Out of Scope with reason
+2. Requirements validated? → Move to Validated with phase reference
+3. New requirements emerged? → Add to Active
+4. Decisions to log? → Add to Key Decisions
+5. "What This Is" still accurate? → Update if drifted
+
+**After each milestone** (via `/gsd:complete-milestone`):
+1. Full review of all sections
+2. Core Value check — still the right priority?
+3. Audit Out of Scope — reasons still valid?
+4. Update Context with current state
 
 ---
-*Last updated: 2026-10-03 after v8 milestone close (2/2 phases, 2/2 plans, 7/7 requirements; v8 archived)*
+*Last updated: 2026-10-07 after v9 milestone start (SOTA upgrade; defining requirements)*

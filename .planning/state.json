@@ -1,0 +1,48 @@
+{
+  "contract": "1.0.0",
+  "flavor": "core",
+  "milestone": "v9 — SOTA upgrade",
+  "phases": [
+    {
+      "number": "46",
+      "name": "Land in-flight hardening",
+      "status": "complete"
+    },
+    {
+      "number": "47",
+      "name": "Lint + format + types",
+      "status": "complete"
+    },
+    {
+      "number": "48",
+      "name": "Dependencies + matrix",
+      "status": "complete"
+    },
+    {
+      "number": "49",
+      "name": "Provider resilience",
+      "status": "complete"
+    },
+    {
+      "number": "50",
+      "name": "Provider protocols",
+      "status": "complete"
+    },
+    {
+      "number": "51",
+      "name": "Red-team depth",
+      "status": "complete"
+    },
+    {
+      "number": "52",
+      "name": "Answers + evals + docs",
+      "status": "complete"
+    }
+  ],
+  "next": {
+    "command": "/gsd:new-milestone",
+    "label": "Start next milestone",
+    "reason": "v9 SOTA upgrade milestone complete. All 7 phases (46-52) and all 19 requirements verified."
+  },
+  "updated_at": "2026-10-08T05:20:00Z"
+}

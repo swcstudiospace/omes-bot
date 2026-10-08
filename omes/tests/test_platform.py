@@ -7,6 +7,7 @@ import os
 import socket
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -53,7 +54,102 @@ def _files(root: Path) -> list[str]:
     return sorted(path.relative_to(root).as_posix() for path in root.rglob("*"))
 
 
+class _PlatformFakeRoot:
+    def __init__(self, authority: object, deadline_at: float) -> None:
+        self.identity = object()
+        self.authority = authority
+        self.deadline_at = deadline_at
+
+        class _Abort:
+            reason = None
+
+        self.abort_handle = _Abort()
+
+
+class _PlatformFakeScope:
+    def __init__(self, root: _PlatformFakeRoot) -> None:
+        self.operation = root
+        self.deadline_at = root.deadline_at
+
+    def close(self) -> None:
+        return None
+
+
+class _PlatformFakeTransport:
+    def __init__(self, page: str = "<page>example</page>") -> None:
+        self.authority = object()
+        self.page = page
+        self.urls: list[str] = []
+
+        class _Limits:
+            decoded_max = 16_777_216
+            decoder_workspace_max = 262_144
+
+        self.limits = _Limits()
+
+    def begin_operation(self, *, deadline_at: float) -> _PlatformFakeRoot:
+        return _PlatformFakeRoot(self.authority, deadline_at)
+
+    def current_operation(self) -> None:
+        return None
+
+    def finish_operation(
+        self, operation: _PlatformFakeRoot, *, deadline_at: float
+    ) -> object:
+        from collections import namedtuple
+
+        _Drain = namedtuple(
+            "_Drain",
+            "operation scopes_closed pending_scopes abort_reason errors complete",
+        )
+        return _Drain(operation.identity, 1, 0, None, (), True)
+
+    def open_scope(
+        self, *, operation: _PlatformFakeRoot, deadline_at: float, parent: object = None
+    ) -> _PlatformFakeScope:
+        return _PlatformFakeScope(operation)
+
+    def fetch(
+        self, request: object, *, scope: object, sample_limit: object = None
+    ) -> object:
+        from types import SimpleNamespace
+        from urllib.parse import urlparse
+
+        url = getattr(request, "url", "")
+        self.urls.append(url)
+        host = urlparse(url).hostname or ""
+        if host != "example.test":
+            raise AssertionError("unexpected host")
+        return SimpleNamespace(url=url, status=200, body=b"<title>t</title>")
+
+    def decode_response(
+        self, response: Any, *, request: object, scope: object, budget: object
+    ) -> object:
+        from types import SimpleNamespace
+
+        return SimpleNamespace(url=response.url, status=200, body=b"<title>t</title>")
+
+
+def _platform_factory(transport: _PlatformFakeTransport) -> object:
+    from pathlib import Path as _Path
+
+    from omes.tools.browser_egress import GuardedBrowserFactory as _Factory
+    from omes.tools.browser_egress import HostBrowserConfig as _Config
+    from omes.tools.browser_egress import StubLaunchBackend as _Backend
+
+    config = _Config(
+        executable=_Path("/opt/google/chrome/chrome"),
+        bwrap=_Path("/usr/bin/bwrap"),
+        manifest=(),
+        delegated_cgroup=_Path("/sys/fs/cgroup/omes-browser"),
+        profile_id="hermetic-platform",
+    )
+    return _Factory._for_test(transport, config=config, launcher=_Backend())  # type: ignore[arg-type]
+
+
 class _Page:
+    """Legacy shape retained for import compatibility; no longer injected."""
+
     def __init__(self) -> None:
         self.urls: list[str] = []
         self.page = "<page>example</page>"
@@ -209,15 +305,19 @@ def test_browser_navigate_and_snapshot_use_the_injected_transport(
         raise AssertionError("socket opened")
 
     monkeypatch.setattr(socket, "socket", refuse_socket)
-    page = _Page()
+    transport = _PlatformFakeTransport()
+    factory = _platform_factory(transport)
     registry = ToolRegistry()
-    register_platform_tools(registry, home=tmp_path, browser=BrowserSession(page))
+    register_platform_tools(registry, home=tmp_path, browser=BrowserSession(factory))
     navigated = _load(
         registry.dispatch("browser_navigate", {"url": "https://example.test/omes"})
     )
-    assert navigated == {"url": "https://example.test/omes", "page": page.page}
-    assert page.urls == ["https://example.test/omes"]
-    assert _load(registry.dispatch("browser_snapshot", {})) == {"page": page.page}
+    assert navigated["url"] == "https://example.test/omes"
+    assert navigated["page"] == {"title": "t", "url": "https://example.test/omes"}
+    assert transport.urls == ["https://example.test/omes"]
+    assert _load(registry.dispatch("browser_snapshot", {})) == {
+        "page": {"title": "t", "url": "https://example.test/omes"}
+    }
 
     closed = ToolRegistry()
     register_platform_tools(closed, home=tmp_path, browser=None)
@@ -225,10 +325,19 @@ def test_browser_navigate_and_snapshot_use_the_injected_transport(
         closed.dispatch("browser_navigate", {"url": "https://example.test"})
     )
     assert "error" in _load(closed.dispatch("browser_snapshot", {}))
-    assert page.urls == ["https://example.test/omes"]
+    assert transport.urls == ["https://example.test/omes"]
     missing = BrowserSession(None)
     assert "error" in missing.browser_navigate("https://example.test")
     assert "error" in missing.browser_snapshot()
+
+
+def test_browser_direct_failure_blocks_cache_and_snapshot(tmp_path: Path) -> None:
+    transport = _PlatformFakeTransport()
+    factory = _platform_factory(transport)
+    direct = BrowserSession(factory)
+    bad = direct.browser_navigate("https://forbidden.example/x")
+    assert "error" in bad
+    assert "error" in direct.browser_snapshot()
 
 
 def test_approval_gate_blocks_until_a_person_approves():

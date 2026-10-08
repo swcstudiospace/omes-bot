@@ -43,7 +43,7 @@ def test_ci_runs_lint_format_and_types() -> None:
     assert "python3 -m ruff check omes/" in workflow
     assert "python3 -m ruff format --check omes/" in workflow
     assert "python3 -m mypy omes/" in workflow
-    assert "pip install -e .[dev]" in workflow
+    assert "pip install -e '.[dev]'" in workflow or "pip install -e .[dev]" in workflow
 
 
 def test_canonical_mcp_spellings_in_server() -> None:

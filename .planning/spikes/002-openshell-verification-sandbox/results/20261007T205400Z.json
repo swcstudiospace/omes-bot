@@ -1,0 +1,238 @@
+{
+  "passed_all_checks": false,
+  "checks": {
+    "no_leftover_sandboxes": false,
+    "no_leftover_containers": true
+  },
+  "timings_s": {
+    "image_build_s": 2.051,
+    "create_s": 0.837
+  },
+  "facts": {
+    "run_id": "20261007T205400Z",
+    "sandbox": "osp002-406440",
+    "image": "omega-verify-py:spike002",
+    "pre_sandboxes": [],
+    "base_image_present_before": false,
+    "verifier_image_present_before": false,
+    "aborted": "RuntimeError: sandbox create failed",
+    "images_new_after_run": [],
+    "containers_new_after_run": [],
+    "leftover_labelled_sandboxes": [
+      "osp002-406440"
+    ],
+    "final_sandbox_list": "NAME           CREATED              PHASE\nosp002-406440  2026-10-07 20:54:03  Error\n",
+    "final_docker_ps": "CONTAINER ID   IMAGE                               COMMAND                  CREATED       STATUS                PORTS                                          NAMES\n376d6841647d   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:54000->4000/tcp                      substrate-smoke-greptime\ndc89b9a95749   postgres:16                         \"docker-entrypoint.s\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:55432->5432/tcp                      substrate-smoke-pg\n72470b4d22eb   rivetdev/engine:latest              \"/usr/bin/rivet-engi\u2026\"   5 days ago    Up 5 days (healthy)   127.0.0.1:6420->6420/tcp                       gcs-rivet-rivet-engine-1\n1917e37f4d54   linuxserver/webtop:ubuntu-xfce      \"/init\"                  11 days ago   Up 8 days             3001/tcp, 127.0.0.1:6081->3000/tcp             substrate-desktop\n683a121f1561   agentos:latest                      \"/app/scripts/entryp\u2026\"   2 weeks ago   Up 8 days             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp    agentos-api\nc8ee8fe4057c   agnohq/pgvector:18                  \"docker-entrypoint.s\u2026\"   2 weeks ago   Up 8 days                                                            agentos-db\n9c39d8624475   timescale/timescaledb:2.17.2-pg16   \"docker-entrypoint.s\u2026\"   3 weeks ago   Up 8 days (healthy)   127.0.0.1:5432->5432/tcp                       auctioning-timescale-1\n347baad9425e   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 weeks ago   Up 8 days             127.0.0.1:4000-4003->4000-4003/tcp             auctioning-greptime-1\n0e03ad4761f2   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 7091/tcp, 127.0.0.1:5173->5173/tcp   rakazo-web-1\nedba2c690db3   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 5173/tcp, 7091/tcp                   rakazo-worker-1\n2c5808a36b7d   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5173/tcp, 127.0.0.1:3100->3100/tcp, 7091/tcp   rakazo-api-1\n487bb2b33b8b   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   3100/tcp, 5173/tcp, 7091/tcp                   rakazo-supervisor-1\n8cbf0fd7be37   postgres:16                         \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5432/tcp                                       rakazo-postgres-1\nbfc4f031b564   vikunja/vikunja:latest              \"/app/vikunja/vikunja\"   5 weeks ago   Up 8 days (healthy)   127.0.0.1:3456->3456/tcp                       vikunja\nec9664fe7bc0   untraceablez/uvdesk:latest          \"/bin/bash /usr/loca\u2026\"   6 weeks ago   Up 8 days (healthy)   127.0.0.1:8082->80/tcp                         uvdesk\n"
+  },
+  "steps": [
+    {
+      "step": "openshell_version",
+      "argv": [
+        "openshell",
+        "--version"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.008,
+      "stdout": "openshell 0.1.2\n",
+      "stderr": ""
+    },
+    {
+      "step": "openshell_status",
+      "argv": [
+        "openshell",
+        "status"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.065,
+      "stdout": "Server Status\n\n  Gateway: openshell\n  Server: https://127.0.0.1:17670\n  Status: Connected\n  Authentication: Authenticated (mTLS transport)\n  Version: 0.1.2\n",
+      "stderr": ""
+    },
+    {
+      "step": "gateway_info",
+      "argv": [
+        "openshell",
+        "gateway",
+        "info"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.061,
+      "stdout": "Gateway Info\n\n  Gateway: openshell\n  Server: https://127.0.0.1:17670\n  Status: healthy\n  Version: 0.1.2\n  Compute drivers:\n    docker\n      Driver version: 0.1.2\n  Extensions:\n    docker (compute-driver)\n      Implementation: openshell/docker 0.1.2 (protocol 1.0)\n      Capabilities: openshell.compute.contract\n      Requires gateway: openshell.compute.contract\n    openshell-driver-db-credstore (credential-driver)\n      Implementation: openshell/openshell-driver-db-credstore 0.1.2 (protocol 1.0)\n      Capabilities: openshell.credentials.contract\n      Requires gateway: openshell.credentials.contract\n    openshell/regex (supervisor-middleware)\n      Implementation: openshell/regex 0.1.2 (protocol 1.0)\n      Capabilities: openshell.supervisor-middleware.contract\n      Requires gateway: openshell.supervisor-middleware.contract\n",
+      "stderr": ""
+    },
+    {
+      "step": "sandbox_list_names",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list",
+        "--names"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.06,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "step": "docker_images",
+      "argv": [
+        "docker",
+        "images",
+        "--format",
+        "{{.Repository}}:{{.Tag}}"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.235,
+      "stdout": "rivetdev/engine:latest\nsubstrate-sandbox:0.1\nagentos:latest\npostgres:16-alpine\nlinuxserver/webtop:ubuntu-xfce\nmcr.microsoft.com/devcontainers/javascript-node:latest\nghcr.io/elie222/rakazo/app:edge\ntraefik:latest\npostgres:16\nghcr.io/vectorize-io/hindsight-api:0.9.1\npostgres:<none>\nvikunja/vikunja:latest\nuntraceablez/uvdesk:latest\nagnohq/pgvector:18\ngreptime/greptimedb:v0.14.4\ntimescale/timescaledb:2.17.2-pg16\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_ps_all_ids",
+      "argv": [
+        "docker",
+        "ps",
+        "-a",
+        "-q",
+        "--no-trunc"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.175,
+      "stdout": "376d6841647de901401aab19add4b892b9d802aed922c3232a3d020fd12e8ceb\ndc89b9a957498131ea5475147359ae22cb6802f65c6e80a336e672110966926b\n72470b4d22ebfb27515ee701dc69cfc7d141d9009e22a5ea771dccb936f16c61\n1917e37f4d54d632ab7f62d3ab5a1558e4740b666946966aca4064f904fe7ba7\nf509cd54444fd435d7cada5e1a27d92f07adbafddc3585de01cd92bdeb01d596\n19f317246866698aa89761c50959d8185754a574df743eac638c76278aff75d0\nd90ac898441914b74c6157b553d8791251f96ba30eb8076f0fd93b53e2bd6c83\n683a121f156111ab804e7c1b88ce823082c9bf911d5d5c6fdda37adc6ce7fa81\nc8ee8fe4057c0247f26de6b228a884b12b758b6dcd009de8bcacd527a1440106\n9c39d8624475fa32db5c25dd9f87a0595645c0b0f738ec9e95a37fe1eb2ce4d7\n347baad9425e18ac956bbc98f83264ee3431461f9271cb64d6d4869a8aa009e1\n0e03ad4761f241c13285ea5460008eaf8a93b26ed200541ef1fa638cf4a3498d\nedba2c690db355bb72fc913176dd7dcc01bebee1d926b17c9cc136bab3e21d51\n2c5808a36b7de0f530625011eec469b3f0749122be564f384b376f01f3742ee7\n487bb2b33b8bd15601b92fbf28dc4dbb4751593a2e4e85bb9100d12bde01321e\n8cbf0fd7be37fb6b5b972915fa6ad508f8900689fb6ee7819b4590cb61095efe\nade015e6499a1ee9e4f3a609f799fa94fb803448890af544f341a56a6eefb7bc\nbfc4f031b5649c93c333c61dd64f5eecfaf3eb24d06149a2cbe6ba2522c6a327\nec9664fe7bc05db641e4811416ff331905a493c6f989f4f90400c42373ab465f\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_build",
+      "argv": [
+        "docker",
+        "build",
+        "-t",
+        "omega-verify-py:spike002",
+        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/image"
+      ],
+      "rc": 0,
+      "elapsed_s": 2.051,
+      "stdout": "",
+      "stderr": "#0 building with \"default\" instance using docker driver\n\n#1 [internal] load build definition from Dockerfile\n#1 transferring dockerfile: 1.09kB done\n#1 DONE 0.0s\n\n#2 [internal] load metadata for docker.io/library/python:3.13-slim\n#2 DONE 0.8s\n\n#3 [internal] load .dockerignore\n#3 transferring context: 2B done\n#3 DONE 0.0s\n\n#4 [1/7] FROM docker.io/library/python:3.13-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c\n#4 resolve docker.io/library/python:3.13-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c 0.0s done\n#4 DONE 0.0s\n\n#5 [4/7] RUN groupadd --gid 1500 app     && useradd --uid 1500 --gid app --create-home app\n#5 CACHED\n\n#6 [6/7] RUN install -d -m 0777 /opt/omega-dac-writable\n#6 CACHED\n\n#7 [2/7] RUN apt-get update     && apt-get install -y --no-install-recommends curl iproute2     && rm -rf /var/lib/apt/lists/*\n#7 CACHED\n\n#8 [3/7] RUN pip install --no-cache-dir \"pytest==8.4.2\"\n#8 CACHED\n\n#9 [5/7] RUN install -d -o app -g app /sandbox\n#9 CACHED\n\n#10 [7/7] WORKDIR /sandbox\n#10 CACHED\n\n#11 exporting to image\n#11 exporting layers done\n#11 exporting manifest sha256:910da7b5c0491df222b214ae0a4660362d7cf018b36ca54054082582b8ac7d97 done\n#11 exporting config sha256:fefedefd26ea44d254862f8071178be8c151b6f3853f2fb588eb75a9bd42a8ac done\n#11 exporting attestation manifest sha256:fde77fd8ed787eb63657e6fd8c88cd5d64f8e0c6b179d4600d452c1f5c62e558 0.0s done\n#11 exporting manifest list sha256:40ae35b46db610b2f7301603e9c76aaf531da4660d5b13345e28bf29d7383455\n#11 exporting manifest list sha256:40ae35b46db610b2f7301603e9c76aaf531da4660d5b13345e28bf29d7383455 0.0s done\n#11 naming to docker.io/library/omega-verify-py:spike002 done\n#11 unpacking to docker.io/library/omega-verify-py:spike002\n#11 unpacking to docker.io/library/omega-verify-py:spike002 0.6s done\n#11 DONE 0.7s\n"
+    },
+    {
+      "step": "sandbox_create",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "create",
+        "--name",
+        "osp002-406440",
+        "--from",
+        "omega-verify-py:spike002",
+        "--policy",
+        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/verify-policy.yaml",
+        "--no-auto-providers",
+        "--label",
+        "omega-spike=002",
+        "--cpu",
+        "1",
+        "--memory",
+        "1Gi",
+        "--detach",
+        "--no-tty",
+        "-o",
+        "json",
+        "--",
+        "sleep",
+        "3600"
+      ],
+      "rc": 1,
+      "elapsed_s": 0.837,
+      "stdout": "",
+      "stderr": "Provisioning sandbox (structured output on stdout)...\nError:   \u00d7 sandbox entered error phase while provisioning:\n  \u2502 ControlSupervisorStartFailed: create Docker supervisor staging container:\n  \u2502 Docker responded with status code 404: No such image:\n  \u2502 sha256:d7b5264bb6bc56f4796e6fa3617b8e4a8d785be0b7293542efd8cc250b0fb67a\n\n"
+    },
+    {
+      "step": "docker_rmi_verifier",
+      "argv": [
+        "docker",
+        "rmi",
+        "omega-verify-py:spike002"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.12,
+      "stdout": "Untagged: omega-verify-py:spike002\nDeleted: sha256:40ae35b46db610b2f7301603e9c76aaf531da4660d5b13345e28bf29d7383455\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_rmi_base",
+      "argv": [
+        "docker",
+        "rmi",
+        "python:3.13-slim"
+      ],
+      "rc": 1,
+      "elapsed_s": 0.025,
+      "stdout": "",
+      "stderr": "Error response from daemon: No such image: python:3.13-slim\n"
+    },
+    {
+      "step": "docker_images",
+      "argv": [
+        "docker",
+        "images",
+        "--format",
+        "{{.Repository}}:{{.Tag}}"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.195,
+      "stdout": "rivetdev/engine:latest\nsubstrate-sandbox:0.1\nagentos:latest\npostgres:16-alpine\nlinuxserver/webtop:ubuntu-xfce\nmcr.microsoft.com/devcontainers/javascript-node:latest\nghcr.io/elie222/rakazo/app:edge\ntraefik:latest\npostgres:16\nghcr.io/vectorize-io/hindsight-api:0.9.1\npostgres:<none>\nvikunja/vikunja:latest\nuntraceablez/uvdesk:latest\nagnohq/pgvector:18\ngreptime/greptimedb:v0.14.4\ntimescale/timescaledb:2.17.2-pg16\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_ps_all_ids",
+      "argv": [
+        "docker",
+        "ps",
+        "-a",
+        "-q",
+        "--no-trunc"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.099,
+      "stdout": "376d6841647de901401aab19add4b892b9d802aed922c3232a3d020fd12e8ceb\ndc89b9a957498131ea5475147359ae22cb6802f65c6e80a336e672110966926b\n72470b4d22ebfb27515ee701dc69cfc7d141d9009e22a5ea771dccb936f16c61\n1917e37f4d54d632ab7f62d3ab5a1558e4740b666946966aca4064f904fe7ba7\nf509cd54444fd435d7cada5e1a27d92f07adbafddc3585de01cd92bdeb01d596\n19f317246866698aa89761c50959d8185754a574df743eac638c76278aff75d0\nd90ac898441914b74c6157b553d8791251f96ba30eb8076f0fd93b53e2bd6c83\n683a121f156111ab804e7c1b88ce823082c9bf911d5d5c6fdda37adc6ce7fa81\nc8ee8fe4057c0247f26de6b228a884b12b758b6dcd009de8bcacd527a1440106\n9c39d8624475fa32db5c25dd9f87a0595645c0b0f738ec9e95a37fe1eb2ce4d7\n347baad9425e18ac956bbc98f83264ee3431461f9271cb64d6d4869a8aa009e1\n0e03ad4761f241c13285ea5460008eaf8a93b26ed200541ef1fa638cf4a3498d\nedba2c690db355bb72fc913176dd7dcc01bebee1d926b17c9cc136bab3e21d51\n2c5808a36b7de0f530625011eec469b3f0749122be564f384b376f01f3742ee7\n487bb2b33b8bd15601b92fbf28dc4dbb4751593a2e4e85bb9100d12bde01321e\n8cbf0fd7be37fb6b5b972915fa6ad508f8900689fb6ee7819b4590cb61095efe\nade015e6499a1ee9e4f3a609f799fa94fb803448890af544f341a56a6eefb7bc\nbfc4f031b5649c93c333c61dd64f5eecfaf3eb24d06149a2cbe6ba2522c6a327\nec9664fe7bc05db641e4811416ff331905a493c6f989f4f90400c42373ab465f\n",
+      "stderr": ""
+    },
+    {
+      "step": "sandbox_list_selector",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list",
+        "--selector",
+        "omega-spike=002",
+        "--names"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.055,
+      "stdout": "osp002-406440\n",
+      "stderr": ""
+    },
+    {
+      "step": "final_sandbox_list",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.049,
+      "stdout": "NAME           CREATED              PHASE\nosp002-406440  2026-10-07 20:54:03  Error\n",
+      "stderr": ""
+    },
+    {
+      "step": "final_docker_ps",
+      "argv": [
+        "docker",
+        "ps"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.096,
+      "stdout": "CONTAINER ID   IMAGE                               COMMAND                  CREATED       STATUS                PORTS                                          NAMES\n376d6841647d   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:54000->4000/tcp                      substrate-smoke-greptime\ndc89b9a95749   postgres:16                         \"docker-entrypoint.s\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:55432->5432/tcp                      substrate-smoke-pg\n72470b4d22eb   rivetdev/engine:latest              \"/usr/bin/rivet-engi\u2026\"   5 days ago    Up 5 days (healthy)   127.0.0.1:6420->6420/tcp                       gcs-rivet-rivet-engine-1\n1917e37f4d54   linuxserver/webtop:ubuntu-xfce      \"/init\"                  11 days ago   Up 8 days             3001/tcp, 127.0.0.1:6081->3000/tcp             substrate-desktop\n683a121f1561   agentos:latest                      \"/app/scripts/entryp\u2026\"   2 weeks ago   Up 8 days             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp    agentos-api\nc8ee8fe4057c   agnohq/pgvector:18                  \"docker-entrypoint.s\u2026\"   2 weeks ago   Up 8 days                                                            agentos-db\n9c39d8624475   timescale/timescaledb:2.17.2-pg16   \"docker-entrypoint.s\u2026\"   3 weeks ago   Up 8 days (healthy)   127.0.0.1:5432->5432/tcp                       auctioning-timescale-1\n347baad9425e   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 weeks ago   Up 8 days             127.0.0.1:4000-4003->4000-4003/tcp             auctioning-greptime-1\n0e03ad4761f2   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 7091/tcp, 127.0.0.1:5173->5173/tcp   rakazo-web-1\nedba2c690db3   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 5173/tcp, 7091/tcp                   rakazo-worker-1\n2c5808a36b7d   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5173/tcp, 127.0.0.1:3100->3100/tcp, 7091/tcp   rakazo-api-1\n487bb2b33b8b   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   3100/tcp, 5173/tcp, 7091/tcp                   rakazo-supervisor-1\n8cbf0fd7be37   postgres:16                         \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5432/tcp                                       rakazo-postgres-1\nbfc4f031b564   vikunja/vikunja:latest              \"/app/vikunja/vikunja\"   5 weeks ago   Up 8 days (healthy)   127.0.0.1:3456->3456/tcp                       vikunja\nec9664fe7bc0   untraceablez/uvdesk:latest          \"/bin/bash /usr/loca\u2026\"   6 weeks ago   Up 8 days (healthy)   127.0.0.1:8082->80/tcp                         uvdesk\n",
+      "stderr": ""
+    }
+  ]
+}

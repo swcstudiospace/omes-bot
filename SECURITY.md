@@ -31,3 +31,15 @@ Omes is built to keep secrets out of reach:
 - Tests are hermetic — no live credentials exist in CI.
 - If you find a secret committed anywhere in history, report it as above
   so it can be rotated and purged; do not quote it in an issue or PR.
+
+## Network & Browser Hardening
+
+Network operations and browser sessions enforce fail-closed egress boundaries:
+
+- Destination policy: `DestinationTransport` strictly validates hostnames, port ranges
+  (1–65535), IP classification, and authority framing. Private, loopback, and reserved
+  ranges refuse before dial.
+- Browser sandbox confinement: `GuardedBrowserFactory` validates accounting receipts,
+  cgroup lifecycle, and socket tracking. Unverified sandbox environments fail closed.
+- Test coverage and evidence are validated through hermetic test suites and runtime
+  verifications (`omes/tests/test_web.py` and `omes/tests/test_browser_egress.py`).

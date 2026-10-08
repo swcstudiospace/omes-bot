@@ -197,32 +197,194 @@ def _registry(client: _FakeClient) -> ToolRegistry:
     return registry
 
 
-def test_docs_tool_retrieval_passthrough() -> None:
-    body = {"code": 0, "data": {"chunks": [{"content": "cited"}]}}
+def test_docs_tool_returns_excerpts_without_raw() -> None:
+    body = {
+        "code": 0,
+        "data": {
+            "chunks": [
+                {
+                    "content": "cited",
+                    "document_keyword": "guide.md",
+                    "dataset_id": "ds-1",
+                    "similarity": 0.9,
+                    "id": "chunk-1",
+                    "document_id": "document-1",
+                    "positions": [[1, 2]],
+                }
+            ]
+        },
+    }
     registry = _registry(_FakeClient(docs={"ok": True, "status": 200, "body": body}))
-    assert json.loads(registry.dispatch("substrate_docs_search", {"query": "q"})) == {
-        "retrieval": body
+    payload = json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))
+    assert "retrieval" not in payload
+    assert payload == {
+        "chunks": [
+            {
+                "content": "cited",
+                "document": "guide.md",
+                "dataset_id": "ds-1",
+                "score": 0.9,
+                "chunk_id": "chunk-1",
+                "document_id": "document-1",
+                "positions": [[1, 2]],
+            }
+        ]
     }
 
 
-def test_docs_tool_plane_and_transport_errors() -> None:
-    registry = _registry(
-        _FakeClient(docs={"ok": False, "error": "RAGFLOW_URL missing"})
-    )
-    assert (
-        "RAGFLOW_URL"
-        in json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))[
-            "error"
+def test_docs_tool_redacts_entire_payload_and_caps_content() -> None:
+    token = "ghp_" + "x" * 36
+    sentinel = "SENTINEL-BEYOND-CAP"
+    raw = {
+        "code": 0,
+        "data": {
+            "chunks": [
+                {
+                    "content": f"leak {token} " + "y" * 2000 + sentinel,
+                    "document_keyword": f"guide-{token}.md",
+                    "dataset_id": f"ds-{token}",
+                    "similarity": 0.9,
+                    "id": f"chunk-{token}",
+                    "document_id": f"document-{token}",
+                    "positions": [[1, 2]],
+                },
+                "not-a-chunk",
+            ]
+        },
+    }
+    registry = _registry(_FakeClient(docs={"ok": True, "status": 200, "body": raw}))
+    payload = json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))
+    assert "retrieval" not in payload
+    serialized = json.dumps(payload)
+    assert token not in serialized
+    assert sentinel not in serialized
+    assert len(payload["chunks"]) == 1
+    (shaped,) = payload["chunks"]
+    assert len(shaped["content"]) <= 1500
+    assert shaped["document"] == "guide-[REDACTED].md"
+    assert shaped["score"] == 0.9
+    assert shaped["chunk_id"] == "chunk-[REDACTED]"
+    assert shaped["document_id"] == "document-[REDACTED]"
+
+
+def test_docs_tool_validates_metadata_types_and_preserves_zero() -> None:
+    body = {
+        "code": 0,
+        "data": {
+            "chunks": [
+                {"content": "zero", "docnm_kwd": "zero.md", "score": 0},
+                {
+                    "content": "typed",
+                    "document": {"nested": "nope"},
+                    "dataset_id": ["ds", "list"],
+                    "score": "high",
+                },
+                "not-a-chunk",
+            ]
+        },
+    }
+    registry = _registry(_FakeClient(docs={"ok": True, "status": 200, "body": body}))
+    payload = json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))
+    assert payload == {
+        "chunks": [
+            {
+                "content": "zero",
+                "document": "zero.md",
+                "dataset_id": None,
+                "score": 0,
+            },
+            {
+                "content": "typed",
+                "document": None,
+                "dataset_id": None,
+                "score": None,
+            },
         ]
+    }
+
+
+def test_docs_tool_redacts_every_error_branch() -> None:
+    token = "ghp_" + "x" * 36
+    ragflow = _registry(
+        _FakeClient(
+            docs={
+                "ok": True,
+                "status": 200,
+                "body": {"code": 102, "message": f"no dataset {token} " + "z" * 900},
+            }
+        )
     )
-    down = _registry(_FakeClient(docs=SubstrateError("down")))
-    assert (
-        "unreachable"
-        in json.loads(down.dispatch("substrate_docs_search", {"query": "q"}))["error"]
+    ragflow_payload = json.loads(
+        ragflow.dispatch("substrate_docs_search", {"query": "q"})
     )
+    assert set(ragflow_payload) == {"error"}
+    assert token not in json.dumps(ragflow_payload)
+    assert len(ragflow_payload["error"]) <= 500
+
+    plane = _registry(_FakeClient(docs={"ok": False, "error": f"down {token}"}))
+    plane_payload = json.loads(plane.dispatch("substrate_docs_search", {"query": "q"}))
+    assert token not in json.dumps(plane_payload)
+    assert len(plane_payload["error"]) <= 500
+
+    down = _registry(_FakeClient(docs=SubstrateError(f"boom {token}")))
+    down_payload = json.loads(down.dispatch("substrate_docs_search", {"query": "q"}))
+    assert "unreachable" in down_payload["error"]
+    assert token not in json.dumps(down_payload)
+    assert len(down_payload["error"]) <= 500
+
+    registry = _registry(_FakeClient(docs={"ok": True, "status": 200, "body": {}}))
     assert "error" in json.loads(
         registry.dispatch("substrate_docs_search", {"query": ""})
     )
+
+
+def test_docs_tool_malformed_response_is_error_not_empty() -> None:
+    malformed: list[dict] = [
+        {"ok": True, "status": 200},
+        {"ok": True, "status": 200, "body": None},
+        {"ok": True, "status": 200, "body": "chunks"},
+        {"ok": True, "status": 200, "body": ["chunks"]},
+        {"ok": True, "status": 200, "body": {"code": 0}},
+        {"ok": True, "status": 200, "body": {"code": 0, "data": {}}},
+        {"ok": True, "status": 200, "body": {"code": 0, "data": {"chunks": {}}}},
+        {"ok": True, "status": 200, "body": {"code": 0, "data": "chunks"}},
+        {"ok": True, "status": 200, "body": {"code": 0, "chunks": "chunks"}},
+        {"ok": True, "status": 200, "body": {"code": "zero"}},
+        {"ok": True, "status": 200, "body": {"code": True}},
+    ]
+    for docs in malformed:
+        registry = _registry(_FakeClient(docs=docs))
+        payload = json.loads(registry.dispatch("substrate_docs_search", {"query": "q"}))
+        assert set(payload) == {"error"}, docs
+        assert "malformed" in payload["error"], docs
+
+    empty = _registry(
+        _FakeClient(
+            docs={
+                "ok": True,
+                "status": 200,
+                "body": {"code": 0, "data": {"chunks": []}},
+            }
+        )
+    )
+    assert json.loads(empty.dispatch("substrate_docs_search", {"query": "q"})) == {
+        "chunks": []
+    }
+
+    top_level = _registry(
+        _FakeClient(
+            docs={
+                "ok": True,
+                "status": 200,
+                "body": {"code": 0, "chunks": [{"content": "cited"}]},
+            }
+        )
+    )
+    assert json.loads(top_level.dispatch("substrate_docs_search", {"query": "q"})) == {
+        "chunks": [
+            {"content": "cited", "document": None, "dataset_id": None, "score": None}
+        ]
+    }
 
 
 def _approved_registry(client: _FakeClient) -> ToolRegistry:

@@ -1,5 +1,27 @@
 # Milestones
 
+## v9 — SOTA upgrade (2026-10-08)
+
+**Status:** Complete. 7/7 phases, 12/12 plans, 19/19 requirements Done.
+
+**Core value delivered:** The same one-agent product brought to state-of-the-art
+engineering and agent standards: SEC-NET 2.2.0 egress transport hardening and
+verified browser sandbox boundaries, Ruff linter/formatter and typechecker
+enforced in CI, reproducible dependency floors with committed lockfile and
+Python 3.12-3.14 matrix with Discord guard, provider retry backoff with usage
+accounting, Responses mode with chat-completions fallback and streamed turns,
+PyRIT multi-turn attack campaigns with scorer judging in hermetic isolation,
+extracted chunk docs answers, and 26 golden/red-team evals with truthful docs.
+
+**Verification:** `.venv/bin/python -m pytest omes/tests -q` → exit 0, 372 passed.
+`.venv/bin/python -m omes.evals.runner omes/evals/cases` → exit 0, 26 passed.
+`assemble-prompts.sh --check` → exit 0. `omes.setup_check` → exit 0.
+`catalog --check` → exit 0. `pip check` → exit 0. All 19 requirements satisfied.
+
+**Archive:** `milestones/v9-ROADMAP.md`, `milestones/v9-REQUIREMENTS.md`, `milestones/v9-MILESTONE-AUDIT.md`, `milestones/v9-phases/`.
+
+**Decisions:** Full-SOTA scope; remediate SSRF T-46-08/T-46-12 via SEC-NET 2.2.0; verified Python 3.12-3.14 matrix.
+
 ## v8 — Public launch (2026-10-03)
 
 **Status:** Complete. 2/2 phases, 2/2 plans, 7/7 requirements Done.

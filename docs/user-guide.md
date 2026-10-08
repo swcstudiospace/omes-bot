@@ -33,12 +33,12 @@ it never claims a skill that isn't a file on disk.
 
 ## Tools and approvals
 
-The roster lists 104 tools across coding, growth, platform, IDE,
-messaging, and seven domain packs (lead, systems, web, mobile,
-infra, quality, app packs) plus ultrathink bridge tools. Most
-reads run free; writes, deploys, publishes, and merges need your
-approval first — the bot asks, you approve, then it runs. Nothing
-approval-gated ever self-approves.
+The roster lists 109 tools across coding, growth, platform, IDE,
+messaging, seven domain packs (lead, systems, web, mobile,
+infra, quality, app packs), and substrate plus ultrathink bridge
+tools. Most reads run free; writes, deploys, publishes, and merges
+need your approval first — the bot asks, you approve, then it runs.
+Nothing approval-gated ever self-approves.
 
 ## Receipts
 

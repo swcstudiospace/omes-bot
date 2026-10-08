@@ -1,0 +1,236 @@
+{
+  "passed_all_checks": false,
+  "checks": {
+    "no_leftover_sandboxes": true,
+    "no_leftover_containers": true
+  },
+  "timings_s": {
+    "image_build_s": 17.143,
+    "create_s": 0.076
+  },
+  "facts": {
+    "run_id": "20261007T205317Z",
+    "sandbox": "omega-spike002-1791406397",
+    "image": "omega-verify-py:spike002",
+    "pre_sandboxes": [],
+    "base_image_present_before": false,
+    "verifier_image_present_before": false,
+    "aborted": "RuntimeError: sandbox create failed",
+    "images_new_after_run": [],
+    "containers_new_after_run": [],
+    "leftover_labelled_sandboxes": [],
+    "final_sandbox_list": "No sandboxes found.\n",
+    "final_docker_ps": "CONTAINER ID   IMAGE                               COMMAND                  CREATED       STATUS                PORTS                                          NAMES\n376d6841647d   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:54000->4000/tcp                      substrate-smoke-greptime\ndc89b9a95749   postgres:16                         \"docker-entrypoint.s\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:55432->5432/tcp                      substrate-smoke-pg\n72470b4d22eb   rivetdev/engine:latest              \"/usr/bin/rivet-engi\u2026\"   5 days ago    Up 5 days (healthy)   127.0.0.1:6420->6420/tcp                       gcs-rivet-rivet-engine-1\n1917e37f4d54   linuxserver/webtop:ubuntu-xfce      \"/init\"                  11 days ago   Up 8 days             3001/tcp, 127.0.0.1:6081->3000/tcp             substrate-desktop\n683a121f1561   agentos:latest                      \"/app/scripts/entryp\u2026\"   2 weeks ago   Up 8 days             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp    agentos-api\nc8ee8fe4057c   agnohq/pgvector:18                  \"docker-entrypoint.s\u2026\"   2 weeks ago   Up 8 days                                                            agentos-db\n9c39d8624475   timescale/timescaledb:2.17.2-pg16   \"docker-entrypoint.s\u2026\"   3 weeks ago   Up 8 days (healthy)   127.0.0.1:5432->5432/tcp                       auctioning-timescale-1\n347baad9425e   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 weeks ago   Up 8 days             127.0.0.1:4000-4003->4000-4003/tcp             auctioning-greptime-1\n0e03ad4761f2   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 7091/tcp, 127.0.0.1:5173->5173/tcp   rakazo-web-1\nedba2c690db3   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 5173/tcp, 7091/tcp                   rakazo-worker-1\n2c5808a36b7d   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5173/tcp, 127.0.0.1:3100->3100/tcp, 7091/tcp   rakazo-api-1\n487bb2b33b8b   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   3100/tcp, 5173/tcp, 7091/tcp                   rakazo-supervisor-1\n8cbf0fd7be37   postgres:16                         \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5432/tcp                                       rakazo-postgres-1\nbfc4f031b564   vikunja/vikunja:latest              \"/app/vikunja/vikunja\"   5 weeks ago   Up 8 days (healthy)   127.0.0.1:3456->3456/tcp                       vikunja\nec9664fe7bc0   untraceablez/uvdesk:latest          \"/bin/bash /usr/loca\u2026\"   6 weeks ago   Up 8 days (healthy)   127.0.0.1:8082->80/tcp                         uvdesk\n"
+  },
+  "steps": [
+    {
+      "step": "openshell_version",
+      "argv": [
+        "openshell",
+        "--version"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.009,
+      "stdout": "openshell 0.1.2\n",
+      "stderr": ""
+    },
+    {
+      "step": "openshell_status",
+      "argv": [
+        "openshell",
+        "status"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.059,
+      "stdout": "Server Status\n\n  Gateway: openshell\n  Server: https://127.0.0.1:17670\n  Status: Connected\n  Authentication: Authenticated (mTLS transport)\n  Version: 0.1.2\n",
+      "stderr": ""
+    },
+    {
+      "step": "gateway_info",
+      "argv": [
+        "openshell",
+        "gateway",
+        "info"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.049,
+      "stdout": "Gateway Info\n\n  Gateway: openshell\n  Server: https://127.0.0.1:17670\n  Status: healthy\n  Version: 0.1.2\n  Compute drivers:\n    docker\n      Driver version: 0.1.2\n  Extensions:\n    docker (compute-driver)\n      Implementation: openshell/docker 0.1.2 (protocol 1.0)\n      Capabilities: openshell.compute.contract\n      Requires gateway: openshell.compute.contract\n    openshell-driver-db-credstore (credential-driver)\n      Implementation: openshell/openshell-driver-db-credstore 0.1.2 (protocol 1.0)\n      Capabilities: openshell.credentials.contract\n      Requires gateway: openshell.credentials.contract\n    openshell/regex (supervisor-middleware)\n      Implementation: openshell/regex 0.1.2 (protocol 1.0)\n      Capabilities: openshell.supervisor-middleware.contract\n      Requires gateway: openshell.supervisor-middleware.contract\n",
+      "stderr": ""
+    },
+    {
+      "step": "sandbox_list_names",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list",
+        "--names"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.051,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "step": "docker_images",
+      "argv": [
+        "docker",
+        "images",
+        "--format",
+        "{{.Repository}}:{{.Tag}}"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.191,
+      "stdout": "rivetdev/engine:latest\nsubstrate-sandbox:0.1\nagentos:latest\npostgres:16-alpine\nlinuxserver/webtop:ubuntu-xfce\nmcr.microsoft.com/devcontainers/javascript-node:latest\nghcr.io/elie222/rakazo/app:edge\ntraefik:latest\npostgres:16\nghcr.io/vectorize-io/hindsight-api:0.9.1\npostgres:<none>\nvikunja/vikunja:latest\nuntraceablez/uvdesk:latest\nagnohq/pgvector:18\ngreptime/greptimedb:v0.14.4\ntimescale/timescaledb:2.17.2-pg16\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_ps_all_ids",
+      "argv": [
+        "docker",
+        "ps",
+        "-a",
+        "-q",
+        "--no-trunc"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.102,
+      "stdout": "376d6841647de901401aab19add4b892b9d802aed922c3232a3d020fd12e8ceb\ndc89b9a957498131ea5475147359ae22cb6802f65c6e80a336e672110966926b\n72470b4d22ebfb27515ee701dc69cfc7d141d9009e22a5ea771dccb936f16c61\n1917e37f4d54d632ab7f62d3ab5a1558e4740b666946966aca4064f904fe7ba7\nf509cd54444fd435d7cada5e1a27d92f07adbafddc3585de01cd92bdeb01d596\n19f317246866698aa89761c50959d8185754a574df743eac638c76278aff75d0\nd90ac898441914b74c6157b553d8791251f96ba30eb8076f0fd93b53e2bd6c83\n683a121f156111ab804e7c1b88ce823082c9bf911d5d5c6fdda37adc6ce7fa81\nc8ee8fe4057c0247f26de6b228a884b12b758b6dcd009de8bcacd527a1440106\n9c39d8624475fa32db5c25dd9f87a0595645c0b0f738ec9e95a37fe1eb2ce4d7\n347baad9425e18ac956bbc98f83264ee3431461f9271cb64d6d4869a8aa009e1\n0e03ad4761f241c13285ea5460008eaf8a93b26ed200541ef1fa638cf4a3498d\nedba2c690db355bb72fc913176dd7dcc01bebee1d926b17c9cc136bab3e21d51\n2c5808a36b7de0f530625011eec469b3f0749122be564f384b376f01f3742ee7\n487bb2b33b8bd15601b92fbf28dc4dbb4751593a2e4e85bb9100d12bde01321e\n8cbf0fd7be37fb6b5b972915fa6ad508f8900689fb6ee7819b4590cb61095efe\nade015e6499a1ee9e4f3a609f799fa94fb803448890af544f341a56a6eefb7bc\nbfc4f031b5649c93c333c61dd64f5eecfaf3eb24d06149a2cbe6ba2522c6a327\nec9664fe7bc05db641e4811416ff331905a493c6f989f4f90400c42373ab465f\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_build",
+      "argv": [
+        "docker",
+        "build",
+        "-t",
+        "omega-verify-py:spike002",
+        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/image"
+      ],
+      "rc": 0,
+      "elapsed_s": 17.143,
+      "stdout": "",
+      "stderr": "7acf3febdcf62b79441a1bfca4f3a4a 0B / 1.29MB 0.2s\n#4 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 10.49MB / 29.84MB 0.6s\n#4 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 25.94MB / 29.84MB 0.8s\n#4 sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 29.84MB / 29.84MB 0.8s done\n#4 sha256:3a5db7051419a594a866378c5d2c422e3d282d69e6792b3213772cb1349da446 11.24MB / 11.92MB 0.9s\n#4 sha256:65a67aec859c5fafe6ca38c2ed07825c97acf3febdcf62b79441a1bfca4f3a4a 1.29MB / 1.29MB 0.8s done\n#4 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e\n#4 sha256:3a5db7051419a594a866378c5d2c422e3d282d69e6792b3213772cb1349da446 11.92MB / 11.92MB 0.9s done\n#4 extracting sha256:ecc510c1e359bdc007b39802570bb7e4dec7d6ebccf357c3201a74299113e05e 0.8s done\n#4 DONE 1.7s\n\n#4 [1/7] FROM docker.io/library/python:3.13-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c\n#4 extracting sha256:65a67aec859c5fafe6ca38c2ed07825c97acf3febdcf62b79441a1bfca4f3a4a 0.1s done\n#4 extracting sha256:3a5db7051419a594a866378c5d2c422e3d282d69e6792b3213772cb1349da446\n#4 extracting sha256:3a5db7051419a594a866378c5d2c422e3d282d69e6792b3213772cb1349da446 0.4s done\n#4 DONE 2.2s\n\n#4 [1/7] FROM docker.io/library/python:3.13-slim@sha256:bf44cdfcb76cd3b41e879bc058fc37ec5872002ccfde7fcb765e218cde0cd79c\n#4 extracting sha256:2f5b06adfd9138ef928aaf8b34f3fecf122b137a537133dfe421509dd57b4a47 0.0s done\n#4 DONE 2.2s\n\n#5 [2/7] RUN apt-get update     && apt-get install -y --no-install-recommends curl iproute2     && rm -rf /var/lib/apt/lists/*\n#5 0.450 Hit:1 http://deb.debian.org/debian trixie InRelease\n#5 0.595 Get:2 http://deb.debian.org/debian trixie-updates InRelease [47.3 kB]\n#5 0.597 Get:3 http://deb.debian.org/debian-security trixie-security InRelease [43.4 kB]\n#5 0.601 Get:4 http://deb.debian.org/debian trixie/main amd64 Packages [9678 kB]\n#5 0.736 Get:5 http://deb.debian.org/debian trixie-updates/main amd64 Packages [4412 B]\n#5 0.736 Get:6 http://deb.debian.org/debian-security trixie-security/main amd64 Packages [264 kB]\n#5 1.395 Fetched 10.0 MB in 1s (9567 kB/s)\n#5 1.395 Reading package lists...\n#5 2.017 Reading package lists...\n#5 2.650 Building dependency tree...\n#5 2.841 Reading state information...\n#5 3.040 The following additional packages will be installed:\n#5 3.040   libbpf1 libbrotli1 libcap2-bin libcom-err2 libcurl4t64 libelf1t64\n#5 3.040   libgnutls30t64 libgssapi-krb5-2 libidn2-0 libk5crypto3 libkeyutils1\n#5 3.040   libkrb5-3 libkrb5support0 libldap2 libmnl0 libnghttp2-14 libnghttp3-9\n#5 3.040   libp11-kit0 libpsl5t64 librtmp1 libsasl2-2 libsasl2-modules-db libssh2-1t64\n#5 3.041   libtasn1-6 libtirpc-common libtirpc3t64 libunistring5 libxtables12\n#5 3.042 Suggested packages:\n#5 3.042   python3:any gnutls-bin krb5-doc krb5-user\n#5 3.042 Recommended packages:\n#5 3.042   bash-completion libpam-cap krb5-locales libldap-common publicsuffix\n#5 3.042   libsasl2-modules\n#5 3.208 The following NEW packages will be installed:\n#5 3.209   curl iproute2 libbpf1 libbrotli1 libcap2-bin libcom-err2 libcurl4t64\n#5 3.209   libelf1t64 libgnutls30t64 libgssapi-krb5-2 libidn2-0 libk5crypto3\n#5 3.209   libkeyutils1 libkrb5-3 libkrb5support0 libldap2 libmnl0 libnghttp2-14\n#5 3.209   libnghttp3-9 libp11-kit0 libpsl5t64 librtmp1 libsasl2-2 libsasl2-modules-db\n#5 3.209   libssh2-1t64 libtasn1-6 libtirpc-common libtirpc3t64 libunistring5\n#5 3.210   libxtables12\n#5 3.243 0 upgraded, 30 newly installed, 0 to remove and 0 not upgraded.\n#5 3.243 Need to get 6510 kB of archives.\n#5 3.243 After this operation, 20.8 MB of additional disk space will be used.\n#5 3.243 Get:1 http://deb.debian.org/debian trixie/main amd64 libelf1t64 amd64 0.192-4 [189 kB]\n#5 3.247 Get:2 http://deb.debian.org/debian trixie/main amd64 libbpf1 amd64 1:1.5.0-3 [169 kB]\n#5 3.249 Get:3 http://deb.debian.org/debian trixie/main amd64 libmnl0 amd64 1.0.5-3 [11.9 kB]\n#5 3.249 Get:4 http://deb.debian.org/debian trixie/main amd64 libkrb5support0 amd64 1.21.3-5+deb13u1 [33.1 kB]\n#5 3.250 Get:5 http://deb.debian.org/debian trixie/main amd64 libcom-err2 amd64 1.47.2-3+b12 [25.0 kB]\n#5 3.250 Get:6 http://deb.debian.org/debian trixie/main amd64 libk5crypto3 amd64 1.21.3-5+deb13u1 [81.2 kB]\n#5 3.251 Get:7 http://deb.debian.org/debian trixie/main amd64 libkeyutils1 amd64 1.6.3-6 [9456 B]\n#5 3.251 Get:8 http://deb.debian.org/debian trixie/main amd64 libkrb5-3 amd64 1.21.3-5+deb13u1 [326 kB]\n#5 3.255 Get:9 http://deb.debian.org/debian trixie/main amd64 libgssapi-krb5-2 amd64 1.21.3-5+deb13u1 [138 kB]\n#5 3.257 Get:10 http://deb.debian.org/debian trixie/main amd64 libtirpc-common all 1.3.6+ds-1 [11.0 kB]\n#5 3.258 Get:11 http://deb.debian.org/debian trixie/main amd64 libtirpc3t64 amd64 1.3.6+ds-1 [83.3 kB]\n#5 3.260 Get:12 http://deb.debian.org/debian trixie/main amd64 libxtables12 amd64 1.8.11-2 [31.9 kB]\n#5 3.260 Get:13 http://deb.debian.org/debian trixie/main amd64 libcap2-bin amd64 1:2.75-10+deb13u1+b3 [36.5 kB]\n#5 3.269 Get:14 http://deb.debian.org/debian trixie/main amd64 iproute2 amd64 6.15.0-1 [1089 kB]\n#5 3.278 Get:15 http://deb.debian.org/debian trixie/main amd64 libbrotli1 amd64 1.1.0-2+b7 [307 kB]\n#5 3.279 Get:16 http://deb.debian.org/debian trixie/main amd64 libunistring5 amd64 1.3-2 [477 kB]\n#5 3.285 Get:17 http://deb.debian.org/debian trixie/main amd64 libidn2-0 amd64 2.3.8-2 [109 kB]\n#5 3.288 Get:18 http://deb.debian.org/debian trixie/main amd64 libsasl2-modules-db amd64 2.1.28+dfsg1-9 [19.8 kB]\n#5 3.290 Get:19 http://deb.debian.org/debian trixie/main amd64 libsasl2-2 amd64 2.1.28+dfsg1-9 [57.5 kB]\n#5 3.291 Get:20 http://deb.debian.org/debian trixie/main amd64 libldap2 amd64 2.6.10+dfsg-1 [194 kB]\n#5 3.292 Get:21 http://deb.debian.org/debian trixie/main amd64 libnghttp2-14 amd64 1.64.0-1.1+deb13u1 [76.2 kB]\n#5 3.293 Get:22 http://deb.debian.org/debian trixie/main amd64 libnghttp3-9 amd64 1.8.0-1 [67.7 kB]\n#5 3.293 Get:23 http://deb.debian.org/debian trixie/main amd64 libpsl5t64 amd64 0.21.2-1.1+b1 [57.2 kB]\n#5 3.294 Get:24 http://deb.debian.org/debian trixie/main amd64 libp11-kit0 amd64 0.25.5-3 [425 kB]\n#5 3.302 Get:25 http://deb.debian.org/debian trixie/main amd64 libtasn1-6 amd64 4.20.0-2+deb13u1 [50.1 kB]\n#5 3.308 Get:26 http://deb.debian.org/debian trixie/main amd64 libgnutls30t64 amd64 3.8.9-3+deb13u4 [1469 kB]\n#5 3.322 Get:27 http://deb.debian.org/debian trixie/main amd64 librtmp1 amd64 2.4+20151223.gitfa8646d.1-2+b5 [58.8 kB]\n#5 3.322 Get:28 http://deb.debian.org/debian trixie/main amd64 libssh2-1t64 amd64 1.11.1-1+deb13u2 [245 kB]\n#5 3.323 Get:29 http://deb.debian.org/debian trixie/main amd64 libcurl4t64 amd64 8.14.1-2+deb13u5 [391 kB]\n#5 3.325 Get:30 http://deb.debian.org/debian trixie/main amd64 curl amd64 8.14.1-2+deb13u5 [270 kB]\n#5 3.477 debconf: unable to initialize frontend: Dialog\n#5 3.477 debconf: (TERM is not set, so the dialog frontend is not usable.)\n#5 3.477 debconf: falling back to frontend: Readline\n#5 3.478 debconf: unable to initialize frontend: Readline\n#5 3.478 debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/x86_64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8, <STDIN> line 30.)\n#5 3.478 debconf: falling back to frontend: Teletype\n#5 3.485 debconf: unable to initialize frontend: Teletype\n#5 3.485 debconf: (This frontend requires a controlling tty.)\n#5 3.485 debconf: falling back to frontend: Noninteractive\n#5 4.141 Preconfiguring packages ...\n#5 4.219 Fetched 6510 kB in 0s (64.9 MB/s)\n#5 4.251 Selecting previously unselected package libelf1t64:amd64.\n#5 4.251 (Reading database ... \n(Reading database ... 5%\n(Reading database ... 10%\n(Reading database ... 15%\n(Reading database ... 20%\n(Reading database ... 25%\n(Reading database ... 30%\n(Reading database ... 35%\n(Reading database ... 40%\n(Reading database ... 45%\n(Reading database ... 50%\n(Reading database ... 55%\n(Reading database ... 60%\n(Reading database ... 65%\n(Reading database ... 70%\n(Reading database ... 75%\n(Reading database ... 80%\n(Reading database ... 85%\n(Reading database ... 90%\n(Reading database ... 95%\n(Reading database ... 100%\n(Reading database ... 5660 files and directories currently installed.)\n#5 4.260 Preparing to unpack .../00-libelf1t64_0.192-4_amd64.deb ...\n#5 4.264 Unpacking libelf1t64:amd64 (0.192-4) ...\n#5 4.300 Selecting previously unselected package libbpf1:amd64.\n#5 4.303 Preparing to unpack .../01-libbpf1_1%3a1.5.0-3_amd64.deb ...\n#5 4.304 Unpacking libbpf1:amd64 (1:1.5.0-3) ...\n#5 4.340 Selecting previously unselected package libmnl0:amd64.\n#5 4.342 Preparing to unpack .../02-libmnl0_1.0.5-3_amd64.deb ...\n#5 4.345 Unpacking libmnl0:amd64 (1.0.5-3) ...\n#5 4.373 Selecting previously unselected package libkrb5support0:amd64.\n#5 4.375 Preparing to unpack .../03-libkrb5support0_1.21.3-5+deb13u1_amd64.deb ...\n#5 4.378 Unpacking libkrb5support0:amd64 (1.21.3-5+deb13u1) ...\n#5 4.405 Selecting previously unselected package libcom-err2:amd64.\n#5 4.408 Preparing to unpack .../04-libcom-err2_1.47.2-3+b12_amd64.deb ...\n#5 4.409 Unpacking libcom-err2:amd64 (1.47.2-3+b12) ...\n#5 4.439 Selecting previously unselected package libk5crypto3:amd64.\n#5 4.442 Preparing to unpack .../05-libk5crypto3_1.21.3-5+deb13u1_amd64.deb ...\n#5 4.444 Unpacking libk5crypto3:amd64 (1.21.3-5+deb13u1) ...\n#5 4.475 Selecting previously unselected package libkeyutils1:amd64.\n#5 4.477 Preparing to unpack .../06-libkeyutils1_1.6.3-6_amd64.deb ...\n#5 4.479 Unpacking libkeyutils1:amd64 (1.6.3-6) ...\n#5 4.506 Selecting previously unselected package libkrb5-3:amd64.\n#5 4.508 Preparing to unpack .../07-libkrb5-3_1.21.3-5+deb13u1_amd64.deb ...\n#5 4.511 Unpacking libkrb5-3:amd64 (1.21.3-5+deb13u1) ...\n#5 4.565 Selecting previously unselected package libgssapi-krb5-2:amd64.\n#5 4.567 Preparing to unpack .../08-libgssapi-krb5-2_1.21.3-5+deb13u1_amd64.deb ...\n#5 4.572 Unpacking libgssapi-krb5-2:amd64 (1.21.3-5+deb13u1) ...\n#5 4.605 Selecting previously unselected package libtirpc-common.\n#5 4.608 Preparing to unpack .../09-libtirpc-common_1.3.6+ds-1_all.deb ...\n#5 4.611 Unpacking libtirpc-common (1.3.6+ds-1) ...\n#5 4.649 Selecting previously unselected package libtirpc3t64:amd64.\n#5 4.652 Preparing to unpack .../10-libtirpc3t64_1.3.6+ds-1_amd64.deb ...\n#5 4.661 Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3 to /lib/x86_64-linux-gnu/libtirpc.so.3.usr-is-merged by libtirpc3t64'\n#5 4.668 Adding 'diversion of /lib/x86_64-linux-gnu/libtirpc.so.3.0.0 to /lib/x86_64-linux-gnu/libtirpc.so.3.0.0.usr-is-merged by libtirpc3t64'\n#5 4.670 Unpacking libtirpc3t64:amd64 (1.3.6+ds-1) ...\n#5 4.700 Selecting previously unselected package libxtables12:amd64.\n#5 4.703 Preparing to unpack .../11-libxtables12_1.8.11-2_amd64.deb ...\n#5 4.704 Unpacking libxtables12:amd64 (1.8.11-2) ...\n#5 4.737 Selecting previously unselected package libcap2-bin.\n#5 4.739 Preparing to unpack .../12-libcap2-bin_1%3a2.75-10+deb13u1+b3_amd64.deb ...\n#5 4.743 Unpacking libcap2-bin (1:2.75-10+deb13u1+b3) ...\n#5 4.774 Selecting previously unselected package iproute2.\n#5 4.777 Preparing to unpack .../13-iproute2_6.15.0-1_amd64.deb ...\n#5 4.838 Unpacking iproute2 (6.15.0-1) ...\n#5 4.907 Selecting previously unselected package libbrotli1:amd64.\n#5 4.909 Preparing to unpack .../14-libbrotli1_1.1.0-2+b7_amd64.deb ...\n#5 4.912 Unpacking libbrotli1:amd64 (1.1.0-2+b7) ...\n#5 4.954 Selecting previously unselected package libunistring5:amd64.\n#5 4.957 Preparing to unpack .../15-libunistring5_1.3-2_amd64.deb ...\n#5 4.959 Unpacking libunistring5:amd64 (1.3-2) ...\n#5 5.011 Selecting previously unselected package libidn2-0:amd64.\n#5 5.013 Preparing to unpack .../16-libidn2-0_2.3.8-2_amd64.deb ...\n#5 5.015 Unpacking libidn2-0:amd64 (2.3.8-2) ...\n#5 5.046 Selecting previously unselected package libsasl2-modules-db:amd64.\n#5 5.049 Preparing to unpack .../17-libsasl2-modules-db_2.1.28+dfsg1-9_amd64.deb ...\n#5 5.051 Unpacking libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...\n#5 5.079 Selecting previously unselected package libsasl2-2:amd64.\n#5 5.082 Preparing to unpack .../18-libsasl2-2_2.1.28+dfsg1-9_amd64.deb ...\n#5 5.084 Unpacking libsasl2-2:amd64 (2.1.28+dfsg1-9) ...\n#5 5.113 Selecting previously unselected package libldap2:amd64.\n#5 5.115 Preparing to unpack .../19-libldap2_2.6.10+dfsg-1_amd64.deb ...\n#5 5.117 Unpacking libldap2:amd64 (2.6.10+dfsg-1) ...\n#5 5.158 Selecting previously unselected package libnghttp2-14:amd64.\n#5 5.159 Preparing to unpack .../20-libnghttp2-14_1.64.0-1.1+deb13u1_amd64.deb ...\n#5 5.162 Unpacking libnghttp2-14:amd64 (1.64.0-1.1+deb13u1) ...\n#5 5.190 Selecting previously unselected package libnghttp3-9:amd64.\n#5 5.192 Preparing to unpack .../21-libnghttp3-9_1.8.0-1_amd64.deb ...\n#5 5.194 Unpacking libnghttp3-9:amd64 (1.8.0-1) ...\n#5 5.222 Selecting previously unselected package libpsl5t64:amd64.\n#5 5.225 Preparing to unpack .../22-libpsl5t64_0.21.2-1.1+b1_amd64.deb ...\n#5 5.229 Unpacking libpsl5t64:amd64 (0.21.2-1.1+b1) ...\n#5 5.260 Selecting previously unselected package libp11-kit0:amd64.\n#5 5.263 Preparing to unpack .../23-libp11-kit0_0.25.5-3_amd64.deb ...\n#5 5.265 Unpacking libp11-kit0:amd64 (0.25.5-3) ...\n#5 5.305 Selecting previously unselected package libtasn1-6:amd64.\n#5 5.308 Preparing to unpack .../24-libtasn1-6_4.20.0-2+deb13u1_amd64.deb ...\n#5 5.310 Unpacking libtasn1-6:amd64 (4.20.0-2+deb13u1) ...\n#5 5.342 Selecting previously unselected package libgnutls30t64:amd64.\n#5 5.344 Preparing to unpack .../25-libgnutls30t64_3.8.9-3+deb13u4_amd64.deb ...\n#5 5.346 Unpacking libgnutls30t64:amd64 (3.8.9-3+deb13u4) ...\n#5 5.412 Selecting previously unselected package librtmp1:amd64.\n#5 5.414 Preparing to unpack .../26-librtmp1_2.4+20151223.gitfa8646d.1-2+b5_amd64.deb ...\n#5 5.416 Unpacking librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...\n#5 5.451 Selecting previously unselected package libssh2-1t64:amd64.\n#5 5.453 Preparing to unpack .../27-libssh2-1t64_1.11.1-1+deb13u2_amd64.deb ...\n#5 5.455 Unpacking libssh2-1t64:amd64 (1.11.1-1+deb13u2) ...\n#5 5.488 Selecting previously unselected package libcurl4t64:amd64.\n#5 5.490 Preparing to unpack .../28-libcurl4t64_8.14.1-2+deb13u5_amd64.deb ...\n#5 5.492 Unpacking libcurl4t64:amd64 (8.14.1-2+deb13u5) ...\n#5 5.537 Selecting previously unselected package curl.\n#5 5.539 Preparing to unpack .../29-curl_8.14.1-2+deb13u5_amd64.deb ...\n#5 5.544 Unpacking curl (8.14.1-2+deb13u5) ...\n#5 5.589 Setting up libkeyutils1:amd64 (1.6.3-6) ...\n#5 5.595 Setting up libtirpc-common (1.3.6+ds-1) ...\n#5 5.601 Setting up libbrotli1:amd64 (1.1.0-2+b7) ...\n#5 5.606 Setting up libnghttp2-14:amd64 (1.64.0-1.1+deb13u1) ...\n#5 5.612 Setting up libcom-err2:amd64 (1.47.2-3+b12) ...\n#5 5.616 Setting up libelf1t64:amd64 (0.192-4) ...\n#5 5.621 Setting up libkrb5support0:amd64 (1.21.3-5+deb13u1) ...\n#5 5.628 Setting up libsasl2-modules-db:amd64 (2.1.28+dfsg1-9) ...\n#5 5.634 Setting up libcap2-bin (1:2.75-10+deb13u1+b3) ...\n#5 5.641 Setting up libp11-kit0:amd64 (0.25.5-3) ...\n#5 5.652 Setting up libunistring5:amd64 (1.3-2) ...\n#5 5.659 Setting up libmnl0:amd64 (1.0.5-3) ...\n#5 5.668 Setting up libk5crypto3:amd64 (1.21.3-5+deb13u1) ...\n#5 5.673 Setting up libxtables12:amd64 (1.8.11-2) ...\n#5 5.682 Setting up libsasl2-2:amd64 (2.1.28+dfsg1-9) ...\n#5 5.689 Setting up libnghttp3-9:amd64 (1.8.0-1) ...\n#5 5.700 Setting up libtasn1-6:amd64 (4.20.0-2+deb13u1) ...\n#5 5.707 Setting up libkrb5-3:amd64 (1.21.3-5+deb13u1) ...\n#5 5.716 Setting up libssh2-1t64:amd64 (1.11.1-1+deb13u2) ...\n#5 5.727 Setting up libldap2:amd64 (2.6.10+dfsg-1) ...\n#5 5.739 Setting up libbpf1:amd64 (1:1.5.0-3) ...\n#5 5.751 Setting up libidn2-0:amd64 (2.3.8-2) ...\n#5 5.757 Setting up libgssapi-krb5-2:amd64 (1.21.3-5+deb13u1) ...\n#5 5.770 Setting up libgnutls30t64:amd64 (3.8.9-3+deb13u4) ...\n#5 5.775 Setting up libtirpc3t64:amd64 (1.3.6+ds-1) ...\n#5 5.782 Setting up iproute2 (6.15.0-1) ...\n#5 5.863 debconf: unable to initialize frontend: Dialog\n#5 5.863 debconf: (TERM is not set, so the dialog frontend is not usable.)\n#5 5.863 debconf: falling back to frontend: Readline\n#5 5.864 debconf: unable to initialize frontend: Readline\n#5 5.864 debconf: (Can't locate Term/ReadLine.pm in @INC (you may need to install the Term::ReadLine module) (@INC entries checked: /etc/perl /usr/local/lib/x86_64-linux-gnu/perl/5.40.1 /usr/local/share/perl/5.40.1 /usr/lib/x86_64-linux-gnu/perl5/5.40 /usr/share/perl5 /usr/lib/x86_64-linux-gnu/perl-base /usr/lib/x86_64-linux-gnu/perl/5.40 /usr/share/perl/5.40 /usr/local/lib/site_perl) at /usr/share/perl5/Debconf/FrontEnd/Readline.pm line 8.)\n#5 5.864 debconf: falling back to frontend: Teletype\n#5 5.870 debconf: unable to initialize frontend: Teletype\n#5 5.870 debconf: (This frontend requires a controlling tty.)\n#5 5.870 debconf: falling back to frontend: Noninteractive\n#5 5.954 Setting up libpsl5t64:amd64 (0.21.2-1.1+b1) ...\n#5 5.960 Setting up librtmp1:amd64 (2.4+20151223.gitfa8646d.1-2+b5) ...\n#5 5.968 Setting up libcurl4t64:amd64 (8.14.1-2+deb13u5) ...\n#5 5.973 Setting up curl (8.14.1-2+deb13u5) ...\n#5 5.980 Processing triggers for libc-bin (2.41-12+deb13u4) ...\n#5 DONE 6.3s\n\n#6 [3/7] RUN pip install --no-cache-dir \"pytest==8.4.2\"\n#6 1.624 Collecting pytest==8.4.2\n#6 1.720   Downloading pytest-8.4.2-py3-none-any.whl.metadata (7.7 kB)\n#6 1.731 Collecting iniconfig>=1 (from pytest==8.4.2)\n#6 1.734   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)\n#6 1.744 Collecting packaging>=20 (from pytest==8.4.2)\n#6 1.747   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)\n#6 1.755 Collecting pluggy<2,>=1.5 (from pytest==8.4.2)\n#6 1.757   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)\n#6 1.770 Collecting pygments>=2.7.2 (from pytest==8.4.2)\n#6 1.774   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)\n#6 1.782 Downloading pytest-8.4.2-py3-none-any.whl (365 kB)\n#6 1.795 Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)\n#6 1.799 Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)\n#6 1.802 Downloading packaging-26.3-py3-none-any.whl (129 kB)\n#6 1.806 Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)\n#6 1.824    \u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501\u2501 1.3/1.3 MB 97.7 MB/s  0:00:00\n#6 1.919 Installing collected packages: pygments, pluggy, packaging, iniconfig, pytest\n#6 2.992 \n#6 2.993 Successfully installed iniconfig-2.3.1 packaging-26.3 pluggy-1.6.0 pygments-2.21.0 pytest-8.4.2\n#6 2.994 WARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager, possibly rendering your system unusable. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv. Use the --root-user-action option if you know what you are doing and want to suppress this warning.\n#6 DONE 3.2s\n\n#7 [4/7] RUN groupadd --gid 1500 app     && useradd --uid 1500 --gid app --create-home app\n#7 DONE 0.3s\n\n#8 [5/7] RUN install -d -o app -g app /sandbox\n#8 DONE 0.2s\n\n#9 [6/7] RUN install -d -m 0777 /opt/omega-dac-writable\n#9 DONE 0.2s\n\n#10 [7/7] WORKDIR /sandbox\n#10 DONE 0.0s\n\n#11 exporting to image\n#11 exporting layers\n#11 exporting layers 0.9s done\n#11 exporting manifest sha256:910da7b5c0491df222b214ae0a4660362d7cf018b36ca54054082582b8ac7d97 done\n#11 exporting config sha256:fefedefd26ea44d254862f8071178be8c151b6f3853f2fb588eb75a9bd42a8ac done\n#11 exporting attestation manifest sha256:e60df561f28a02b545472c365e9fab0f4838d131c75e9fc86e7415754fd65bd9 0.0s done\n#11 exporting manifest list sha256:3f16d34b01ae5e3f04a7f1be12b1d18df45dc8987f1e65d1cff7d26a163f60af done\n#11 naming to docker.io/library/omega-verify-py:spike002 done\n#11 unpacking to docker.io/library/omega-verify-py:spike002\n#11 unpacking to docker.io/library/omega-verify-py:spike002 0.5s done\n#11 DONE 1.5s\n"
+    },
+    {
+      "step": "sandbox_create",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "create",
+        "--name",
+        "omega-spike002-1791406397",
+        "--from",
+        "omega-verify-py:spike002",
+        "--policy",
+        "/root/src/repos/Omes-Bot/.planning/spikes/002-openshell-verification-sandbox/verify-policy.yaml",
+        "--no-auto-providers",
+        "--label",
+        "omega-spike=002",
+        "--cpu",
+        "1",
+        "--memory",
+        "1Gi",
+        "--detach",
+        "--no-tty",
+        "-o",
+        "json",
+        "--",
+        "sleep",
+        "3600"
+      ],
+      "rc": 1,
+      "elapsed_s": 0.076,
+      "stdout": "",
+      "stderr": "Error:   \u00d7 code: 'Client specified an invalid argument', message: \"name exceeds\n  \u2502 maximum length (25 > 19)\"\n\n"
+    },
+    {
+      "step": "docker_rmi_verifier",
+      "argv": [
+        "docker",
+        "rmi",
+        "omega-verify-py:spike002"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.102,
+      "stdout": "Untagged: omega-verify-py:spike002\nDeleted: sha256:3f16d34b01ae5e3f04a7f1be12b1d18df45dc8987f1e65d1cff7d26a163f60af\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_rmi_base",
+      "argv": [
+        "docker",
+        "rmi",
+        "python:3.13-slim"
+      ],
+      "rc": 1,
+      "elapsed_s": 0.022,
+      "stdout": "",
+      "stderr": "Error response from daemon: No such image: python:3.13-slim\n"
+    },
+    {
+      "step": "docker_images",
+      "argv": [
+        "docker",
+        "images",
+        "--format",
+        "{{.Repository}}:{{.Tag}}"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.204,
+      "stdout": "rivetdev/engine:latest\nsubstrate-sandbox:0.1\nagentos:latest\npostgres:16-alpine\nlinuxserver/webtop:ubuntu-xfce\nmcr.microsoft.com/devcontainers/javascript-node:latest\nghcr.io/elie222/rakazo/app:edge\ntraefik:latest\npostgres:16\nghcr.io/vectorize-io/hindsight-api:0.9.1\npostgres:<none>\nvikunja/vikunja:latest\nuntraceablez/uvdesk:latest\nagnohq/pgvector:18\ngreptime/greptimedb:v0.14.4\ntimescale/timescaledb:2.17.2-pg16\n",
+      "stderr": ""
+    },
+    {
+      "step": "docker_ps_all_ids",
+      "argv": [
+        "docker",
+        "ps",
+        "-a",
+        "-q",
+        "--no-trunc"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.126,
+      "stdout": "376d6841647de901401aab19add4b892b9d802aed922c3232a3d020fd12e8ceb\ndc89b9a957498131ea5475147359ae22cb6802f65c6e80a336e672110966926b\n72470b4d22ebfb27515ee701dc69cfc7d141d9009e22a5ea771dccb936f16c61\n1917e37f4d54d632ab7f62d3ab5a1558e4740b666946966aca4064f904fe7ba7\nf509cd54444fd435d7cada5e1a27d92f07adbafddc3585de01cd92bdeb01d596\n19f317246866698aa89761c50959d8185754a574df743eac638c76278aff75d0\nd90ac898441914b74c6157b553d8791251f96ba30eb8076f0fd93b53e2bd6c83\n683a121f156111ab804e7c1b88ce823082c9bf911d5d5c6fdda37adc6ce7fa81\nc8ee8fe4057c0247f26de6b228a884b12b758b6dcd009de8bcacd527a1440106\n9c39d8624475fa32db5c25dd9f87a0595645c0b0f738ec9e95a37fe1eb2ce4d7\n347baad9425e18ac956bbc98f83264ee3431461f9271cb64d6d4869a8aa009e1\n0e03ad4761f241c13285ea5460008eaf8a93b26ed200541ef1fa638cf4a3498d\nedba2c690db355bb72fc913176dd7dcc01bebee1d926b17c9cc136bab3e21d51\n2c5808a36b7de0f530625011eec469b3f0749122be564f384b376f01f3742ee7\n487bb2b33b8bd15601b92fbf28dc4dbb4751593a2e4e85bb9100d12bde01321e\n8cbf0fd7be37fb6b5b972915fa6ad508f8900689fb6ee7819b4590cb61095efe\nade015e6499a1ee9e4f3a609f799fa94fb803448890af544f341a56a6eefb7bc\nbfc4f031b5649c93c333c61dd64f5eecfaf3eb24d06149a2cbe6ba2522c6a327\nec9664fe7bc05db641e4811416ff331905a493c6f989f4f90400c42373ab465f\n",
+      "stderr": ""
+    },
+    {
+      "step": "sandbox_list_selector",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list",
+        "--selector",
+        "omega-spike=002",
+        "--names"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.064,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "step": "final_sandbox_list",
+      "argv": [
+        "openshell",
+        "sandbox",
+        "list"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.055,
+      "stdout": "No sandboxes found.\n",
+      "stderr": ""
+    },
+    {
+      "step": "final_docker_ps",
+      "argv": [
+        "docker",
+        "ps"
+      ],
+      "rc": 0,
+      "elapsed_s": 0.096,
+      "stdout": "CONTAINER ID   IMAGE                               COMMAND                  CREATED       STATUS                PORTS                                          NAMES\n376d6841647d   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:54000->4000/tcp                      substrate-smoke-greptime\ndc89b9a95749   postgres:16                         \"docker-entrypoint.s\u2026\"   3 hours ago   Up 3 hours            127.0.0.1:55432->5432/tcp                      substrate-smoke-pg\n72470b4d22eb   rivetdev/engine:latest              \"/usr/bin/rivet-engi\u2026\"   5 days ago    Up 5 days (healthy)   127.0.0.1:6420->6420/tcp                       gcs-rivet-rivet-engine-1\n1917e37f4d54   linuxserver/webtop:ubuntu-xfce      \"/init\"                  11 days ago   Up 8 days             3001/tcp, 127.0.0.1:6081->3000/tcp             substrate-desktop\n683a121f1561   agentos:latest                      \"/app/scripts/entryp\u2026\"   2 weeks ago   Up 8 days             0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp    agentos-api\nc8ee8fe4057c   agnohq/pgvector:18                  \"docker-entrypoint.s\u2026\"   2 weeks ago   Up 8 days                                                            agentos-db\n9c39d8624475   timescale/timescaledb:2.17.2-pg16   \"docker-entrypoint.s\u2026\"   3 weeks ago   Up 8 days (healthy)   127.0.0.1:5432->5432/tcp                       auctioning-timescale-1\n347baad9425e   greptime/greptimedb:v0.14.4         \"sh -c 'exec $TARGET\u2026\"   3 weeks ago   Up 8 days             127.0.0.1:4000-4003->4000-4003/tcp             auctioning-greptime-1\n0e03ad4761f2   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 7091/tcp, 127.0.0.1:5173->5173/tcp   rakazo-web-1\nedba2c690db3   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days             3100/tcp, 5173/tcp, 7091/tcp                   rakazo-worker-1\n2c5808a36b7d   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5173/tcp, 127.0.0.1:3100->3100/tcp, 7091/tcp   rakazo-api-1\n487bb2b33b8b   ghcr.io/elie222/rakazo/app:edge     \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   3100/tcp, 5173/tcp, 7091/tcp                   rakazo-supervisor-1\n8cbf0fd7be37   postgres:16                         \"docker-entrypoint.s\u2026\"   4 weeks ago   Up 8 days (healthy)   5432/tcp                                       rakazo-postgres-1\nbfc4f031b564   vikunja/vikunja:latest              \"/app/vikunja/vikunja\"   5 weeks ago   Up 8 days (healthy)   127.0.0.1:3456->3456/tcp                       vikunja\nec9664fe7bc0   untraceablez/uvdesk:latest          \"/bin/bash /usr/loca\u2026\"   6 weeks ago   Up 8 days (healthy)   127.0.0.1:8082->80/tcp                         uvdesk\n",
+      "stderr": ""
+    }
+  ]
+}

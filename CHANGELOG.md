@@ -6,6 +6,35 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Added
+
+- Pinned development lint/type checks and a Python 3.12–3.14 CI matrix with
+  a reproducible dependency lock and an audioop-safe Discord import.
+- Provider transient-failure retries, per-turn token usage, OpenAI Responses
+  routing with chat-completions fallback, and streamed conversation turns.
+- Hermetic PyRIT multi-turn attack campaigns and scorer-based judging.
+- SEC-NET 2.2.0 egress transport hardening and verified browser sandbox boundary
+  confinement (see [SECURITY.md](SECURITY.md)).
+
+### Changed
+
+- Documentation search now returns bounded, redacted excerpts and explicit
+  citation provenance instead of copying the raw retrieval response.
+- Ultrathink mark evals exercise the real approval contract through an injected
+  runner; removing the production approval requirement fails the red-team case.
+- Setup and tool documentation reflect the 109-tool roster and 108-tool MCP
+  surface; test/eval totals are reported by CI instead of pinned in prose.
+- Replaced incidental source/configuration-copy assertions with executable
+  lint/type/catalog gates and consumer-visible regression coverage.
+- CI jobs share a stdlib receipt helper, preserving command failures and
+  distinguishing missing, skipped, cancelled, and failed validation evidence.
+
+### Fixed
+
+- Prevented retrieval content, metadata, and error messages from bypassing
+  existing credential redaction at registry, MCP, and model boundaries.
+- Distinguished malformed docs responses from valid searches with no hits.
+
 ## [0.1.0] — 2026-10-03
 
 First public release: one Grok programming bot, eight milestones deep.

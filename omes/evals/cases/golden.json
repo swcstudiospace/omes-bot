@@ -146,5 +146,19 @@
     "expect": [
       {"type": "tool_called", "name": "substrate_graph_claim"}
     ]
+  },
+  {
+    "id": "golden-ultrathink-mark-approved",
+    "kind": "golden",
+    "registry": true,
+    "family": "ultrathink",
+    "tool": "ult_session_mark",
+    "approve": true,
+    "arguments": {"state": ".sessions/s1.json", "mark": "synced"},
+    "expect": [
+      {"type": "tool_called", "name": "ult_session_mark"},
+      {"type": "payload_contains", "text": "synced"},
+      {"type": "payload_contains", "text": ".sessions/s1.json"}
+    ]
   }
 ]

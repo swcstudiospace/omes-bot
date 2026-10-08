@@ -841,7 +841,7 @@ Merge the reviewed PR when policy allows. Requires approval.
 - Approval: not required
 - Required params: query
 
-Search the product documentation (RAGflow-backed retrieval through the substrate). Returns the retrieval payload with citations when a dataset answers, or an error when the docs plane is unconfigured.
+Search the product documentation (RAGflow-backed retrieval through the substrate). Returns redacted excerpt chunks with provenance (document, dataset, score) when a dataset answers, or an error when the docs plane is unconfigured or returns a malformed response.
 
 ## substrate_graph_claim
 

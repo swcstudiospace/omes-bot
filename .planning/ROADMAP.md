@@ -10,10 +10,11 @@
 - ✅ **v6 Grok ship** — Phases 34-38 (shipped 2026-10-03)
 - ✅ **v7 Substrate surface** — Phases 39-43 (shipped 2026-10-03)
 - ✅ **v8 Public launch** — Phases 44-45 (shipped 2026-10-03)
+- ✅ **v9 SOTA upgrade** — Phases 46-52 (shipped 2026-10-08)
 
-Archives: `milestones/v1-ROADMAP.md` through `milestones/v8-ROADMAP.md`
+Archives: `milestones/v1-ROADMAP.md` through `milestones/v9-ROADMAP.md`
 with phase directories under `milestones/v1-phases/` through
-`milestones/v8-phases/`.
+`milestones/v9-phases/`.
 
 ## Phases
 

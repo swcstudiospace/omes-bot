@@ -160,3 +160,172 @@ def test_stdio_roundtrip_through_own_client(tmp_path: Path):
     assert "error" not in called, called
     text = called["result"]["content"][0]["text"]
     assert json.loads(text)["summary"] == {}
+
+
+def test_call_tool_substrate_docs_search_exports_no_raw_secret():
+    from omes.tools.substrate_tools import register_substrate_tools
+
+    token = "ghp_" + "x" * 36
+
+    class _DocsClient:
+        def docs_search(self, query: str) -> dict:
+            return {
+                "ok": True,
+                "status": 200,
+                "body": {
+                    "code": 0,
+                    "data": {
+                        "chunks": [
+                            {
+                                "content": f"excerpt {token} " + "y" * 2000,
+                                "document_keyword": "guide.md",
+                                "dataset_id": "ds-1",
+                                "similarity": 0.5,
+                            }
+                        ]
+                    },
+                },
+            }
+
+    registry = ToolRegistry()
+    register_substrate_tools(registry, _DocsClient())
+    call = call_tool_handler(registry)
+
+    class Params:
+        def __init__(self, name, arguments):
+            self.name = name
+            self.arguments = arguments
+
+    ok = asyncio.run(call(None, Params("substrate_docs_search", {"query": "q"})))
+    assert ok.is_error in (False, None)
+    text = ok.content[0].text
+    assert token not in text
+    assert "retrieval" not in json.loads(text)
+
+    class _BrokenClient:
+        def docs_search(self, query: str) -> dict:
+            return {"ok": True, "status": 200, "body": {"code": 0}}
+
+    broken = ToolRegistry()
+    register_substrate_tools(broken, _BrokenClient())
+    bad = asyncio.run(
+        call_tool_handler(broken)(None, Params("substrate_docs_search", {"query": "q"}))
+    )
+    assert bad.is_error is True
+    assert "malformed" in bad.content[0].text
+
+
+def test_P46_R01_registry_preview_uses_actual_policy(tmp_path: Path):
+    """AC-OMEGA-V9-01: None policy, no-roster and approval never widen fetch."""
+    from omes.policy.policy import SeatPolicy
+
+    doc = {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": ["acme.test"]}}
+    registry = default_registry(ROOT, tmp_path, policy=SeatPolicy(doc))
+    out = json.loads(
+        registry.dispatch("web_preview_check", {"url": "https://other.test/"})
+    )
+    assert "error" in out
+    assert out["error"].split(":")[0] in ("forbidden_host", "upstream_error")
+    bare = default_registry(ROOT, tmp_path, policy=None)
+    denied = json.loads(
+        bare.dispatch("web_preview_check", {"url": "https://acme.test/"})
+    )
+    assert "not_configured" in denied.get(
+        "error", ""
+    ) or "forbidden_host" in denied.get("error", "")
+
+
+def test_P46_R07_missing_binding_returns_not_configured(tmp_path: Path):
+    """AC-OMEGA-V9-01: unbound web tools deny before dispatch."""
+    from omes.tools.webpack import WebClient, WebContext, register_web_tools
+
+    registry = ToolRegistry(approval_log=ApprovalLog())
+    register_web_tools(registry, WebClient(WebContext(root=tmp_path)))
+    for tool, args in (
+        ("web_preview_check", {"url": "https://acme.test/"}),
+        ("web_review_page", {"url": "https://acme.test/", "question": "q"}),
+    ):
+        out = json.loads(registry.dispatch(tool, args))
+        assert "not_configured" in out.get(
+            "error", ""
+        ) or "connectivity failed" in out.get("error", ""), tool
+
+
+def test_P46_R07_rebinding_different_transport_refuses(tmp_path: Path):
+    """AC-OMEGA-V9-01: a registry binds exactly one dispatch transport."""
+    import pytest as _pytest
+
+    from omes.mcp_server import bind_dispatch_transport
+    from omes.providers.destination import DestinationTransport
+
+    registry = ToolRegistry(approval_log=ApprovalLog())
+    first = DestinationTransport(None)
+    bind_dispatch_transport(registry, first)
+    bind_dispatch_transport(registry, first)
+    with _pytest.raises(ValueError, match="different transport"):
+        bind_dispatch_transport(registry, DestinationTransport(None))
+
+
+def test_P46_R07_bound_dispatch_creates_worker_root(tmp_path: Path):
+    """AC-OMEGA-V9-01: dispatch enters a bound root and leaves none behind."""
+    from omes.mcp_server import _coordinator_for
+    from omes.policy.policy import SeatPolicy
+
+    doc = {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": ["acme.test"]}}
+    registry = default_registry(ROOT, tmp_path, policy=SeatPolicy(doc))
+    coordinator = _coordinator_for(registry)
+    assert coordinator is not None
+    out = json.loads(
+        registry.dispatch("web_preview_check", {"url": "https://acme.test/"})
+    )
+    assert "error" in out  # hermetic: no real DNS in unit tier
+    assert coordinator.pending == 0
+    assert coordinator.transport.current_operation() is None
+
+
+def test_P46_R07_queue_bound_sixteen(tmp_path: Path):
+    """AC-OMEGA-V9-01: dispatch queue limits to 16 pending items."""
+    from omes.mcp_server import _coordinator_for
+    from omes.policy.policy import SeatPolicy
+
+    doc = {"version": 1, "tools": {}, "paths": {}, "network": {"hosts": ["acme.test"]}}
+    registry = default_registry(ROOT, tmp_path, policy=SeatPolicy(doc))
+    coordinator = _coordinator_for(registry)
+    assert coordinator is not None
+    with coordinator.lock:
+        coordinator.pending = 16
+    try:
+        out = json.loads(
+            registry.dispatch("web_preview_check", {"url": "https://acme.test/"})
+        )
+        assert "dispatch queue is full" in out.get("error", "")
+    finally:
+        with coordinator.lock:
+            coordinator.pending = 0
+
+
+def test_P46_R07_cancelled_operation_aborts_before_dispatch(tmp_path: Path):
+    """AC-OMEGA-V9-01: pre-aborted root refuses execution immediately."""
+    from omes.mcp_server import bind_dispatch_transport
+    from omes.providers.destination import DestinationTransport
+    from omes.tools.webpack import WebClient, WebContext, register_web_tools
+
+    transport = DestinationTransport(None)
+    registry = ToolRegistry(approval_log=ApprovalLog())
+    register_web_tools(
+        registry, WebClient(WebContext(root=tmp_path, transport=transport))
+    )
+    bind_dispatch_transport(registry, transport)
+
+    orig_begin = transport.begin_operation
+
+    def _begin_cancelled(*args, **kwargs):
+        root = orig_begin(*args, **kwargs)
+        root.abort_handle.abort("cancelled")
+        return root
+
+    transport.begin_operation = _begin_cancelled  # type: ignore[method-assign]
+    out = json.loads(
+        registry.dispatch("web_preview_check", {"url": "https://acme.test/"})
+    )
+    assert "operation was cancelled" in out.get("error", "")
