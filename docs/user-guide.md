@@ -1,0 +1,47 @@
+# User guide
+
+How to get the best out of Omega Prime: the magic words, ultrathink
+turns, skills, tools, and the approval model.
+
+## Magic words
+
+Three standalone lowercase words change how Omega Prime works a turn
+(they are ignored inside code and markup):
+
+- `ultrathink` — think hard before answering. Best paired with
+  the ask: "`ultrathink` how should we split this migration?"
+- `orchestrate` — fan substantial work out to subagents, verify
+  between phases, and don't yield until everything is done.
+- `workflowz` — run the work as a batched multi-subagent
+  workflow: scope the list, dispatch one batch per phase, verify,
+  integrate.
+
+## Ultrathink turns
+
+Say `ultrathink` plus a multi-step ask and the turn runs the
+ultrathink flow: resolve any written plan, work its waves in
+order, track progress, and ship finished work through a reviewed
+PR. The plan never overrides your words — it organizes them.
+
+## Skills and routines
+
+Omega Prime carries 26 skills (platform guides, review and debugging
+playbooks, security handling, desk flows, ultrathink) and 5
+routines (lead dispatch, intake polling, nightly learning,
+ultrathink turns). Name one to invoke it, or let the bot pick:
+it never claims a skill that isn't a file on disk.
+
+## Tools and approvals
+
+The roster lists 109 tools across coding, growth, platform, IDE,
+messaging, seven domain packs (lead, systems, web, mobile,
+infra, quality, app packs), and substrate plus ultrathink bridge
+tools. Most reads run free; writes, deploys, publishes, and merges
+need your approval first — the bot asks, you approve, then it runs.
+Nothing approval-gated ever self-approves.
+
+## Receipts
+
+A completion claim cites its evidence: the commands run and their
+exit codes. Ask "show the receipt" any time to see what was run,
+what passed, and what stayed unverified.

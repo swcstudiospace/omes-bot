@@ -24,4 +24,8 @@ build/
 # Subagent-driven-development scratch
 .superpowers/
 
+# Runtime artifacts (created on runs, never committed)
+omega_prime/sessions.db
+.substrate/
+
 .DS_Store

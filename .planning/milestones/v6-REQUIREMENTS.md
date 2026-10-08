@@ -1,0 +1,57 @@
+# Requirements: v6 Grok ship
+
+Milestone-scoped. v5 requirements are archived in `milestones/v5-REQUIREMENTS.md`.
+Ground truth: `.planning/research/v6-runtime-spike.md`. User decisions (2026-10-03):
+hybrid architecture (Add-Bot template + optional Omega Prime MCP tool host), MIT license
+(bridge-only ultrathink integration, no AGPL vendoring).
+
+## Magic keywords
+
+- [x] **KEY-01**: `ultrathink`, `orchestrate`, `workflowz` recognized in prompts per Omp matching rules (lowercase standalone prose; code spans/blocks ignored; per-turn).
+- [x] **KEY-02**: Each word injects its notice for the turn with requires-gates adapted to Omega Prime tools (`orchestrate` needs `delegate_task`; `workflowz` needs `delegate_task` + subagent batching).
+
+## Ultrathink native
+
+- [x] **ULT-01**: Ultrathink Grok-host flow (plan → kickoff → ship) available as Omega Prime skills/routines (prompt-native, no dependency).
+- [x] **ULT-02**: Bridge tools to the `bun` ultrathink CLI (uplift/track/ship); no vendored AGPL code in this repo.
+
+## MCP tool host
+
+- [x] **MCP-01**: Omega Prime tool registry served over MCP (stdio), roster-gated, with fake-backed tests.
+- [x] **MCP-02**: OpenShell host profile + AgentOS host notes for running the tool host.
+
+## Template + setup
+
+- [x] **TPL-01**: Polished Add-Bot template + setup flow (install → secrets → optional custom MCP → smoke prompt) with a verifiable smoke check.
+- [x] **TPL-02**: MIT LICENSE file at repo root.
+
+## Docs + GitBook
+
+- [x] **DOC-01**: Build-aesthetics documentation (how Omega Prime is built: agent, packs, contracts, receipts).
+- [x] **DOC-02**: User guide + setup flow docs for Grok Bot installs.
+- [x] **DOC-03**: GitBook Git Sync structure (`docs/`, `SUMMARY.md`) + dashboard connection guide.
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| KEY-01 | Phase 34 | Done |
+| KEY-02 | Phase 34 | Done |
+| ULT-01 | Phase 35 | Done |
+| ULT-02 | Phase 35 | Done |
+| MCP-01 | Phase 36 | Done |
+| MCP-02 | Phase 36 | Done |
+| TPL-01 | Phase 37 | Done |
+| TPL-02 | Phase 37 | Done |
+| DOC-01 | Phase 38 | Done |
+| DOC-02 | Phase 38 | Done |
+| DOC-03 | Phase 38 | Done |
+
+**Coverage:**
+
+- v6 requirements: 11 total
+- Mapped to phases: 11
+- Unmapped: 0
+
+---
+*Requirements defined: 2026-10-03 (v6 milestone)*

@@ -1,9 +1,9 @@
 # Milestone v1 archive — REQUIREMENTS (all Done, 2026-10-03)
 
-# Requirements: Omes Bot
+# Requirements: Omega Prime
 
 **Defined:** 2026-10-02
-**Core Value:** One Omes agent runs both Hermes and Omp agent logic.
+**Core Value:** One Omega Prime agent runs both Hermes and Omp agent logic.
 
 ## v1 Requirements
 
@@ -112,7 +112,7 @@ Deferred. Not in this roadmap.
 | Feature | Reason |
 |---------|--------|
 | Temporal as the merge mechanism | One Python process is the merge. Temporal is a later adapter. |
-| Sidecar that shells out to the two checkouts | Both agents are ported into Omes. |
+| Sidecar that shells out to the two checkouts | Both agents are ported into Omega Prime. |
 | Hermes TUI, desktop, website, locales, nix and docker packaging | Product chrome around the agent. |
 | Messaging gateways, Feishu, Yuanbao, Home Assistant, Spotify, kanban UI | Product chrome. Pulled in only if a phase's tests cannot pass without that code. |
 | Omp TUI, collab web, stats site, CLI gallery, Rust crates, bazel and nix | Product chrome and the non-Python core. The agent loop is the port. |

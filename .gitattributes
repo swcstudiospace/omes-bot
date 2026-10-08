@@ -1,0 +1,5 @@
+# Normalize line endings; keep binaries binary.
+* text=auto
+*.svg text
+*.png binary
+*.jpg binary

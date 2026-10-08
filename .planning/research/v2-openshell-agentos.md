@@ -1,4 +1,4 @@
-# v2 research: OpenShell + AgentOS, and what Omes borrows
+# v2 research: OpenShell + AgentOS, and what Omega Prime borrows
 
 Sources (fetched 2026-10-03):
 

@@ -1,9 +1,72 @@
 [project]
-name = "omes-bot"
+name = "omega-prime"
 version = "0.1.0"
 description = "One Grok programming bot. Hermes and oh-my-pi agent logic in one Python process."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "SWC Studio" }]
 requires-python = ">=3.11"
+keywords = ["grok", "agent", "programming-bot", "mcp"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "tweepy>=4.17",
+  "mcp>=2.3,<3",
+  "pyrit>=1.1",
+  "apscheduler>=3.11",
+  "aiogram>=3.31",
+  "discord.py>=2.7",
+  "playwright>=1.63",
+  "Appium-Python-Client>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff==0.16.10",
+  "mypy==2.4.0",
+  "pytest>=8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/swcstudiospace/omega-prime"
+Repository = "https://github.com/swcstudiospace/omega-prime"
+Documentation = "https://github.com/swcstudiospace/omega-prime/tree/main/docs"
+Issues = "https://github.com/swcstudiospace/omega-prime/issues"
+Changelog = "https://github.com/swcstudiospace/omega-prime/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["omega_prime*"]
+
+[tool.setuptools.package-data]
+omega_prime = ["**/*.md", "**/*.yaml", "**/*.yml", "**/*.json", "**/*.xml", "**/*.sh"]
 
 [tool.pytest.ini_options]
-testpaths = ["omes/tests"]
+testpaths = ["omega_prime/tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM", "RUF"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["omega_prime"]
+
+[tool.mypy]
+python_version = "3.11"
+check_untyped_defs = true
+ignore_missing_imports = true
+show_error_codes = true

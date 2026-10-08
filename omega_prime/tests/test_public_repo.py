@@ -1,0 +1,99 @@
+"""Phase 44: public-repo surface stays complete, linked, and placeholder-free."""
+
+from __future__ import annotations
+
+import re
+import tomllib
+from pathlib import Path
+from xml.dom import minidom
+
+OMEGA_PRIME = Path(__file__).resolve().parents[1]
+ROOT = OMEGA_PRIME.parent
+
+REQUIRED_FILES = (
+    "README.md",
+    "LICENSE",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SECURITY.md",
+    "CHANGELOG.md",
+    ".editorconfig",
+    ".gitattributes",
+    ".github/PULL_REQUEST_TEMPLATE.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    "assets/icon.svg",
+    "assets/banner.svg",
+)
+
+PLACEHOLDERS = ("TODO", "FIXME", "your-email", "your-name", "example.com", "CHANGEME")
+
+_LINK = re.compile(r"\[[^\]]*\]\(([^)#]+?)(?:#[^)]*)?\)")
+
+
+def test_required_files_exist_and_nontrivial() -> None:
+    for name in REQUIRED_FILES:
+        path = ROOT / name
+        assert path.is_file(), f"missing {name}"
+        assert len(path.read_text(encoding="utf-8")) > 80, f"{name} is trivially short"
+
+
+def test_readme_links_resolve() -> None:
+    text = (ROOT / "README.md").read_text(encoding="utf-8")
+    targets = [match for match in _LINK.findall(text) if "://" not in match]
+    assert targets, "README names no relative links"
+    for target in targets:
+        assert (ROOT / target).exists(), f"README links missing {target}"
+
+
+def test_brand_assets_referenced() -> None:
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    assert "assets/banner.svg" in readme
+    docs_front = (ROOT / "docs" / "README.md").read_text(encoding="utf-8")
+    assert docs_front.splitlines()[0].startswith("# ")
+    assert "../assets/banner.svg" in docs_front
+
+
+def test_svgs_valid_and_self_contained() -> None:
+    for name in ("assets/icon.svg", "assets/banner.svg"):
+        raw = (ROOT / name).read_text(encoding="utf-8")
+        root = minidom.parseString(raw).documentElement
+        assert root is not None
+        assert root.tagName == "svg"
+        assert root.getAttribute("width") and root.getAttribute("height")
+        assert not root.getElementsByTagName("script")
+        assert "href" not in raw and "xlink" not in raw
+        without_ns = raw.replace('xmlns="http://www.w3.org/2000/svg"', "")
+        assert "http://" not in without_ns and "https://" not in without_ns
+
+
+def test_packaging_is_public_complete() -> None:
+    parsed = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    project = parsed["project"]
+    assert project["license"] == {"text": "MIT"}
+    assert project["readme"] == "README.md"
+    assert project["authors"] == [{"name": "SWC Studio"}]
+    for key in ("Homepage", "Repository", "Documentation", "Issues", "Changelog"):
+        assert project["urls"][key].startswith(
+            "https://github.com/swcstudiospace/omega-prime"
+        )
+    assert project["dependencies"] and "dependencies" not in project["urls"]
+    find = parsed["tool"]["setuptools"]["packages"]["find"]
+    assert find["include"] == ["omega_prime*"]
+    license_text = (ROOT / "LICENSE").read_text(encoding="utf-8")
+    assert "MIT License" in license_text and "SWC Studio" in license_text
+
+
+def test_no_placeholders_in_public_files() -> None:
+    checked = [*list(REQUIRED_FILES), "pyproject.toml", ".gitignore"]
+    for name in checked:
+        text = (ROOT / name).read_text(encoding="utf-8")
+        for token in PLACEHOLDERS:
+            assert token not in text, f"{name} contains placeholder {token}"
+
+
+def test_changelog_sections() -> None:
+    text = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    assert "## [Unreleased]" in text
+    assert "## [0.1.0]" in text

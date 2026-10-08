@@ -1,0 +1,164 @@
+[
+  {
+    "id": "golden-greeting",
+    "kind": "golden",
+    "user": "hello",
+    "script": [{"role": "assistant", "content": "Hello, I am Omega Prime."}],
+    "expect": [
+      {"type": "final_contains", "text": "Omega Prime"},
+      {"type": "exit_reason", "reason": "text_response(finish_reason=stop)"}
+    ]
+  },
+  {
+    "id": "golden-read-roundtrip",
+    "kind": "golden",
+    "user": "read the note",
+    "script": [
+      {
+        "role": "assistant",
+        "content": "",
+        "tool_calls": [
+          {
+            "id": "call-1",
+            "type": "function",
+            "function": {"name": "read", "arguments": "{}"}
+          }
+        ]
+      },
+      {"role": "assistant", "content": "saw it"}
+    ],
+    "tools": {"read": "file-bytes"},
+    "expect": [
+      {"type": "tool_called", "name": "read"},
+      {"type": "final_contains", "text": "saw it"},
+      {"type": "exit_reason", "reason": "text_response(finish_reason=stop)"}
+    ]
+  },
+  {
+    "id": "golden-no-password",
+    "kind": "golden",
+    "user": "help me log in",
+    "script": [{"role": "assistant", "content": "Here is help without secrets."}],
+    "expect": [
+      {"type": "final_not_contains", "text": "password"}
+    ]
+  },
+  {
+    "id": "golden-lead-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "lead_intake_ack",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"intake_id": "in-abc123", "status": "done"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "lead_intake_ack"}
+    ]
+  },
+  {
+    "id": "golden-systems-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "sys_contract_propose",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"surface": "rosters", "body": "b", "version": "1.0.0", "summary": "s", "breaking": false, "consumers_required": ["bot-00-omega-prime"]},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "sys_contract_propose"}
+    ]
+  },
+  {
+    "id": "golden-web-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "web_vercel_promote",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"project": "web", "deployment_id": "d-1"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "web_vercel_promote"}
+    ]
+  },
+  {
+    "id": "golden-mobile-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "mob_play_halt_rollout",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"package_name": "com.example.app", "track": "production", "reason": "regression"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "mob_play_halt_rollout"}
+    ]
+  },
+  {
+    "id": "golden-infra-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "infra_railway_redeploy",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"project": "acme", "service": "web", "prior_deployment_id": "d-9"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "infra_railway_redeploy"}
+    ]
+  },
+  {
+    "id": "golden-quality-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "qua_receipt_approve",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"receipt_path": ".receipts/31/plan.json"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "qua_receipt_approve"}
+    ]
+  },
+  {
+    "id": "golden-packs-approved-runs",
+    "kind": "golden",
+    "registry": true,
+    "tool": "app_push_test",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"app": "desklanes", "platform": "android", "device_label": "dev-1"},
+    "returns": {"ok": true},
+    "expect": [
+      {"type": "tool_called", "name": "app_push_test"}
+    ]
+  },
+  {
+    "id": "golden-substrate-claim-approved",
+    "kind": "golden",
+    "registry": true,
+    "tool": "substrate_graph_claim",
+    "requires_approval": true,
+    "approve": true,
+    "arguments": {"graph_id": "ut-1", "node_id": "n1", "session_id": "s1"},
+    "returns": {"ok": true, "token": "lease-tok", "expires": "soon"},
+    "expect": [
+      {"type": "tool_called", "name": "substrate_graph_claim"}
+    ]
+  },
+  {
+    "id": "golden-ultrathink-mark-approved",
+    "kind": "golden",
+    "registry": true,
+    "family": "ultrathink",
+    "tool": "ult_session_mark",
+    "approve": true,
+    "arguments": {"state": ".sessions/s1.json", "mark": "synced"},
+    "expect": [
+      {"type": "tool_called", "name": "ult_session_mark"},
+      {"type": "payload_contains", "text": "synced"},
+      {"type": "payload_contains", "text": ".sessions/s1.json"}
+    ]
+  }
+]

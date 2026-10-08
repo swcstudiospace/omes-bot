@@ -1,0 +1,29 @@
+# Spike 002 verification-gate policy for NVIDIA OpenShell 0.1.2.
+#
+# Derived from omega_prime/hosting/openshell/sandbox-policy.yaml (same filesystem
+# lists, same empty network map). Two deliberate differences for a
+# verification gate:
+#   - landlock.compatibility is hard_requirement, so a host that cannot
+#     enforce the filesystem rules fails sandbox start instead of running the
+#     gate unconfined (best_effort only logs a high-severity finding).
+#   - /app is dropped from read_only: the verifier image has no /app and the
+#     gate has no use for it.
+#
+# Schema: https://docs.nvidia.com/openshell/how-it-works/policies/schema
+# - filesystem_policy / landlock are startup-only (fixed for the sandbox life).
+# - network_policies is live; an empty map means every outbound connection is
+#   denied by the sandbox proxy. With zero network rules OpenShell adds no
+#   baseline filesystem paths, so the lists below are the whole grant
+#   (plus the runtime-only read grant on /run/openshell-supervisor-ca).
+
+version: 1
+
+filesystem_policy:
+  include_workdir: true
+  read_only: [/bin, /usr, /lib, /proc, /dev/urandom, /etc, /var/log]
+  read_write: [/sandbox, /tmp, /dev/null]
+
+landlock:
+  compatibility: hard_requirement
+
+network_policies: {}

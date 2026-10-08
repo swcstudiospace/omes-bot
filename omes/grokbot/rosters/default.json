@@ -1,9 +1,0 @@
-{
-  "bot_id": "bot-00-omes",
-  "default_branch": "main",
-  "roster_version": "2026-10-02",
-  "skills_dir": "skills",
-  "prompts_dir": "prompts",
-  "routines_dir": "routines",
-  "tool_roster": "contracts/tool-rosters/omes.yaml"
-}

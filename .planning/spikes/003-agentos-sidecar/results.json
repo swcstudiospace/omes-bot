@@ -1,0 +1,456 @@
+{
+  "started_at": "2026-10-07T20:50:51+0000",
+  "host_python": "3.12.3",
+  "cases": [
+    {
+      "name": "exec_command_with_file_write",
+      "expect": "files[] written via vm.filesystem.writeFile, `cat` sees it, exitCode 0",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 2444,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "hello from omega\ndone\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 2441
+      }
+    },
+    {
+      "name": "exec_js_fs_and_child_process",
+      "expect": "guest JS writes/reads node:fs and spawns `cat` via node:child_process",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 947,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "written by guest js\nhello from omega\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 946
+      }
+    },
+    {
+      "name": "exec_typescript_transpile_only",
+      "expect": "TS executes (transpile only) and prints 42",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 249,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "42\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 248
+      }
+    },
+    {
+      "name": "typecheck_type_error",
+      "expect": "hasErrors true with TS2322 diagnostic carrying line/column",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 2900,
+      "response": {
+        "outcome": "succeeded",
+        "hasErrors": true,
+        "diagnostics": [
+          {
+            "code": 2322,
+            "category": "error",
+            "message": "Type 'string' is not assignable to type 'number'.",
+            "filePath": "/workspace/bad.ts",
+            "line": 1,
+            "column": 7
+          }
+        ],
+        "error": null,
+        "durationMs": 2898
+      }
+    },
+    {
+      "name": "typecheck_clean",
+      "expect": "hasErrors false, no error diagnostics",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 2551,
+      "response": {
+        "outcome": "succeeded",
+        "hasErrors": false,
+        "diagnostics": [],
+        "error": null,
+        "durationMs": 2550
+      }
+    },
+    {
+      "name": "nonzero_exit_command",
+      "expect": "bash `exit 3` -> exitCode 3, stderr 'boom'",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 720,
+      "response": {
+        "outcome": "failed",
+        "exitCode": 3,
+        "stdout": "",
+        "stderr": "boom\n",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": {
+          "code": "execution_failed",
+          "name": "ExecutionError",
+          "message": "execution exited with code 3"
+        },
+        "durationMs": 718
+      }
+    },
+    {
+      "name": "nonzero_exit_js",
+      "expect": "process.exit(4) -> exitCode 4 (outcome recorded)",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 257,
+      "response": {
+        "outcome": "failed",
+        "exitCode": 4,
+        "stdout": "",
+        "stderr": "bad\n",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": {
+          "code": "execution_failed",
+          "name": "ExecutionError",
+          "message": "execution exited with code 4"
+        },
+        "durationMs": 256
+      }
+    },
+    {
+      "name": "js_uncaught_throw",
+      "expect": "uncaught Error -> non-succeeded outcome or non-zero exit, message surfaced",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 167,
+      "response": {
+        "outcome": "failed",
+        "exitCode": 1,
+        "stdout": "",
+        "stderr": "Error: kaboom\n    at /[agentos-inline.js]:276:7\n",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": {
+          "code": "execution_failed",
+          "name": "ExecutionError",
+          "message": "execution exited with code 1"
+        },
+        "durationMs": 165
+      }
+    },
+    {
+      "name": "timeout_js_runaway_loop",
+      "expect": "while(true){} with timeoutMs 1000 -> outcome timed_out well under the 16 s backstop",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 1011,
+      "response": {
+        "outcome": "timed_out",
+        "exitCode": 137,
+        "stdout": "",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": {
+          "code": "execution_timed_out",
+          "name": "ExecutionError",
+          "message": "execution timed out"
+        },
+        "durationMs": 1010
+      }
+    },
+    {
+      "name": "timeout_command_runaway_loop",
+      "expect": "`node -e 'while(true){}'` with timeoutMs 1000 -> outcome timed_out",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 1014,
+      "response": {
+        "outcome": "timed_out",
+        "exitCode": 137,
+        "stdout": "",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": {
+          "code": "execution_timed_out",
+          "name": "ExecutionError",
+          "message": "execution timed out"
+        },
+        "durationMs": 1012
+      }
+    },
+    {
+      "name": "vm_alive_after_timeouts",
+      "expect": "VM still serves a fresh exec after both timeouts",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 620,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "still-alive\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 619
+      }
+    },
+    {
+      "name": "network_fetch_denied",
+      "expect": "guest fetch(https://example.com) fails without network permission",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 277,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "DENIED TypeError code=EACCES msg=EACCES: EACCES: permission denied, tcp://example.com:443: blocked by network.http policy\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 275
+      }
+    },
+    {
+      "name": "network_tcp_denied",
+      "expect": "guest node:net connect to 1.1.1.1:80 fails",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 165,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "DENIED EACCES EACCES: EACCES: permission denied, tcp://1.1.1.1:80: blocked by network.http policy\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 164
+      }
+    },
+    {
+      "name": "network_dns_probe",
+      "expect": "recorded only: whether guest DNS resolution is allowed under the default policy",
+      "passed": null,
+      "http_status": 200,
+      "wall_ms": 172,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "DENIED EACCES EACCES: EACCES: permission denied, dns://example.com: blocked by network.dns policy\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 171
+      }
+    },
+    {
+      "name": "host_isolation_canary",
+      "expect": "a file the guest writes to /tmp does not appear on the host",
+      "passed": true,
+      "http_status": 200,
+      "wall_ms": 1103,
+      "response": {
+        "outcome": "succeeded",
+        "exitCode": 0,
+        "stdout": "canary\n",
+        "stderr": "",
+        "stdoutTruncated": false,
+        "stderrTruncated": false,
+        "error": null,
+        "durationMs": 1101
+      }
+    },
+    {
+      "name": "bad_request_both_fields",
+      "expect": "sending both command and code -> HTTP 400",
+      "passed": true,
+      "http_status": 400,
+      "wall_ms": 1,
+      "response": {
+        "error": "send exactly one of `command` or `code` (string)"
+      }
+    },
+    {
+      "name": "concurrent_exec_x4",
+      "expect": "4 parallel /exec calls all succeed with their own stdout",
+      "passed": true,
+      "wall_ms": 1558,
+      "responses": [
+        {
+          "status": 200,
+          "stdout": "parallel-0\n",
+          "error": null,
+          "durationMs": 1409
+        },
+        {
+          "status": 200,
+          "stdout": "parallel-1\n",
+          "error": null,
+          "durationMs": 1409
+        },
+        {
+          "status": 200,
+          "stdout": "parallel-2\n",
+          "error": null,
+          "durationMs": 1409
+        },
+        {
+          "status": 200,
+          "stdout": "parallel-3\n",
+          "error": null,
+          "durationMs": 1553
+        }
+      ]
+    }
+  ],
+  "cold_start": {
+    "spawn_to_ready_ms": 632,
+    "sidecar_reported": {
+      "port": 37321,
+      "pid": 1967111,
+      "vmCreateMs": 408,
+      "readyMs": 416
+    }
+  },
+  "memory_after_boot": {
+    "total_rss_mb": 136.6,
+    "processes": [
+      {
+        "pid": 1967111,
+        "rss_kb": 86624,
+        "cmd": "node sidecar.mjs"
+      },
+      {
+        "pid": 1967122,
+        "rss_kb": 53268,
+        "cmd": "/root/src/repos/omega/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
+      }
+    ]
+  },
+  "health": {
+    "status": "ok",
+    "pid": 1967111,
+    "versions": {
+      "node": "v24.18.0",
+      "@rivet-dev/agentos-core": "0.2.22",
+      "@rivet-dev/agentos-sidecar": "0.2.22",
+      "@rivet-dev/agentos-runtime-core": "0.2.22",
+      "@agentos-software/common": "0.2.22"
+    },
+    "coldStart": {
+      "vmCreateMs": 408,
+      "readyMs": 416
+    },
+    "memory": {
+      "rss": 88174592,
+      "heapTotal": 34586624,
+      "heapUsed": 16417928,
+      "external": 4916198,
+      "arrayBuffers": 1105909
+    }
+  },
+  "memory_after_cases": {
+    "total_rss_mb": 579.2,
+    "processes": [
+      {
+        "pid": 1967111,
+        "rss_kb": 88796,
+        "cmd": "node sidecar.mjs"
+      },
+      {
+        "pid": 1967122,
+        "rss_kb": 504256,
+        "cmd": "/root/src/repos/omega/.planning/spikes/003-agentos-sidecar/node_modules/@rivet-dev/agentos-sidecar-linux-x64-gnu/agentos-sidecar"
+      }
+    ]
+  },
+  "cleanup": {
+    "tracked_pids": [
+      1967111,
+      1967122
+    ],
+    "steps": [
+      {
+        "step": "POST /shutdown",
+        "status": 202,
+        "body": {
+          "status": "stopping"
+        }
+      }
+    ],
+    "exit_code": 0,
+    "leftover_pids_after_shutdown": [],
+    "still_alive_after_cleanup": []
+  },
+  "sidecar_stderr_tail": [
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: restored session isolate from_snapshot=true",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=3",
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker pool-empty key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker evicted key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: restored session isolate from_snapshot=true",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=1",
+    "agentos-v8-runtime: warm worker evicted key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker claimed key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=1",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=2",
+    "agentos-v8-runtime: warm worker evicted key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker claimed key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=2",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=3",
+    "agentos-v8-runtime: warm worker evicted key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=4e1f6906 heap=128 pool_size=4",
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker pool-empty key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=1",
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=2",
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: restored session isolate from_snapshot=true",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=3",
+    "agentos-v8-runtime: warm worker evicted key=4e1f6906 heap=128",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker claimed key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker claimed key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker claimed key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker claimed key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "agentos-v8-runtime: warm worker claimed key=3cd0aaa5 heap=2048",
+    "agentos-v8-runtime: warm worker refilled key=3cd0aaa5 heap=2048 pool_size=4",
+    "ERR_AGENTOS_VM_TEARDOWN_DEADLINE: vm_id=vm-1 generation=1 active_tasks=1 outstanding_capabilities=0 ledger_zero=false deadline_ms=5000; raise limits.reactor.shutdownDeadlineMs"
+  ],
+  "finished_at": "2026-10-07T20:51:15+0000",
+  "summary": {
+    "total": 17,
+    "passed": 16,
+    "info_only": 1,
+    "failed": [],
+    "fatal_error": null,
+    "clean_shutdown": true
+  }
+}
