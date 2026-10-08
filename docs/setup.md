@@ -40,7 +40,7 @@ the roster).
 On a machine you control (Linux, Mac, or WSL2, Python 3.11+):
 
 ```bash
-git clone https://github.com/swcstudiospace/omega-prime.git
+git clone https://github.com/swcstudiospace/omes-bot.git omega-prime
 cd omega-prime
 python3 -m venv .venv
 .venv/bin/pip install -e .

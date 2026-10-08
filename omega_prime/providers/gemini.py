@@ -106,10 +106,29 @@ class GeminiProvider(Provider):
         texts: list[str] = []
         calls: list[dict[str, Any]] = []
         usage: dict[str, int] | None = None
-        for event in self._sse_data(lines):
+        finish_reason: str | None = None
+        line_count = 0
+        max_lines = 50_000
+
+        def _counted_lines() -> Any:
+            nonlocal line_count
+            if lines is None:
+                return
+            for line in lines:
+                line_count += 1
+                if line_count > max_lines:
+                    raise ProviderError(
+                        f"{self.name} stream exceeded maximum line limit"
+                    )
+                yield line
+
+        for event in self._sse_data(_counted_lines()):
             for candidate in event.get("candidates") or []:
                 if not isinstance(candidate, dict):
                     continue
+                reason = candidate.get("finishReason")
+                if isinstance(reason, str) and reason:
+                    finish_reason = reason
                 content = candidate.get("content") or {}
                 parts = content.get("parts") if isinstance(content, dict) else None
                 for part in parts or []:
@@ -136,6 +155,8 @@ class GeminiProvider(Provider):
             )
             if block is not None:
                 usage = block
+        if finish_reason is None and usage is None:
+            raise ProviderError(f"{self.name} stream ended before completion marker")
         row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
         if calls:
             row["tool_calls"] = [

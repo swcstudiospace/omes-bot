@@ -14,6 +14,7 @@ import argparse
 import asyncio
 import json
 import os
+import shutil
 import sys
 import threading
 import weakref
@@ -146,6 +147,20 @@ def default_registry(
     registry = ToolRegistry(approval_log=approval_log, policy=policy)
     root = Path(root)
     home = Path(home)
+    legacy_root = root / "omes"
+    target_root = root / "omega_prime"
+    if legacy_root.is_dir():
+        for item in ("memory", "skills", "sessions.db"):
+            src = legacy_root / item
+            dst = target_root / item
+            if src.exists() and not dst.exists():
+                try:
+                    if src.is_dir():
+                        shutil.copytree(src, dst)
+                    else:
+                        shutil.copy2(src, dst)
+                except Exception:
+                    pass
     register_coding_tools(registry, root / "omega_prime", policy=policy)
     register_growth_tools(
         registry,

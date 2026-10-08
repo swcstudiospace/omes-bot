@@ -93,8 +93,26 @@ class AnthropicProvider(Provider):
         texts: list[str] = []
         calls: dict[int, dict[str, Any]] = {}
         usage: dict[str, int] = {}
-        for event in self._sse_data(lines):
+        saw_stop = False
+        line_count = 0
+        max_lines = 50_000
+
+        def _counted_lines() -> Any:
+            nonlocal line_count
+            if lines is None:
+                return
+            for line in lines:
+                line_count += 1
+                if line_count > max_lines:
+                    raise ProviderError(
+                        f"{self.name} stream exceeded maximum line limit"
+                    )
+                yield line
+
+        for event in self._sse_data(_counted_lines()):
             kind = event.get("type")
+            if kind in ("message_stop", "message_delta"):
+                saw_stop = True
             if kind == "message_start":
                 message = event.get("message") or {}
                 block = self._usage_from(
@@ -131,6 +149,9 @@ class AnthropicProvider(Provider):
                     if isinstance(piece, str) and index in calls:
                         calls[index]["arguments"] += piece
             elif kind == "message_delta":
+                delta_obj = event.get("delta")
+                if isinstance(delta_obj, dict) and delta_obj.get("stop_reason"):
+                    saw_stop = True
                 block = self._usage_from(
                     event,
                     "usage",
@@ -138,6 +159,8 @@ class AnthropicProvider(Provider):
                 )
                 if block is not None:
                     usage.update(block)
+        if not saw_stop:
+            raise ProviderError(f"{self.name} stream ended before completion marker")
         row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
         merged = [calls[index] for index in sorted(calls) if calls[index]["name"]]
         if merged:

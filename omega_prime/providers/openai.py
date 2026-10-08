@@ -141,14 +141,27 @@ class OpenAIProvider(Provider):
         usage: dict[str, int] | None = None
         finish: str | None = None
         saw_done = False
-        raw_lines = list(lines) if lines is not None else []
-        for line in raw_lines:
-            if isinstance(line, str) and line.strip() in (
-                "data: [DONE]",
-                "data:[DONE]",
-            ):
-                saw_done = True
-        for event in self._sse_data(raw_lines):
+        line_count = 0
+        max_lines = 50_000
+
+        def _counted_lines() -> Any:
+            nonlocal line_count, saw_done
+            if lines is None:
+                return
+            for line in lines:
+                line_count += 1
+                if line_count > max_lines:
+                    raise ProviderError(
+                        f"{self.name} stream exceeded maximum line limit"
+                    )
+                if isinstance(line, str) and line.strip() in (
+                    "data: [DONE]",
+                    "data:[DONE]",
+                ):
+                    saw_done = True
+                yield line
+
+        for event in self._sse_data(_counted_lines()):
             for choice in event.get("choices") or []:
                 if not isinstance(choice, dict):
                     continue

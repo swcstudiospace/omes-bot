@@ -129,7 +129,9 @@ def cmd_summary():
                 "conclusion": step.get("conclusion"),
                 # WR-01 fix: test for absence, so an observed numeric 0 stays 0
                 # instead of collapsing to null like any other falsy value would.
-                "exit_code": int(exit_code) if exit_code not in (None, "") else None,
+                "exit_code": (
+                    int(str(exit_code)) if exit_code not in (None, "") else None
+                ),
                 "reason": reason,
             }
         )

@@ -407,24 +407,32 @@ class NumericDialer:
 
 
 class TLSVerifier:
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+
     def wrap(
         self, raw: Any, *, identity: str, context: ssl.SSLContext, scope: OperationScope
     ) -> Any:
         try:
             is_ip = _is_ip_literal(identity)
-            if is_ip:
-                orig_check = context.check_hostname
-                try:
-                    context.check_hostname = False
-                    wrapped_sock = context.wrap_socket(raw._sock, server_hostname=None)
-                finally:
-                    context.check_hostname = orig_check
-                cert = wrapped_sock.getpeercert() or {}
-                match_fn = getattr(ssl, "match_hostname", None)
-                if callable(match_fn):
-                    match_fn(cert, identity)
-            else:
-                wrapped_sock = context.wrap_socket(raw._sock, server_hostname=identity)
+            with self._lock:
+                if is_ip:
+                    orig_check = context.check_hostname
+                    try:
+                        context.check_hostname = False
+                        wrapped_sock = context.wrap_socket(
+                            raw._sock, server_hostname=None
+                        )
+                    finally:
+                        context.check_hostname = orig_check
+                    cert = wrapped_sock.getpeercert() or {}
+                    match_fn = getattr(ssl, "match_hostname", None)
+                    if callable(match_fn):
+                        match_fn(cert, identity)
+                else:
+                    wrapped_sock = context.wrap_socket(
+                        raw._sock, server_hostname=identity
+                    )
         except DestinationDenied:
             raise
         except Exception:
@@ -940,45 +948,64 @@ class DestinationTransport:
             )
         with self._lock:
             key = id(operation.identity._token)
-            if key not in self._roots:
+            if key in self._drains:
+                return self._drains[key]
+            if key not in self._roots and key not in self._root_finished:
                 raise DestinationDenied(
                     _deny("foreign_authority", "unknown operation").refusal
                 )
-            if key in self._drains:
-                return self._drains[key]
             pending = sum(
                 1
                 for skey in self._scope_open
                 if self._scopes.get(skey) is not None
                 and self._scopes[skey].operation is operation
             )
+            op_scope_tokens = {
+                skey
+                for skey, scope in self._scopes.items()
+                if scope.operation is operation
+            }
             for _skey, scope in list(self._scopes.items()):
                 if scope.operation is operation:
                     scope._closed = True
                     self._scopes.pop(_skey, None)
-            self._scope_open = {
-                s
-                for s in self._scope_open
-                if self._scopes.get(s) is None
-                or self._scopes[s].operation is not operation
-            }
+            self._scope_open = {s for s in self._scope_open if s not in op_scope_tokens}
             for pkey, prec in list(self._permits.items()):
                 p = prec.get("permit")
                 if (
-                    p is not None
-                    and p.scope_identity is not None
-                    and getattr(p.scope_identity, "operation", None) is operation
+                    prec.get("operation_key") == key
+                    or prec.get("scope_token") in op_scope_tokens
+                    or (
+                        p is not None
+                        and p.scope_identity is not None
+                        and id(p.scope_identity._token) in op_scope_tokens
+                    )
                 ):
                     self._permits.pop(pkey, None)
             for _ckey, conn in list(self._connections.items()):
-                if conn.scope_identity is not None:
-                    scope_obj = self._scopes.get(id(conn.scope_identity._token))
-                    if scope_obj is not None and scope_obj.operation is operation:
-                        self._connections.pop(_ckey, None)
+                if (
+                    conn.scope_identity is not None
+                    and id(conn.scope_identity._token) in op_scope_tokens
+                ):
+                    self._connections.pop(_ckey, None)
             for xkey, xrec in list(self._exchanges.items()):
                 if xrec.get("operation") == key:
                     self._exchanges.pop(xkey, None)
+                    if hasattr(self, "_response_scope"):
+                        self._response_scope.pop(xkey, None)
+            if hasattr(self, "_response_scope"):
+                for rkey, rscope in list(self._response_scope.items()):
+                    if (
+                        id(rscope.identity._token) in op_scope_tokens
+                        or rscope.operation is operation
+                    ):
+                        self._response_scope.pop(rkey, None)
+            self._roots.pop(key, None)
             self._root_finished.add(key)
+            if len(self._root_finished) > 256:
+                oldest = next(iter(self._root_finished))
+                self._root_finished.discard(oldest)
+                self._drains.pop(oldest, None)
             drain = OperationDrain(
                 operation=operation.identity,
                 scopes_closed=0,
@@ -1078,7 +1105,7 @@ class DestinationTransport:
                     parent_handle.unsubscribe(sub)
             for pkey, prec in list(self._permits.items()):
                 p = prec.get("permit")
-                if (
+                if prec.get("scope_token") == skey or (
                     p is not None
                     and p.scope_identity is not None
                     and p.scope_identity._token is scope.identity._token
@@ -1093,6 +1120,8 @@ class DestinationTransport:
             for xkey, xrec in list(self._exchanges.items()):
                 if xrec.get("scope") == skey:
                     self._exchanges.pop(xkey, None)
+                    if hasattr(self, "_response_scope"):
+                        self._response_scope.pop(xkey, None)
 
     def _unregister_connection(self, conn: ValidatedConnection) -> None:
         with self._lock:
@@ -1202,7 +1231,12 @@ class DestinationTransport:
             expires_at=min(scope.deadline_at, scope.operation.deadline_at),
         )
         with self._lock:
-            self._permits[id(nonce)] = {"permit": permit, "consumed": False}
+            self._permits[id(nonce)] = {
+                "permit": permit,
+                "consumed": False,
+                "operation_key": id(scope.operation.identity._token),
+                "scope_token": id(scope.identity._token),
+            }
         return permit
 
     def connect(
@@ -1798,7 +1832,9 @@ def _read_chunked(
                         "over_bounds", "chunk header line exceeds header_line_max"
                     ).refusal
                 )
-            chunk = _recv_chunk(sock, scope, limits, limits.io_chunk_max)
+            chunk = _recv_chunk(
+                sock, scope, limits, min(limits.io_chunk_max, limits.header_line_max)
+            )
             if not chunk:
                 raise DestinationDenied(
                     _deny("response_framing", "truncated chunk").refusal
@@ -1825,12 +1861,21 @@ def _read_chunked(
             )
         if size == 0:
             while len(buf) < 2:
-                chunk = _recv_chunk(sock, scope, limits, limits.io_chunk_max)
+                chunk = _recv_chunk(
+                    sock,
+                    scope,
+                    limits,
+                    min(limits.io_chunk_max, limits.header_line_max),
+                )
                 if not chunk:
                     raise DestinationDenied(
                         _deny("response_framing", "truncated trailer").refusal
                     )
                 buf.extend(chunk)
+                if len(buf) > limits.header_line_max:
+                    raise DestinationDenied(
+                        _deny("over_bounds", "trailer exceeds header_line_max").refusal
+                    )
             complete = True
             break
         while len(buf) < size + 2:

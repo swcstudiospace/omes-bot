@@ -399,9 +399,23 @@ class LeadClient:
             if banks
             else ([own] + (["omega-prime-desk"] if include_shared else []))
         )
+        legacy_aliases = {
+            "omega-prime-lead": "omes-lead",
+            "omega-prime-desk": "omes-desk",
+        }
         results = []
         for bank in names:
-            entries = Hindsight(self.ctx.memory, bank).recall(query, limit=limit)
+            entries = list(Hindsight(self.ctx.memory, bank).recall(query, limit=limit))
+            legacy_bank = legacy_aliases.get(bank)
+            if legacy_bank and len(entries) < limit:
+                legacy_entries = Hindsight(self.ctx.memory, legacy_bank).recall(
+                    query, limit=limit - len(entries)
+                )
+                seen_texts = set(entries)
+                for le in legacy_entries:
+                    if le not in seen_texts:
+                        entries.append(le)
+                        seen_texts.add(le)
             results.append(
                 {"bank": bank, "entries": [redact_value(e) for e in entries]}
             )

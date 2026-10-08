@@ -68,7 +68,13 @@ class OllamaProvider(Provider):
         texts: list[str] = []
         calls: list[dict[str, Any]] = []
         usage: dict[str, int] | None = None
+        saw_done = False
+        line_count = 0
+        max_lines = 50_000
         for line in lines or []:
+            line_count += 1
+            if line_count > max_lines:
+                raise ProviderError(f"{self.name} stream exceeded maximum line limit")
             if not isinstance(line, str) or not line.strip():
                 continue
             try:
@@ -77,6 +83,8 @@ class OllamaProvider(Provider):
                 continue
             if not isinstance(event, dict):
                 continue
+            if event.get("done") is True:
+                saw_done = True
             message = event.get("message") or {}
             if isinstance(message, dict):
                 if isinstance(message.get("content"), str):
@@ -105,6 +113,8 @@ class OllamaProvider(Provider):
             )
             if block is not None:
                 usage = block
+        if not saw_done:
+            raise ProviderError(f"{self.name} stream ended before completion marker")
         row: dict[str, Any] = {"role": "assistant", "content": "".join(texts)}
         if calls:
             row["tool_calls"] = [normalize_tool_call(call) for call in calls]

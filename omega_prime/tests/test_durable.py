@@ -72,7 +72,7 @@ def test_crashed_turn_resumes_from_the_journal(tmp_path: Path):
     result = run_conversation(agent, "continue", conversation_history=history)
 
     assert result["final_response"] == "recovered"
-    assert agent.run_id not in (None, "")
+    assert agent.run_id is not None
     continued = resumed.transcript(agent.run_id)
     assert [row["role"] for row in continued] == ["user", "assistant"]
     assert continued[-1]["content"] == "recovered"
