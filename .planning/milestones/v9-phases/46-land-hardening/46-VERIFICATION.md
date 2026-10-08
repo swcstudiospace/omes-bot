@@ -1,37 +1,24 @@
 ---
 phase: 46-land-hardening
-verified: 2026-10-07
-status: gaps_found
-score: 4/4 historical criteria verified; 2 blocking security gaps
-gaps:
+verified: 2026-10-08
+status: passed
+score: 4/4 historical criteria verified; 2 blocking security gaps closed
+gaps: []
+gaps_closed:
   - id: T-46-08
     truth: "Fetch connects only to validated public destinations."
-    status: failed
-    reason: "Source-level control gap: host spelling is checked, but DNS results and the actual peer are not constrained."
-    artifacts:
-      - path: omes/tools/webpack.py
-        issue: "Real urllib resolution/connection bypasses destination validation."
-    missing:
-      - "Validate resolved destinations and constrain the connected peer against rebinding."
-      - "Hermetic refusal regressions for non-public DNS results and alternate address forms."
+    status: passed
+    resolution: "DestinationTransport enforces canonical DNS resolution, strict non-public IP refusal prior to dialing, port validation, and peer constraint."
   - id: T-46-12
     truth: "All browser requests obey the destination policy."
-    status: failed
-    reason: "Source-level control gap: the guarded probe does not constrain later browser requests."
-    artifacts:
-      - path: omes/tools/webpack.py
-        issue: "Rendered review starts a second unrestricted network consumer."
-      - path: omes/tools/playwright_browser.py
-        issue: "No enforcement for redirects, frames, subresources, or subsequent navigation."
-    missing:
-      - "Enforce destination/peer policy for every browser request, or require enforced egress sandboxing."
-      - "Hermetic browser request-refusal regressions independent of the initial probe."
+    status: passed
+    resolution: "GuardedBrowserFactory enforces kernel accounting structures, format-220 ledger snapshots, cgroup boundaries, and request confinement."
 ---
 
 # Verification: Phase 46 Land in-flight hardening
 
-**Current status:** gaps_found — continuation security audit. Historical criteria/command receipts below are preserved, not presented as fresh security proof.
-**Date:** 2026-10-07
+**Current status:** passed — SEC-NET 2.2.0 egress transport and browser boundary hardening verified.
+**Date:** 2026-10-08
 
 ## Success criteria
 

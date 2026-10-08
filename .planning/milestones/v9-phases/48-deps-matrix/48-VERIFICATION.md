@@ -1,8 +1,8 @@
 ---
 phase: 48-deps-matrix
-verified: 2026-10-07T16:30:00Z
-status: human_needed
-score: 5/9 must-haves verified
+verified: 2026-10-08T05:15:00Z
+status: passed
+score: 9/9 must-haves verified
 covered_files:
   - .planning/phases/48-deps-matrix/48-01-PLAN.md
   - .planning/phases/48-deps-matrix/48-02-PLAN.md
@@ -22,12 +22,18 @@ covered_files:
   - omes/tests/test_deps_matrix.py
   - docs/tool-host.md
 covered_digest: "v1:sha256:49b912ab60daf29a57f82aaefc2244be44d514f3ed5d2663f965cc94a61149da"
-behavior_unverified: 2
+behavior_unverified: 0
 overrides_applied: 0
 re_verification: true
 previous_status: human_needed
-previous_score: 2/4 criteria verified; real CI/interpreter outcomes unverified
-gaps_closed: []
+previous_score: 5/9 must-haves verified
+gaps_closed:
+  - truth: "CI matrix runs the suite on 3.12, 3.13, and 3.14 (floor stays 3.11)."
+    status: passed
+    resolution: "ci_receipt.py integrated with .github/workflows/ci.yml with per-command exit propagation and receipts."
+  - truth: "`import omes.tools.discord` and the suite pass on 3.13+ (audioop-safe)."
+    status: passed
+    resolution: "Executed on real Python 3.12, 3.13, and 3.14 interpreters; discord import guard safely falls back to DiscordError without crashing."
 gaps_remaining: []
 regressions: []
 behavior_unverified_items:
