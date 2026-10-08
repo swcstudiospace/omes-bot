@@ -15,9 +15,13 @@ from omega_prime.mcp_server import (
     list_tools_handler,
     roster_names,
 )
+from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
 from omega_prime.tools.approvals import ApprovalLog
+from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
 from omega_prime.tools.coding import register_coding_tools
+from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
+from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.infra import InfraClient, InfraContext, register_infra_tools
 from omega_prime.tools.registry import ToolRegistry
 from omega_prime.tools.rlm import RLM_TOOL_NAMES
@@ -93,7 +97,15 @@ def test_default_registry_serves_the_roster(tmp_path: Path):
     registry = default_registry(ROOT, tmp_path)
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
-    gated = {"delegate_task"} | set(RLM_TOOL_NAMES) | set(HARNESS_TOOL_NAMES)
+    gated = (
+        {"delegate_task"}
+        | set(RLM_TOOL_NAMES)
+        | set(HARNESS_TOOL_NAMES)
+        | set(GOAL_TOOL_NAMES)
+        | set(HEARTBEAT_TOOL_NAMES)
+        | set(AUTONOMOUS_TOOL_NAMES)
+        | set(MESSAGING_TOOL_NAMES)
+    )
     assert served == [name for name in roster if name not in gated]
     assert "delegate_task" not in served
 

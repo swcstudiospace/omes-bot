@@ -19,6 +19,14 @@ from omega_prime.providers.ollama import OllamaProvider
 from omega_prime.providers.openai import OpenAIProvider
 from omega_prime.receipts import ReceiptError, validate_receipt
 from omega_prime.substrate.client import SubstrateClient
+from omega_prime.tools.agent_message import (
+    MESSAGING_TOOL_NAMES,
+    register_messaging_tools,
+)
+from omega_prime.tools.autonomous import (
+    AUTONOMOUS_TOOL_NAMES,
+    register_autonomous_tools,
+)
 from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
 from omega_prime.tools.discord import (
@@ -26,8 +34,10 @@ from omega_prime.tools.discord import (
     DiscordClient,
     register_discord_tools,
 )
+from omega_prime.tools.goals import GOAL_TOOL_NAMES, register_goal_tools
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES, register_harness_tools
+from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES, register_heartbeat_tools
 from omega_prime.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omega_prime.tools.infra import (
     INFRA_TOOL_NAMES,
@@ -359,6 +369,10 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         run_child=lambda prompt, model=None, thinking=None: "ok",
     )
     register_harness_tools(registry, tmp_path)
+    register_goal_tools(registry, tmp_path)
+    register_heartbeat_tools(registry, tmp_path)
+    register_autonomous_tools(registry, tmp_path)
+    register_messaging_tools(registry, "test-session")
 
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
@@ -381,6 +395,10 @@ def test_install_surface_names_only_what_exists(tmp_path: Path):
         + SUBSTRATE_TOOL_NAMES
         + RLM_TOOL_NAMES
         + HARNESS_TOOL_NAMES
+        + GOAL_TOOL_NAMES
+        + HEARTBEAT_TOOL_NAMES
+        + AUTONOMOUS_TOOL_NAMES
+        + MESSAGING_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     assert [item["function"]["name"] for item in offered] == roster

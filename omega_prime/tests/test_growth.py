@@ -21,6 +21,14 @@ from omega_prime.providers.fake import FakeTransport
 from omega_prime.session.search import SessionStore, session_search
 from omega_prime.skills_runtime.manager import skill_manage, skill_view
 from omega_prime.substrate.client import SubstrateClient
+from omega_prime.tools.agent_message import (
+    MESSAGING_TOOL_NAMES,
+    register_messaging_tools,
+)
+from omega_prime.tools.autonomous import (
+    AUTONOMOUS_TOOL_NAMES,
+    register_autonomous_tools,
+)
 from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
 from omega_prime.tools.discord import (
@@ -28,8 +36,10 @@ from omega_prime.tools.discord import (
     DiscordClient,
     register_discord_tools,
 )
+from omega_prime.tools.goals import GOAL_TOOL_NAMES, register_goal_tools
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES, register_harness_tools
+from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES, register_heartbeat_tools
 from omega_prime.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omega_prime.tools.infra import (
     INFRA_TOOL_NAMES,
@@ -602,6 +612,10 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         run_child=lambda prompt, model=None, thinking=None: "ok",
     )
     register_harness_tools(registry, tmp_path)
+    register_goal_tools(registry, tmp_path)
+    register_heartbeat_tools(registry, tmp_path)
+    register_autonomous_tools(registry, tmp_path)
+    register_messaging_tools(registry, "test-session")
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -629,6 +643,10 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + SUBSTRATE_TOOL_NAMES
         + RLM_TOOL_NAMES
         + HARNESS_TOOL_NAMES
+        + GOAL_TOOL_NAMES
+        + HEARTBEAT_TOOL_NAMES
+        + AUTONOMOUS_TOOL_NAMES
+        + MESSAGING_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

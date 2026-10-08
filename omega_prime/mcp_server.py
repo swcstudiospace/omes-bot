@@ -221,12 +221,26 @@ def default_registry(
     # RLM needs a live parent agent, so registration happens where the agent's
     # registry is built (the delegate_task precedent: skipped here). The
     # harness family is self-contained (needs only `root`), so it registers
-    # here when its flag is on.
-    from omega_prime.config import load_config, prime_enabled
+    # here when its flag is on. Goals, heartbeat, and autonomous are likewise
+    # self-contained. Messaging needs a session name, so it registers where the
+    # agent's registry is built (the delegate_task precedent: skipped here).
+    from omega_prime.config import family_config, load_config, prime_enabled
+    from omega_prime.tools.autonomous import register_autonomous_tools
+    from omega_prime.tools.goals import register_goal_tools
     from omega_prime.tools.harness import register_harness_tools
+    from omega_prime.tools.heartbeat import register_heartbeat_tools
 
-    if prime_enabled(load_config(root), "harness"):
+    config = load_config(root)
+    if prime_enabled(config, "harness"):
         register_harness_tools(registry, root)
+    if prime_enabled(config, "goals"):
+        register_goal_tools(registry, root)
+    if prime_enabled(config, "heartbeat"):
+        register_heartbeat_tools(registry, root)
+    if prime_enabled(config, "autonomous"):
+        register_autonomous_tools(
+            registry, root, config=family_config(config, "autonomous")
+        )
     return registry
 
 

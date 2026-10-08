@@ -13,7 +13,12 @@
 # register_substrate_tools, then RLM names from register_rlm_tools
 # (gated: prime.rlm.enabled, default off — registered only when enabled),
 # then Harness names from register_harness_tools
-# (gated: prime.harness.enabled, default off — registered only when enabled).
+# (gated: prime.harness.enabled, default off — registered only when enabled),
+# then Goals names from register_goal_tools, then Heartbeat names from
+# register_heartbeat_tools, then Autonomous names from
+# register_autonomous_tools, then Messaging names from
+# register_messaging_tools (each gated: prime.<family>.enabled, default off —
+# registered only when enabled).
 # This list is exactly those names, in that order.
 # Absorbed desk contracts (Phase 32): tool-rosters lead/systems/web/
 # android/ios/infra/quality/_core.yaml and tool-packs clippyos/desklanes/
@@ -144,3 +149,16 @@ tools:
   - harness_delete
   - harness_refine
   - harness_rollback
+  - goal_set
+  - goal_pause
+  - goal_resume
+  - goal_clear
+  - goal_status
+  - heartbeat_set
+  - heartbeat_list
+  - heartbeat_clear
+  - autonomous_start
+  - autonomous_status
+  - autonomous_stop
+  - agent_message_send
+  - agent_observe

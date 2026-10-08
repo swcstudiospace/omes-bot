@@ -978,3 +978,107 @@ Not served by the default registry.
 - Required params: none
 
 Not served by the default registry.
+
+## goal_set
+
+- Family: Goals
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## goal_pause
+
+- Family: Goals
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## goal_resume
+
+- Family: Goals
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## goal_clear
+
+- Family: Goals
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## goal_status
+
+- Family: Goals
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## heartbeat_set
+
+- Family: Heartbeat
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## heartbeat_list
+
+- Family: Heartbeat
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## heartbeat_clear
+
+- Family: Heartbeat
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## autonomous_start
+
+- Family: Autonomous
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## autonomous_status
+
+- Family: Autonomous
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## autonomous_stop
+
+- Family: Autonomous
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## agent_message_send
+
+- Family: Messaging
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.
+
+## agent_observe
+
+- Family: Messaging
+- Approval: not required
+- Required params: none
+
+Not served by the default registry.

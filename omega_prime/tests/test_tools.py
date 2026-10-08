@@ -7,12 +7,16 @@ import json
 import socket
 from pathlib import Path
 
+from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
+from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
 from omega_prime.tools.clarify import ClarifyLog, clarify
 from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.discord import DISCORD_TOOL_NAMES
+from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
+from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
@@ -441,4 +445,8 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + SUBSTRATE_TOOL_NAMES
         + RLM_TOOL_NAMES
         + HARNESS_TOOL_NAMES
+        + GOAL_TOOL_NAMES
+        + HEARTBEAT_TOOL_NAMES
+        + AUTONOMOUS_TOOL_NAMES
+        + MESSAGING_TOOL_NAMES
     )

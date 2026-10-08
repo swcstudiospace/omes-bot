@@ -124,7 +124,20 @@
       "harness_list",
       "harness_delete",
       "harness_refine",
-      "harness_rollback"
+      "harness_rollback",
+      "goal_set",
+      "goal_pause",
+      "goal_resume",
+      "goal_clear",
+      "goal_status",
+      "heartbeat_set",
+      "heartbeat_list",
+      "heartbeat_clear",
+      "autonomous_start",
+      "autonomous_status",
+      "autonomous_stop",
+      "agent_message_send",
+      "agent_observe"
     ]
   },
   "paths": {
