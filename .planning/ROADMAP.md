@@ -21,11 +21,11 @@ with phase directories under `milestones/v1-phases/` through
 
 **Active milestone: v10 Prime merge** (see `milestones/v10-ROADMAP.md`)
 
-- [ ] **Phase 53: Prime discovery + parity baseline** - Capability map + overlap map; cargo baseline green; VENDOR pin.
-- [ ] **Phase 54: Rust workspace CI integration** - Parity-oracle CI job; cargo-deny; toolchain pin.
-- [ ] **Phase 55: RLM recursion port** - spawn/collect/list/delete/create_session/progress_note into the loop.
-- [ ] **Phase 56: Continual harness port** - /refine, harness state, snapshots, rollback.
-- [ ] **Phase 57: Agent loop upgrade** - Goals, heartbeats, autonomous mode, agent messaging; config flags; degraded mode; regression parity.
+- [x] **Phase 53: Prime discovery + parity baseline** - Capability map + overlap map; cargo baseline green; VENDOR pin.
+- [x] **Phase 54: Rust workspace CI integration** - Parity-oracle CI job; cargo-deny; toolchain pin.
+- [x] **Phase 55: RLM recursion port** - spawn/collect/list/delete/create_session/progress_note into the loop.
+- [x] **Phase 56: Continual harness port** - /refine, harness state, snapshots, rollback.
+- [x] **Phase 57: Agent loop upgrade** - Goals, heartbeats, autonomous mode, agent messaging; config flags; degraded mode; regression parity.
 - [ ] **Phase 58: Connector layer + parity suite** - Typed adapters, contract tests, failure injection, parity fixtures.
 - [ ] **Phase 59: Repository hardening** - AGPL-3.0, root files, docs, supply-chain CI.
 - [ ] **Phase 60: Milestone audit + closeout** - Audit, archive, cleanup.
