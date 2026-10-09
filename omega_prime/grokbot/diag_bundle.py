@@ -18,10 +18,10 @@ Everything is serialised to canonical JSON and passed through
 is written. On a leak detection the bundle aborts: no bundle file is created
 or replaced (fail-closed).
 
-The collector never mutates the live system: it only reads files and runs
-the (side-effect-free) doctor checks. The one deliberate caller-side choice
-is ``doctor_checks``/``doctor_summary`` injection, which lets tests assemble
-a bundle from fixtures without probing the host.
+The collector never mutates the live system: it only reads files and never
+probes the host. Doctor output must be injected via ``doctor_checks`` or
+``doctor_summary``; when neither is given the doctor section is recorded as
+skipped (``{"present": False, "status": "skipped"}``).
 """
 
 from __future__ import annotations
@@ -39,7 +39,6 @@ from omega_prime.grokbot.audit import GrokBotAuditTracer, default_audit_path
 from omega_prime.grokbot.doctor import DiagnosticCheck, summarize_checks
 from omega_prime.grokbot.secret_guard import assert_no_secrets
 from omega_prime.grokbot.supervisor import _default_state_file
-from omega_prime.mcp_server import SERVER_VERSION
 
 __all__ = [
     "AUDIT_TAIL_LIMIT",
@@ -108,18 +107,34 @@ def _audit_section(audit_path: Path | str | None, limit: int) -> dict[str, Any]:
     }
 
 
+def _versions_section() -> dict[str, Any]:
+    """Server + package versions without a heavy import at module load.
+
+    ``SERVER_VERSION`` is imported lazily so importing this module never
+    loads ``mcp_server``/connectors; an unimportable server reports
+    ``{"server": "unavailable"}`` instead of raising.
+    """
+    try:
+        from omega_prime.mcp_server import SERVER_VERSION
+    except ImportError:
+        return {"server": "unavailable", "package": PACKAGE_VERSION}
+    return {"server": SERVER_VERSION, "package": PACKAGE_VERSION}
+
+
 def _doctor_section(
     doctor_checks: Sequence[DiagnosticCheck] | None,
     doctor_summary: Mapping[str, Any] | None,
 ) -> dict[str, Any]:
-    """Doctor summary: injected fixtures win; else run the live checks."""
+    """Doctor summary from injected fixtures; skipped when none are given.
+
+    Never probes the host: with neither ``doctor_summary`` nor
+    ``doctor_checks``, records ``{"present": False, "status": "skipped"}``.
+    """
     if doctor_summary is not None:
         return dict(doctor_summary)
     if doctor_checks is not None:
         return summarize_checks(doctor_checks)
-    from omega_prime.grokbot.doctor import run_doctor_checks
-
-    return run_doctor_checks()
+    return {"present": False, "status": "skipped"}
 
 
 def collect_bundle(
@@ -134,17 +149,19 @@ def collect_bundle(
 ) -> Path:
     """Collect a redacted diagnostics bundle into ``out_dir``.
 
-    All sources are read without mutating the live system. The assembled
-    document is scanned with :func:`assert_no_secrets` before any write;
-    a :class:`SecretLeakError` aborts the collection leaving any previous
-    bundle file untouched.
+    All sources are read without mutating the live system and the host is
+    never probed: pass ``doctor_checks`` or ``doctor_summary`` for doctor
+    output, otherwise the doctor section is recorded as skipped. The
+    assembled document is scanned with :func:`assert_no_secrets` before
+    any write; a :class:`SecretLeakError` aborts the collection leaving
+    any previous bundle file untouched.
 
     Returns the path of the written ``diag-bundle.json`` file.
     """
     bundle: dict[str, Any] = {
         "bundle_version": BUNDLE_VERSION,
         "collected_at": datetime.now(UTC).isoformat(),
-        "versions": {"server": SERVER_VERSION, "package": PACKAGE_VERSION},
+        "versions": _versions_section(),
         "doctor": _doctor_section(doctor_checks, doctor_summary),
         "manifest": _manifest_section(manifest_path),
         "supervisor": _supervisor_section(supervisor_state_path),

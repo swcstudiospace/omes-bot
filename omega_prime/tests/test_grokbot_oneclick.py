@@ -1,5 +1,6 @@
 """Tests for Grok Bot 1-Click Launcher."""
 
+import itertools
 import json
 import os
 import stat
@@ -537,3 +538,233 @@ def test_stdio_does_not_forward_sse_only_launcher_flags(
     )
     assert "--log-format" not in seen[0]
     assert "--token-store" not in seen[0]
+
+
+_PORT_COUNTER = itertools.count(59000)
+
+
+def _free_port() -> int:
+    """A dummy port number; liveness is scripted so nothing ever binds."""
+    return next(_PORT_COUNTER)
+
+
+def _isolate_supervisor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the default supervisor state at a missing tmp file (never live)."""
+    state = tmp_path / "supervisor.json"
+    monkeypatch.setattr(
+        "omega_prime.grokbot.supervisor._default_state_file", lambda: state
+    )
+
+
+def _sse_launch(
+    monkeypatch: pytest.MonkeyPatch,
+    out: Path,
+    port: int,
+    launches: list[Any],
+    exit_code: int = 0,
+    **kwargs: Any,
+) -> int:
+    """Run the SSE launcher with a stubbed host; serve kwargs land in launches."""
+
+    def _fake_serve(**serve_kwargs: Any) -> int:
+        launches.append(serve_kwargs)
+        return exit_code
+
+    monkeypatch.setattr("omega_prime.grokbot.remote.serve_sse", _fake_serve)
+    monkeypatch.setenv("MCP_AUTH_TOKEN", TOKEN)
+    return run_oneclick(
+        find_repo_root(),
+        transport="sse",
+        port=port,
+        export_manifest=out,
+        skip_doctor=True,
+        **kwargs,
+    )
+
+
+def test_nonzero_exit_records_failed_and_retries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A nonzero serve exit records STATUS_FAILED, never complete."""
+    from omega_prime.grokbot import receipts
+
+    _isolate_supervisor(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "omega_prime.grokbot.rerun._port_open", lambda host, port: False
+    )
+    out = tmp_path / "m.json"
+    port = _free_port()
+    launches: list[Any] = []
+
+    assert _sse_launch(monkeypatch, out, port, launches, exit_code=3) == 3
+    receipt_path = receipts.receipt_path_for_manifest(out)
+    record = receipts.read_receipt(receipt_path)
+    assert record is not None
+    assert record["status"] == "failed"
+    assert record["exit_code"] == 3
+    capsys.readouterr()
+
+    # The failed receipt must not suppress the retry: the next run relaunches
+    # and a clean exit completes.
+    assert _sse_launch(monkeypatch, out, port, launches, exit_code=0) == 0
+    assert len(launches) == 2
+    retried = receipts.read_receipt(receipt_path)
+    assert retried is not None
+    assert retried["status"] == "complete"
+
+
+def test_json_noop_emits_machine_readable_object(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Both no-ops keep human text on stderr and emit JSON on stdout."""
+    from omega_prime.grokbot import receipts
+
+    _isolate_supervisor(tmp_path, monkeypatch)
+    port_open = {"open": False}
+    monkeypatch.setattr(
+        "omega_prime.grokbot.rerun._port_open",
+        lambda host, port: port_open["open"],
+    )
+    out = tmp_path / "m.json"
+    port = _free_port()
+    launches: list[Any] = []
+
+    assert _sse_launch(monkeypatch, out, port, launches) == 0
+    assert len(launches) == 1
+    receipt = receipts.read_receipt(receipts.receipt_path_for_manifest(out))
+    assert receipt is not None
+    capsys.readouterr()
+
+    assert _sse_launch(monkeypatch, out, port, launches, json_output=True) == 0
+    assert len(launches) == 1
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert payload["status"] == "already-complete"
+    assert payload["manifest_digest"] == receipt["manifest_digest"]
+    assert payload["port"] == port
+    assert "already complete" in captured.err
+
+    port_open["open"] = True
+    assert _sse_launch(monkeypatch, out, port, launches, json_output=True) == 0
+    assert len(launches) == 1
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    assert payload["status"] == "already-running"
+    assert payload["port"] == port
+    assert "already running" in captured.err
+
+
+def test_host_mismatch_does_not_suppress_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A 127.0.0.1 listener must not suppress a launch bound elsewhere."""
+    from omega_prime.grokbot import rerun
+
+    _isolate_supervisor(tmp_path, monkeypatch)
+    seen: list[str] = []
+
+    def _fake_port_open(host: str, port: int) -> bool:
+        seen.append(host)
+        return host == "127.0.0.1"
+
+    monkeypatch.setattr("omega_prime.grokbot.rerun._port_open", _fake_port_open)
+    out = tmp_path / "m.json"
+    port = _free_port()
+    launches: list[Any] = []
+
+    assert _sse_launch(monkeypatch, out, port, launches, host="127.0.0.2") == 0
+    assert len(launches) == 1
+    assert seen and all(host == "127.0.0.2" for host in seen)
+    capsys.readouterr()
+
+    # The guard itself is host-scoped: same port, different hosts differ.
+    assert rerun.check_rerun(None, port, host="127.0.0.2") == "fresh"
+    assert rerun.check_rerun(None, port, host="127.0.0.1") == "already-running"
+
+
+def test_launch_lock_serializes_check_through_export(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """The per-launch flock covers check_rerun..export, released pre-serve."""
+    import contextlib
+    from collections.abc import Iterator
+
+    from omega_prime.grokbot import receipts
+    from omega_prime.grokbot import rerun as rerun_mod
+
+    _isolate_supervisor(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "omega_prime.grokbot.rerun._port_open", lambda host, port: False
+    )
+    events: list[str] = []
+    real_hold = oneclick._hold_launch_lock
+
+    @contextlib.contextmanager
+    def _spy_hold(base: Path) -> Iterator[None]:
+        events.append("lock-acquire")
+        with real_hold(base):
+            events.append("lock-held")
+            yield
+        events.append("lock-release")
+
+    monkeypatch.setattr(oneclick, "_hold_launch_lock", _spy_hold)
+
+    real_check = rerun_mod.check_rerun
+
+    def _spy_check(*args: Any, **kwargs: Any) -> Any:
+        events.append("check")
+        return real_check(*args, **kwargs)
+
+    monkeypatch.setattr(rerun_mod, "check_rerun", _spy_check)
+
+    real_write = oneclick.atomic_write_text
+
+    def _spy_write(*args: Any, **kwargs: Any) -> None:
+        events.append("export")
+        real_write(*args, **kwargs)
+
+    monkeypatch.setattr(oneclick, "atomic_write_text", _spy_write)
+
+    out = tmp_path / "m.json"
+    port = _free_port()
+    launches: list[Any] = []
+
+    def _fake_serve(**serve_kwargs: Any) -> int:
+        events.append("serve")
+        launches.append(serve_kwargs)
+        return 0
+
+    monkeypatch.setattr("omega_prime.grokbot.remote.serve_sse", _fake_serve)
+    monkeypatch.setenv("MCP_AUTH_TOKEN", TOKEN)
+    assert (
+        run_oneclick(
+            find_repo_root(),
+            transport="sse",
+            port=port,
+            export_manifest=out,
+            skip_doctor=True,
+        )
+        == 0
+    )
+    capsys.readouterr()
+    assert events == [
+        "lock-acquire",
+        "lock-held",
+        "check",
+        "export",
+        "lock-release",
+        "serve",
+    ]
+    assert len(launches) == 1
+
+    # The sidecar exists and is released: a non-blocking take must succeed.
+    receipt_path = receipts.receipt_path_for_manifest(out)
+    lock_path = receipt_path.with_name(f"{receipt_path.name}.lock")
+    assert lock_path.is_file()
+    if oneclick._fcntl is not None:
+        fd = os.open(str(lock_path), os.O_RDWR)
+        try:
+            oneclick._fcntl.flock(fd, oneclick._fcntl.LOCK_EX | oneclick._fcntl.LOCK_NB)
+            oneclick._fcntl.flock(fd, oneclick._fcntl.LOCK_UN)
+        finally:
+            os.close(fd)

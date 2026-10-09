@@ -62,7 +62,7 @@ def _port_open(host: str, port: int) -> bool:
         return False
 
 
-def _supervisor_live(state_path: Path | str | None) -> bool:
+def _supervisor_live(state_path: Path | str | None, *, port: int | None = None) -> bool:
     """True when the supervisor state file names a live process."""
     path = (
         Path(state_path)
@@ -84,15 +84,34 @@ def _supervisor_live(state_path: Path | str | None) -> bool:
         data.get("child_pid"),
         data.get("pid"),
     ]
+    live = False
     for pid in candidates:
         if isinstance(pid, int) and not isinstance(pid, bool) and pid > 1:
             try:
                 if _supervisor._pid_alive(pid):
-                    return True
+                    live = True
+                    break
             except Exception as exc:  # never let liveness probing raise
                 logger.warning("supervisor liveness probe failed: %s", exc)
                 return False
-    return False
+    if not live:
+        return False
+    # Only a live supervisor for *this* port may block the launch. When the
+    # state schema carries a recorded port, a mismatch means the live process
+    # belongs to a different launch and must not suppress this one. The
+    # supervisor state schema carries no port today, so a missing/non-int
+    # port conservatively blocks: any live supervisor is treated as ours.
+    # (Limitation: concurrent launches on different ports share one state
+    # file and will conservatively serialize/block until the schema records
+    # the bound port.)
+    recorded = data.get("port")
+    if (
+        port is not None
+        and isinstance(recorded, int)
+        and not isinstance(recorded, bool)
+    ):
+        return recorded == port
+    return True
 
 
 def check_rerun(
@@ -104,13 +123,15 @@ def check_rerun(
 ) -> RerunVerdict:
     """Classify a launch attempt without side effects.
 
-    Liveness (a live supervisor process or an open TCP ``port``) wins over
-    any receipt: a live host must never be double-spawned. Otherwise the
-    receipt decides: missing or corrupt means ``fresh``, ``complete`` means
-    ``already-complete`` (carrying the manifest digest), ``interrupted``
-    means ``interrupted``. Unknown receipt shapes fall back to ``fresh``.
+    Liveness (a live supervisor process for this port, or an open TCP
+    ``host:port``) wins over any receipt: a live host must never be
+    double-spawned. Otherwise the receipt decides: missing or corrupt means
+    ``fresh``, ``complete`` means ``already-complete`` (carrying the manifest
+    digest), ``interrupted`` means ``interrupted``. ``failed`` and unknown
+    receipt shapes fall back to ``fresh`` so the next run retries instead of
+    wedging on a previous failure.
     """
-    if _supervisor_live(state_path) or _port_open(host, port):
+    if _supervisor_live(state_path, port=port) or _port_open(host, port):
         return RerunVerdict(VERDICT_ALREADY_RUNNING)
     if receipt_path is None:
         return RerunVerdict(VERDICT_FRESH)
@@ -132,6 +153,8 @@ def check_rerun(
         return RerunVerdict(
             VERDICT_INTERRUPTED, digest if isinstance(digest, str) else None
         )
+    # ``failed`` and any unrecognized status mean fresh: a failed launch must
+    # never suppress its own retry.
     return RerunVerdict(VERDICT_FRESH)
 
 

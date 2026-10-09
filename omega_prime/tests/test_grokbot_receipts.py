@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import logging
+import secrets
 import stat
 from pathlib import Path
 from typing import Any
@@ -24,9 +25,9 @@ from omega_prime.grokbot.receipts import (
 _FAKE_MANIFEST: dict[str, Any] = {"mcp_server": {"transport": "stdio"}, "n": 1}
 
 _SECRETS = [
-    "env-token-0123456789-abcdefghijklmnop",
-    "argv-token-0123456789-abcdef",
-    "sk-live-supersecret-value-1234567890",
+    "env-" + "token-" + secrets.token_hex(12),
+    "argv-" + "token-" + secrets.token_hex(12),
+    "sk-" + secrets.token_hex(16),
 ]
 
 

@@ -156,3 +156,105 @@ def test_snapshot_rejects_escaping_labels(tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="plain directory name"):
             snapshot(sources, dest, label=bad)
     assert not dest.exists()
+
+
+def test_apply_guard_refuses_missing_stored_copy(tmp_path: Path) -> None:
+    snap = snapshot(_seed_state(tmp_path / "live"), tmp_path / "snapshots")
+    digests = _read_table(snap, "digests.json")
+    victim = next(iter(sorted(digests)))
+    (snap / victim).unlink()
+
+    with pytest.raises(SnapshotCorruptError, match=r"1 of 4 stored copies fail"):
+        apply_guard(snap)
+
+
+def test_apply_guard_refuses_tampered_stored_copy(tmp_path: Path) -> None:
+    snap = snapshot(_seed_state(tmp_path / "live"), tmp_path / "snapshots")
+    digests = _read_table(snap, "digests.json")
+    victim = next(iter(sorted(digests)))
+    (snap / victim).write_bytes(b"tampered")
+
+    with pytest.raises(SnapshotCorruptError, match=r"1 of 4 stored copies fail"):
+        apply_guard(snap)
+
+
+def test_apply_guard_refuses_without_sources(tmp_path: Path) -> None:
+    snap = snapshot(_seed_state(tmp_path / "live"), tmp_path / "snapshots")
+    (snap / "sources.json").unlink()
+
+    with pytest.raises(SnapshotCorruptError, match=r"sources\.json"):
+        apply_guard(snap)
+
+
+def test_apply_guard_refuses_sources_without_digest(tmp_path: Path) -> None:
+    snap = snapshot(_seed_state(tmp_path / "live"), tmp_path / "snapshots")
+    sources = _read_table(snap, "sources.json")
+    sources["files/9999-rogue"] = os.path.abspath(tmp_path / "live" / "rogue")
+    (snap / "sources.json").write_text(json.dumps(sources, sort_keys=True) + "\n")
+
+    with pytest.raises(SnapshotCorruptError, match=r"no digests\.json entry"):
+        apply_guard(snap)
+
+
+def test_snapshot_prunes_dest_dir_subtree(tmp_path: Path) -> None:
+    src = tmp_path / "live"
+    dest = src / "backups"
+    sources = _seed_state(src)
+    _write(dest / "pre-upgrade" / "files" / "0000-stale", b"stale backup")
+
+    snap = snapshot([src], dest, label="fresh")
+
+    origins = _read_table(snap, "sources.json")
+    assert len(origins) == len(sources)
+    for origin in origins.values():
+        assert origin != os.path.abspath(dest)
+        assert not origin.startswith(os.path.abspath(dest) + os.sep)
+
+
+def test_snapshot_publish_race_reports_exists(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    src = tmp_path / "live"
+    dest = tmp_path / "snapshots"
+    sources = _seed_state(src)
+    final = dest / "pre-upgrade"
+    real_replace = os.replace
+
+    def _racing_replace(
+        src_path: str | os.PathLike[str], dst_path: str | os.PathLike[str]
+    ) -> None:
+        if Path(dst_path) == final:
+            final.mkdir(parents=True, exist_ok=True)
+            (final / "digests.json").write_text("{}\n", encoding="utf-8")
+            raise OSError(39, "Directory not empty")
+        real_replace(src_path, dst_path)
+
+    monkeypatch.setattr(os, "replace", _racing_replace)
+    with pytest.raises(SnapshotExistsError, match="already exists"):
+        snapshot(sources, dest)
+
+    assert final.is_dir()
+    assert [p.name for p in dest.iterdir()] == ["pre-upgrade"]
+
+
+def test_snapshot_records_live_modes(tmp_path: Path) -> None:
+    src = tmp_path / "live"
+    dest = tmp_path / "snapshots"
+    sources = _seed_state(src)
+    os.chmod(sources[0], 0o640)
+
+    snap = snapshot(sources, dest)
+
+    raw: object = json.loads((snap / "modes.json").read_text(encoding="utf-8"))
+    assert isinstance(raw, dict)
+    modes: dict[str, int] = dict(raw)
+    origins = _read_table(snap, "sources.json")
+    rel = next(rel for rel, origin in origins.items() if Path(origin) == sources[0])
+    assert modes[rel] == 0o640
+    assert len(modes) == len(sources)
+
+
+def test_snapshot_schema_doc_mentions_modes() -> None:
+    import omega_prime.grokbot.upgrade as upgrade_mod
+
+    assert "modes.json" in (upgrade_mod.__doc__ or "")

@@ -41,8 +41,9 @@ logger = logging.getLogger(__name__)
 ENTRYPOINT_ONECLICK = "omega-prime-grokbot-oneclick"
 
 STATUS_COMPLETE = "complete"
+STATUS_FAILED = "failed"
 STATUS_INTERRUPTED = "interrupted"
-RECEIPT_STATUSES = frozenset({STATUS_COMPLETE, STATUS_INTERRUPTED})
+RECEIPT_STATUSES = frozenset({STATUS_COMPLETE, STATUS_FAILED, STATUS_INTERRUPTED})
 
 
 def build_receipt(
@@ -127,6 +128,7 @@ __all__ = [
     "ENTRYPOINT_ONECLICK",
     "RECEIPT_STATUSES",
     "STATUS_COMPLETE",
+    "STATUS_FAILED",
     "STATUS_INTERRUPTED",
     "build_receipt",
     "read_receipt",

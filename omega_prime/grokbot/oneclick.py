@@ -26,13 +26,19 @@ import tempfile
 import time
 from collections.abc import Iterator, Sequence
 from pathlib import Path
+from types import ModuleType
 from typing import Any, TextIO
 from urllib.parse import urlsplit
 
 from omega_prime.grokbot import doctor as _doctor
 from omega_prime.grokbot import receipts as _receipts
 from omega_prime.grokbot import rerun as _rerun
-from omega_prime.grokbot._io import atomic_write_text, read_secret_file
+from omega_prime.grokbot._io import (
+    PRIVATE_FILE_MODE,
+    atomic_write_text,
+    ensure_private_dir,
+    read_secret_file,
+)
 from omega_prime.grokbot.manifest import generate_manifest
 from omega_prime.grokbot.security import (
     SecurityConfigError,
@@ -52,6 +58,40 @@ _SELF_TEST_READY_TIMEOUT = 20.0
 DEFAULT_TOKEN_ENV = "MCP_AUTH_TOKEN"
 _WILDCARD_HOSTS = frozenset({"", "0.0.0.0", "::", "[::]"})
 _PREFIX = "omega-prime-oneclick"
+_fcntl: ModuleType | None
+try:
+    import fcntl as _fcntl_module
+except ImportError:  # pragma: no cover - non-POSIX platforms
+    _fcntl = None
+else:
+    _fcntl = _fcntl_module
+
+
+def _launch_lock_base(export_manifest: Path | None, port: int) -> Path:
+    """Per-launch identity whose ``<name>.lock`` sidecar serializes launches.
+
+    Launches exporting the same manifest share the receipt-path lock; launches
+    without an export share a port-keyed lock under the system temp dir (never
+    the repo tree, so the guard leaves no stray files behind).
+    """
+    if export_manifest is not None:
+        return _receipts.receipt_path_for_manifest(export_manifest)
+    return Path(tempfile.gettempdir()) / f"omega-prime-oneclick-{port}.launch"
+
+
+@contextlib.contextmanager
+def _hold_launch_lock(base: Path) -> Iterator[None]:
+    """Hold an exclusive ``flock`` on ``<base>.lock`` (``_io`` sidecar use)."""
+    target = Path(base)
+    ensure_private_dir(target.parent)
+    lock_path = target.with_name(f"{target.name}.lock")
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
+    try:
+        if _fcntl is not None:
+            _fcntl.flock(fd, _fcntl.LOCK_EX)
+        yield
+    finally:
+        os.close(fd)  # closing the descriptor releases the lock
 
 
 def run_doctor_checks(
@@ -212,166 +252,203 @@ def run_oneclick(
     # --- Resume-safe re-run guard (SSE serve only): stdio spawns a fresh
     # --- subprocess pipe and never binds TCP, so no port conflict is possible;
     # --- dry-run must always validate and report, never no-op.
-    _verdict = None
+    # ---
+    # --- Double-submit guard: check_rerun through manifest export runs under
+    # --- an exclusive flock on a per-launch lock file (a `<receipt>.lock`
+    # --- sidecar, the `_io` flock convention), so two concurrent launches for
+    # --- the same manifest cannot both pass the guard and export. The lock is
+    # --- released before serve dispatch below.
+    _guard: Any = contextlib.nullcontext()
     if sse and not dry_run:
-        _verdict = _rerun.check_rerun(
-            _receipts.receipt_path_for_manifest(export_manifest)
-            if export_manifest
-            else None,
-            port,
-        )
-    if not force:
-        if _verdict == _rerun.VERDICT_ALREADY_COMPLETE:
-            print(
-                f"{_PREFIX}: already complete"
-                + (
-                    f" (manifest {_verdict.manifest_digest})"
-                    if _verdict.manifest_digest
-                    else ""
-                )
-                + "; nothing to do.",
-                file=say,
+        _guard = _hold_launch_lock(_launch_lock_base(export_manifest, port))
+    with _guard:
+        _verdict = None
+        if sse and not dry_run:
+            _verdict = _rerun.check_rerun(
+                _receipts.receipt_path_for_manifest(export_manifest)
+                if export_manifest
+                else None,
+                port,
+                host=host,
             )
-            return EXIT_OK
-        if _verdict == _rerun.VERDICT_ALREADY_RUNNING and not resume:
-            print(
-                f"{_PREFIX}: already running (port {port} in use); nothing to do.",
-                file=say,
-            )
-            return EXIT_OK
-    if _verdict == _rerun.VERDICT_ALREADY_RUNNING and resume:
-        print(
-            f"{_PREFIX}: already running (port {port} in use); "
-            "--resume: continuing into serve.",
-            file=say,
-        )
-    elif _verdict == _rerun.VERDICT_INTERRUPTED:
-        print(
-            f"{_PREFIX}: previous run was interrupted; resuming launch "
-            "(existing state preserved).",
-            file=say,
-        )
-
-    print("=== Omega Prime ► Grok Bot Native 1-Click Launcher ===", file=say)
-    print(f"Root: {root}", file=say)
-    print(f"Transport: {transport}", file=say)
-
-    if generate_new_token and not sse:
-        return _fail("--generate-token requires --transport sse")
-    if public_url:
-        parts = urlsplit(public_url)
-        if parts.scheme not in ("http", "https") or not parts.netloc:
-            return _fail("--public-url must be an http(s) URL")
-
-    # --- Secrets and bind safety: nothing is written or served before this passes.
-    token: str | None = None
-    token_source = "none"
-    generated = False
-    if sse:
-        try:
-            token, token_source = _resolve_token(
-                token_file, auth_token, token_env, will_generate=generate_new_token
-            )
-        except ValueError as exc:  # includes SecurityConfigError
-            return _fail(str(exc))
-        if generate_new_token:
-            if token is None:
-                token, token_source, generated = generate_token(), "generated", True
-            else:
-                _err(
-                    f"{_PREFIX}: a token is already configured; "
-                    "--generate-token ignored"
-                )
-    if sse and token is None and token_store_path is not None:
-        token_source = "store"
-    auth_enabled = token is not None or token_source == "store"
-    if sse:
-        try:
-            check_bind_safety(
-                host, auth_enabled=auth_enabled, allow_insecure=allow_insecure_no_auth
-            )
-        except SecurityConfigError as exc:
-            return _fail(str(exc))
-        if allow_insecure_no_auth and not auth_enabled:
-            _err(
-                f"{_PREFIX}: WARNING: serving without authentication "
-                "(--allow-insecure-no-auth)"
-            )
-
-    # --- Preflight.
-    checks: list[dict[str, Any]] = []
-    passed: bool | None = None
-    url = _sse_url(host, port, public_url) if sse else None
-    auth_info = {
-        "enabled": auth_enabled,
-        "type": "bearer" if auth_enabled else "none",
-        "token_env": token_env,
-        "source": token_source,
-    }
-
-    def report(manifest_path: Path | None) -> dict[str, Any]:
-        return {
-            "passed": passed,
-            "strict": strict,
-            "checks": checks,
-            "transport": transport,
-            "url": url,
-            "manifest_path": str(manifest_path) if manifest_path else None,
-            "auth": auth_info,
-        }
-
-    if not skip_doctor:
-        results = _run_preflight(root, port, host, auth_enabled, say)
-        checks = list(results.get("checks", []))
-        failures = [c for c in checks if c.get("status") == "fail"]
-        passed = bool(results.get("passed", not failures)) and not failures
-        if not passed:
-            if strict:
+        if not force:
+            if _verdict == _rerun.VERDICT_ALREADY_COMPLETE:
                 print(
-                    f"ERROR: {len(failures)} preflight check(s) failed; aborting "
-                    "(strict). Fix them or pass --no-strict to continue anyway.",
-                    file=sys.stderr,
-                    flush=True,
+                    f"{_PREFIX}: already complete"
+                    + (
+                        f" (manifest {_verdict.manifest_digest})"
+                        if _verdict.manifest_digest
+                        else ""
+                    )
+                    + "; nothing to do.",
+                    file=say,
                 )
                 if json_output:
-                    _emit_json(report(None))
-                return EXIT_PREFLIGHT
+                    _emit_json(
+                        {
+                            "status": "already-complete",
+                            "transport": transport,
+                            "host": host,
+                            "port": port,
+                            "manifest_digest": _verdict.manifest_digest,
+                        }
+                    )
+                return EXIT_OK
+            if _verdict == _rerun.VERDICT_ALREADY_RUNNING and not resume:
+                print(
+                    f"{_PREFIX}: already running (port {port} in use); nothing to do.",
+                    file=say,
+                )
+                if json_output:
+                    _emit_json(
+                        {
+                            "status": "already-running",
+                            "transport": transport,
+                            "host": host,
+                            "port": port,
+                        }
+                    )
+                return EXIT_OK
+        if _verdict == _rerun.VERDICT_ALREADY_RUNNING and resume:
             print(
-                "WARNING: Some preflight checks failed. Continuing launch...",
+                f"{_PREFIX}: already running (port {port} in use); "
+                "--resume: continuing into serve.",
+                file=say,
+            )
+        elif _verdict == _rerun.VERDICT_INTERRUPTED:
+            print(
+                f"{_PREFIX}: previous run was interrupted; resuming launch "
+                "(existing state preserved).",
                 file=say,
             )
 
-    # --- Manifest (never contains the token).
-    manifest: dict[str, Any] | None = None
-    manifest_path: Path | None = None
-    if export_manifest or dry_run:
-        try:
-            manifest = generate_manifest(
-                root,
-                host_url=url or "",
-                transport=transport,
-                public_url=public_url if sse else None,
-                auth_enabled=auth_enabled,
-                token_env=token_env,
-            )
-        except ValueError as exc:
-            return _fail(str(exc))
-        if export_manifest:
-            atomic_write_text(
-                export_manifest, json.dumps(manifest, indent=2) + "\n", mode=0o644
-            )
-            manifest_path = export_manifest
-            print(f"✓ Manifest exported to {export_manifest}", file=say)
+        print("=== Omega Prime ► Grok Bot Native 1-Click Launcher ===", file=say)
+        print(f"Root: {root}", file=say)
+        print(f"Transport: {transport}", file=say)
 
-    if dry_run:
-        print("✓ Dry run requested. Exiting without launching tool host.", file=say)
-        if json_output:
-            _emit_json(report(manifest_path))
-        return EXIT_OK
+        if generate_new_token and not sse:
+            return _fail("--generate-token requires --transport sse")
+        if public_url:
+            parts = urlsplit(public_url)
+            if parts.scheme not in ("http", "https") or not parts.netloc:
+                return _fail("--public-url must be an http(s) URL")
+
+        # --- Secrets and bind safety: nothing is written or served before this passes.
+        token: str | None = None
+        token_source = "none"
+        generated = False
+        if sse:
+            try:
+                token, token_source = _resolve_token(
+                    token_file, auth_token, token_env, will_generate=generate_new_token
+                )
+            except ValueError as exc:  # includes SecurityConfigError
+                return _fail(str(exc))
+            if generate_new_token:
+                if token is None:
+                    token, token_source, generated = generate_token(), "generated", True
+                else:
+                    _err(
+                        f"{_PREFIX}: a token is already configured; "
+                        "--generate-token ignored"
+                    )
+        if sse and token is None and token_store_path is not None:
+            token_source = "store"
+        auth_enabled = token is not None or token_source == "store"
+        if sse:
+            try:
+                check_bind_safety(
+                    host,
+                    auth_enabled=auth_enabled,
+                    allow_insecure=allow_insecure_no_auth,
+                )
+            except SecurityConfigError as exc:
+                return _fail(str(exc))
+            if allow_insecure_no_auth and not auth_enabled:
+                _err(
+                    f"{_PREFIX}: WARNING: serving without authentication "
+                    "(--allow-insecure-no-auth)"
+                )
+
+        # --- Preflight.
+        checks: list[dict[str, Any]] = []
+        passed: bool | None = None
+        url = _sse_url(host, port, public_url) if sse else None
+        auth_info = {
+            "enabled": auth_enabled,
+            "type": "bearer" if auth_enabled else "none",
+            "token_env": token_env,
+            "source": token_source,
+        }
+
+        def report(manifest_path: Path | None) -> dict[str, Any]:
+            return {
+                "passed": passed,
+                "strict": strict,
+                "checks": checks,
+                "transport": transport,
+                "url": url,
+                "manifest_path": str(manifest_path) if manifest_path else None,
+                "auth": auth_info,
+            }
+
+        if not skip_doctor:
+            results = _run_preflight(root, port, host, auth_enabled, say)
+            checks = list(results.get("checks", []))
+            failures = [c for c in checks if c.get("status") == "fail"]
+            passed = bool(results.get("passed", not failures)) and not failures
+            if not passed:
+                if strict:
+                    print(
+                        f"ERROR: {len(failures)} preflight check(s) failed; aborting "
+                        "(strict). Fix them or pass --no-strict to continue anyway.",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    if json_output:
+                        _emit_json(report(None))
+                    return EXIT_PREFLIGHT
+                print(
+                    "WARNING: Some preflight checks failed. Continuing launch...",
+                    file=say,
+                )
+
+        # --- Manifest (never contains the token).
+        manifest: dict[str, Any] | None = None
+        manifest_path: Path | None = None
+        if export_manifest or dry_run:
+            try:
+                manifest = generate_manifest(
+                    root,
+                    host_url=url or "",
+                    transport=transport,
+                    public_url=public_url if sse else None,
+                    auth_enabled=auth_enabled,
+                    token_env=token_env,
+                )
+            except ValueError as exc:
+                return _fail(str(exc))
+            if export_manifest:
+                atomic_write_text(
+                    export_manifest, json.dumps(manifest, indent=2) + "\n", mode=0o644
+                )
+                manifest_path = export_manifest
+                print(f"✓ Manifest exported to {export_manifest}", file=say)
+
+        if dry_run:
+            print("✓ Dry run requested. Exiting without launching tool host.", file=say)
+            if json_output:
+                _emit_json(report(manifest_path))
+            return EXIT_OK
 
     def _finish(status: str, exit_code: int) -> None:
         if dry_run or export_manifest is None or manifest is None:
             return
+        effective = status
+        if effective == _receipts.STATUS_COMPLETE and exit_code != 0:
+            # A failed launch must never read back as already-complete: only
+            # exit 0 completes, anything else fails so the next run retries.
+            effective = _receipts.STATUS_FAILED
         record = _receipts.build_receipt(
             transport=transport,
             host=host,
@@ -380,12 +457,18 @@ def run_oneclick(
             token_source=token_source,
             doctor_passed=passed,
             exit_code=exit_code,
-            status=status,
+            status=effective,
         )
         _receipts.write_receipt(
             _receipts.receipt_path_for_manifest(export_manifest), record
         )
 
+    # NOTE (residual bind race): the launch lock above serializes check_rerun
+    # through manifest export on this host, but the final bind() below is a
+    # small TOCTOU window — two processes (or hosts) can both pass the guard
+    # and race on the port. The loser fails to serve and _finish records
+    # STATUS_FAILED (never complete), so check_rerun treats the next attempt
+    # as fresh and retries instead of wedging on already-complete.
     if json_output:
         _emit_json(report(manifest_path))
 

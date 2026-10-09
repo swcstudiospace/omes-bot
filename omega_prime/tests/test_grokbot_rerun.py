@@ -7,7 +7,6 @@ from __future__ import annotations
 import json
 import logging
 import os
-import socket
 from pathlib import Path
 from typing import Any
 
@@ -22,18 +21,14 @@ from omega_prime.grokbot.security import generate_token
 SECRET = "rerun-guard-secret-0123456789-abcdef"
 
 
-def _free_port() -> int:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return int(sock.getsockname()[1])
+_CLOSED_PORT = 48151
+_OPEN_PORT = 48152
 
 
-def _occupied_port() -> tuple[socket.socket, int]:
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    sock.bind(("127.0.0.1", 0))
-    sock.listen(1)
-    return sock, int(sock.getsockname()[1])
+def _stub_port(monkeypatch: pytest.MonkeyPatch, *, is_open: bool) -> int:
+    """Script the TCP liveness probe; no real network I/O occurs."""
+    monkeypatch.setattr(rerun, "_port_open", lambda host, port: is_open)
+    return _OPEN_PORT if is_open else _CLOSED_PORT
 
 
 def _write_receipt(
@@ -64,77 +59,90 @@ def isolated_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return state
 
 
-def test_fresh_when_receipt_missing(tmp_path: Path, isolated_state: Path) -> None:
-    verdict = rerun.check_rerun(tmp_path / "nope.receipt.json", _free_port())
+def test_fresh_when_receipt_missing(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    port = _stub_port(monkeypatch, is_open=False)
+    verdict = rerun.check_rerun(tmp_path / "nope.receipt.json", port)
     assert verdict == "fresh"
     assert verdict.verdict == rerun.VERDICT_FRESH
     assert verdict in rerun.RERUN_VERDICTS
 
 
-def test_already_complete_carries_digest(tmp_path: Path, isolated_state: Path) -> None:
+def test_already_complete_carries_digest(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     target, record = _write_receipt(tmp_path, "m.receipt.json", "complete")
-    verdict = rerun.check_rerun(target, _free_port())
+    verdict = rerun.check_rerun(target, _stub_port(monkeypatch, is_open=False))
     assert verdict == "already-complete"
     assert verdict.manifest_digest == record["manifest_digest"]
 
 
-def test_interrupted(tmp_path: Path, isolated_state: Path) -> None:
+def test_interrupted(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     target, _ = _write_receipt(tmp_path, "m.receipt.json", "interrupted")
-    verdict = rerun.check_rerun(target, _free_port())
+    verdict = rerun.check_rerun(target, _stub_port(monkeypatch, is_open=False))
     assert verdict == "interrupted"
     assert verdict in rerun.RERUN_VERDICTS
 
 
-def test_already_running_when_port_open(tmp_path: Path, isolated_state: Path) -> None:
-    sock, port = _occupied_port()
-    try:
-        assert (
-            rerun.check_rerun(tmp_path / "nope.receipt.json", port) == "already-running"
-        )
-        target, _ = _write_receipt(tmp_path, "m.receipt.json", "complete")
-        assert rerun.check_rerun(target, port) == "already-running"
-    finally:
-        sock.close()
+def test_already_running_when_port_open(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    port = _stub_port(monkeypatch, is_open=True)
+    assert rerun.check_rerun(tmp_path / "nope.receipt.json", port) == "already-running"
+    target, _ = _write_receipt(tmp_path, "m.receipt.json", "complete")
+    assert rerun.check_rerun(target, port) == "already-running"
 
 
-def test_live_supervisor_means_running(tmp_path: Path, isolated_state: Path) -> None:
+def test_live_supervisor_means_running(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     isolated_state.write_text(
         json.dumps({"running": True, "supervisor_pid": os.getpid()}),
         encoding="utf-8",
     )
-    assert (
-        rerun.check_rerun(tmp_path / "nope.receipt.json", _free_port())
-        == "already-running"
-    )
+    port = _stub_port(monkeypatch, is_open=False)
+    assert rerun.check_rerun(tmp_path / "nope.receipt.json", port) == "already-running"
 
 
 def test_stale_supervisor_state_does_not_mask_receipt(
-    tmp_path: Path, isolated_state: Path
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     isolated_state.write_text(
         json.dumps({"running": True, "supervisor_pid": 4194303}),
         encoding="utf-8",
     )
     target, _ = _write_receipt(tmp_path, "m.receipt.json", "complete")
-    assert rerun.check_rerun(target, _free_port()) == "already-complete"
+    assert rerun.check_rerun(target, _stub_port(monkeypatch, is_open=False)) == (
+        "already-complete"
+    )
 
 
 def test_corrupt_receipt_is_fresh_with_warning(
-    tmp_path: Path, isolated_state: Path, caplog: pytest.LogCaptureFixture
+    tmp_path: Path,
+    isolated_state: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     target = tmp_path / "m.receipt.json"
     target.write_text("{not json", encoding="utf-8")
+    port = _stub_port(monkeypatch, is_open=False)
     with caplog.at_level(logging.WARNING):
-        assert rerun.check_rerun(target, _free_port()) == "fresh"
+        assert rerun.check_rerun(target, port) == "fresh"
     assert any(r.levelno >= logging.WARNING for r in caplog.records)
 
 
-def test_check_rerun_has_no_side_effects(tmp_path: Path, isolated_state: Path) -> None:
+def test_check_rerun_has_no_side_effects(
+    tmp_path: Path, isolated_state: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     target, _ = _write_receipt(tmp_path, "m.receipt.json", "complete")
     before = target.read_text(encoding="utf-8")
-    first = rerun.check_rerun(target, _free_port())
-    second = rerun.check_rerun(target, _free_port())
-    assert first == second == "already-complete"
+    port = _stub_port(monkeypatch, is_open=False)
+    first = rerun.check_rerun(target, port)
+    second = rerun.check_rerun(target, port)
+    assert first == second
     assert target.read_text(encoding="utf-8") == before
 
 
@@ -144,6 +152,8 @@ def _run_stdio(
     out: Path,
     port: int,
     launches: list[list[str]],
+    *,
+    port_open: bool = False,
     **kwargs: Any,
 ) -> int:
     def _fake_call(cmd: list[str]) -> int:
@@ -151,6 +161,8 @@ def _run_stdio(
         return 0
 
     monkeypatch.setattr(oneclick.subprocess, "call", _fake_call)
+    # Script the rerun-guard TCP probe so host state cannot change results.
+    monkeypatch.setattr(rerun, "_port_open", lambda host, probe: port_open)
     # Manifest generation needs the real repo tree (roster + seat policy);
     # the manifest output and receipts still live under the tmp root.
     return run_oneclick(
@@ -169,6 +181,8 @@ def _run_sse(
     out: Path,
     port: int,
     launches: list[Any],
+    *,
+    port_open: bool = False,
     **kwargs: Any,
 ) -> int:
     def _fake_serve(**kw: Any) -> int:
@@ -176,6 +190,8 @@ def _run_sse(
         return 0
 
     monkeypatch.setattr("omega_prime.grokbot.remote.serve_sse", _fake_serve)
+    # Script the rerun-guard TCP probe so host state cannot change results.
+    monkeypatch.setattr(rerun, "_port_open", lambda host, probe: port_open)
     # SSE serve carries a bearer token: mint one into a 0600 tmp file, the
     # same convention run_self_test uses for its throwaway hosts.
     token_file = root / ".rerun-test-bearer.token"
@@ -209,7 +225,7 @@ def test_second_run_is_safe_noop(
     before = receipt_path.read_text(encoding="utf-8")
 
     launches: list[Any] = []
-    code = _run_sse(monkeypatch, tmp_path, out, _free_port(), launches)
+    code = _run_sse(monkeypatch, tmp_path, out, _CLOSED_PORT, launches, port_open=False)
 
     assert code == 0
     assert launches == []
@@ -230,7 +246,7 @@ def test_force_bypasses_complete_receipt(
     receipts.write_receipt(receipt_path, record)
 
     launches: list[list[str]] = []
-    code = _run_stdio(monkeypatch, tmp_path, out, _free_port(), launches, force=True)
+    code = _run_stdio(monkeypatch, tmp_path, out, _CLOSED_PORT, launches, force=True)
 
     assert code == 0
     assert len(launches) == 1
@@ -244,20 +260,18 @@ def test_already_running_is_noop_unless_resume(
     capsys: pytest.CaptureFixture,
 ) -> None:
     out = tmp_path / "m.json"
-    sock, port = _occupied_port()
-    try:
-        launches: list[Any] = []
-        code = _run_sse(monkeypatch, tmp_path, out, port, launches)
-        assert code == 0
-        assert launches == []
-        assert "already running" in capsys.readouterr().out
+    launches: list[Any] = []
+    code = _run_sse(monkeypatch, tmp_path, out, _OPEN_PORT, launches, port_open=True)
+    assert code == 0
+    assert launches == []
+    assert "already running" in capsys.readouterr().out
 
-        launches.clear()
-        code = _run_sse(monkeypatch, tmp_path, out, port, launches, resume=True)
-        assert code == 0
-        assert len(launches) == 1
-    finally:
-        sock.close()
+    launches.clear()
+    code = _run_sse(
+        monkeypatch, tmp_path, out, _OPEN_PORT, launches, port_open=True, resume=True
+    )
+    assert code == 0
+    assert len(launches) == 1
 
 
 def test_interrupted_prints_hint_and_proceeds(
@@ -273,7 +287,7 @@ def test_interrupted_prints_hint_and_proceeds(
     receipts.write_receipt(receipt_path, record)
 
     launches: list[Any] = []
-    code = _run_sse(monkeypatch, tmp_path, out, _free_port(), launches)
+    code = _run_sse(monkeypatch, tmp_path, out, _CLOSED_PORT, launches, port_open=False)
 
     assert code == 0
     assert len(launches) == 1
@@ -295,7 +309,7 @@ def test_no_secret_in_guard_messages(
     receipts.write_receipt(receipt_path, record)
 
     launches: list[list[str]] = []
-    assert _run_stdio(monkeypatch, tmp_path, out, _free_port(), launches) == 0
+    assert _run_stdio(monkeypatch, tmp_path, out, _CLOSED_PORT, launches) == 0
     captured = capsys.readouterr()
     assert SECRET not in captured.out
     assert SECRET not in captured.err
@@ -317,21 +331,17 @@ def test_stdio_ignores_occupied_port_and_stale_complete_receipt(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture,
 ) -> None:
-    """Stdio never binds TCP: a foreign listener + stale receipt must not block it."""
+    """Stdio never uses TCP: a scripted-open probe + stale receipt must not block it."""
     out = tmp_path / "m.json"
     out.write_text('{"mcp_server": {}}', encoding="utf-8")
     receipt_path = receipts.receipt_path_for_manifest(out)
     _, record = _write_receipt(tmp_path, receipt_path.name, "complete")
     receipts.write_receipt(receipt_path, record)
-    sock, port = _occupied_port()
-    try:
-        launches: list[list[str]] = []
-        code = _run_stdio(monkeypatch, tmp_path, out, port, launches)
-        assert code == 0
-        assert len(launches) == 1
-        assert "nothing to do" not in capsys.readouterr().out
-    finally:
-        sock.close()
+    launches: list[list[str]] = []
+    code = _run_stdio(monkeypatch, tmp_path, out, _OPEN_PORT, launches, port_open=True)
+    assert code == 0
+    assert len(launches) == 1
+    assert "nothing to do" not in capsys.readouterr().out
 
 
 def test_dry_run_never_noops(
@@ -346,27 +356,28 @@ def test_dry_run_never_noops(
     receipt_path = receipts.receipt_path_for_manifest(out)
     _, record = _write_receipt(tmp_path, receipt_path.name, "complete")
     receipts.write_receipt(receipt_path, record)
-    sock, port = _occupied_port()
-    try:
-        launches: list[list[str]] = []
-        code = _run_stdio(monkeypatch, tmp_path, out, port, launches, dry_run=True)
-        assert code == 0
-        assert launches == []
-        captured = capsys.readouterr()
-        assert "Dry run requested" in captured.out
-        assert "nothing to do" not in captured.out
+    launches: list[list[str]] = []
+    code = _run_stdio(
+        monkeypatch, tmp_path, out, _OPEN_PORT, launches, port_open=True, dry_run=True
+    )
+    assert code == 0
+    assert launches == []
+    captured = capsys.readouterr()
+    assert "Dry run requested" in captured.out
+    assert "nothing to do" not in captured.out
 
-        code = run_oneclick(
-            find_repo_root(),
-            transport="sse",
-            port=port,
-            export_manifest=out,
-            skip_doctor=True,
-            dry_run=True,
-        )
-        assert code == 0
-        captured = capsys.readouterr()
-        assert "Dry run requested" in captured.out
-        assert "nothing to do" not in captured.out
-    finally:
-        sock.close()
+    # Script the guard probes for the direct SSE dry-run call too, so host
+    # state cannot change the result.
+    monkeypatch.setattr(rerun, "_port_open", lambda host, probe: True)
+    code = run_oneclick(
+        find_repo_root(),
+        transport="sse",
+        port=_OPEN_PORT,
+        export_manifest=out,
+        skip_doctor=True,
+        dry_run=True,
+    )
+    assert code == 0
+    captured = capsys.readouterr()
+    assert "Dry run requested" in captured.out
+    assert "nothing to do" not in captured.out

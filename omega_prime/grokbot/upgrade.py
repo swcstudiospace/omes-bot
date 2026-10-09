@@ -17,6 +17,7 @@ Snapshot directory layout (``<dest_dir>/<label>/``)::
             0000-<basename> copy of the first source path, then 0001-, ...
         sources.json        {stored_rel: original_absolute_path}
         digests.json        {stored_rel: sha256_hex}
+        modes.json          {stored_rel: live_st_mode_bits}
 
 A source that is a directory is expanded recursively (sorted walk); each
 regular file inside it gets its own numbered entry. The numeric prefix keeps
@@ -35,13 +36,22 @@ Sources table schema (`sources.json`): a JSON object written the same way.
 Every key is a `digests.json` key; every value is the absolute path of the
 source file the copy was read from, so rollback knows where each entry goes.
 
+Modes table schema (`modes.json`): a JSON object written the same way.
+Every key is a `digests.json` key; every value is the integer
+`stat.S_IMODE` permission bits of the live source file at snapshot time
+(e.g. 420 for 0o640), so rollback restores the live mode instead of
+forcing 0600. Entries whose mode could not be read are omitted; snapshots
+without this table (written before it existed) restore 0600.
+
 Public functions:
 
 - `snapshot(paths, dest_dir, *, label="pre-upgrade") -> Path`: stage the
-  copies plus both tables in a hidden temp dir inside `dest_dir`, then
+  copies plus all three tables in a hidden temp dir inside `dest_dir`, then
   publish with one `os.replace` to `dest_dir/<label>/` and return that path.
 - `apply_guard(snapshot_dir) -> Path`: return `snapshot_dir` when it holds a
-  readable snapshot, else raise `SnapshotMissingError` naming the path.
+  usable snapshot (readable digest and sources tables, every stored copy
+  present with a matching hash), else raise `SnapshotMissingError` naming
+  the path or `SnapshotCorruptError` with failure counts.
 - `verify_snapshot(snapshot_dir) -> list[str]`: return the sorted stored
   relative paths whose bytes are missing or hash differently than recorded
   (empty means healthy).
@@ -51,12 +61,18 @@ Exceptions (`SnapshotError` base): `SnapshotMissingError` (also a
 unreadable digest table, `SnapshotExistsError` (also a `FileExistsError`)
 when the label is already taken.
 
-Guarantees: snapshots never overwrite (re-snapshot under a fresh label);
-missing or non-regular sources are skipped, never fatal; symlinks are
+Guarantees: snapshots never overwrite (re-snapshot under a fresh label); a
+publish that loses a label race reports `SnapshotExistsError` (a concurrent
+`os.replace` onto an existing label is translated, so pre-rollback retry
+works); missing or non-regular sources are skipped, never fatal; a source
+directory containing `dest_dir` has the `dest_dir` subtree pruned from the
+walk, so snapshots never nest backups inside themselves; symlinks are
 followed and stored as regular files; copies are mode 0600 and directories
-mode 0700 because sources may hold tokens; any disk-full or OS error during
-staging aborts before publish, removes the temp dir, and leaves any previous
-snapshot untouched. Pure functions over paths: no host or CLI wiring here.
+mode 0700 because sources may hold tokens, while each live source's own
+mode bits are recorded in `modes.json` for rollback to restore; any
+disk-full or OS error during staging aborts before publish, removes the
+temp dir, and leaves any previous snapshot untouched. Pure functions over
+paths: no host or CLI wiring here.
 Secrets are never logged; error messages carry paths, never file contents.
 """
 
@@ -67,6 +83,7 @@ import hashlib
 import json
 import os
 import shutil
+import stat
 import tempfile
 from collections.abc import Iterable
 from pathlib import Path
@@ -80,6 +97,7 @@ from omega_prime.grokbot._io import (
 
 DIGESTS_FILENAME = "digests.json"
 SOURCES_FILENAME = "sources.json"
+MODES_FILENAME = "modes.json"
 FILES_DIRNAME = "files"
 DEFAULT_LABEL = "pre-upgrade"
 
@@ -187,10 +205,15 @@ def snapshot(
     *,
     label: str = DEFAULT_LABEL,
 ) -> Path:
-    """Copy `paths` into `dest_dir/<label>/` with a digest table; return it.
+    """Copy `paths` into `dest_dir/<label>/` with digest tables; return it.
 
     Missing sources are skipped. An existing label is never overwritten
-    (`SnapshotExistsError`); use a fresh label per attempt. Any failure
+    (`SnapshotExistsError`); use a fresh label per attempt. A publish that
+    loses a concurrent label race (the atomic `os.replace` onto an existing
+    label) is translated to `SnapshotExistsError` so callers can retry under
+    a fresh label. Sources inside `dest_dir` are pruned, so snapshotting a
+    parent of `dest_dir` never nests backups. Each live source's mode bits
+    are recorded in `modes.json` for rollback to restore. Any failure
     during staging removes the temp dir and raises, leaving `dest_dir`
     without a partial snapshot.
     """
@@ -199,21 +222,41 @@ def snapshot(
     final = dest / label
     if final.exists() or final.is_symlink():
         raise SnapshotExistsError(f"snapshot {final} already exists; use a fresh label")
+    dest_abs = os.path.abspath(dest)
+    live = [
+        src
+        for src in _expand_sources(paths)
+        if os.path.abspath(src) != dest_abs
+        and not os.path.abspath(src).startswith(dest_abs + os.sep)
+    ]
     stage = Path(tempfile.mkdtemp(dir=dest, prefix=f".{label}.stage-"))
     try:
         with contextlib.suppress(OSError):
             os.chmod(stage, PRIVATE_DIR_MODE)
         digests: dict[str, str] = {}
         origins: dict[str, str] = {}
-        for index, src in enumerate(_expand_sources(paths)):
+        modes: dict[str, int] = {}
+        for index, src in enumerate(live):
             data = src.read_bytes()
             stored_rel = f"{FILES_DIRNAME}/{index:04d}-{src.name}"
             _atomic_write_bytes(stage / stored_rel, data)
             digests[stored_rel] = hashlib.sha256(data).hexdigest()
             origins[stored_rel] = os.path.abspath(src)
+            try:
+                modes[stored_rel] = stat.S_IMODE(src.stat().st_mode)
+            except OSError:
+                continue
         atomic_write_json(stage / DIGESTS_FILENAME, digests)
         atomic_write_json(stage / SOURCES_FILENAME, origins)
-        os.replace(stage, final)
+        atomic_write_json(stage / MODES_FILENAME, modes)
+        try:
+            os.replace(stage, final)
+        except OSError as exc:
+            if final.exists() or final.is_symlink():
+                raise SnapshotExistsError(
+                    f"snapshot {final} already exists; use a fresh label"
+                ) from exc
+            raise
     except BaseException:
         shutil.rmtree(stage, ignore_errors=True)
         raise
@@ -226,11 +269,40 @@ def snapshot(
     return final
 
 
+def _read_sources(root: Path) -> dict[str, str]:
+    """Parse and validate the sources table of the snapshot at `root`."""
+    table_path = root / SOURCES_FILENAME
+    try:
+        raw: object = json.loads(table_path.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise SnapshotCorruptError(
+            f"snapshot at {root} has no {SOURCES_FILENAME} "
+            "(run upgrade.snapshot() first and pass its snapshot directory)"
+        ) from exc
+    except (OSError, ValueError) as exc:
+        raise SnapshotCorruptError(
+            f"snapshot at {root} has an unreadable {SOURCES_FILENAME}: {exc}"
+        ) from exc
+    if not isinstance(raw, dict) or any(
+        not isinstance(key, str)
+        or not isinstance(value, str)
+        or Path(key).is_absolute()
+        or ".." in Path(key).parts
+        for key, value in raw.items()
+    ):
+        raise SnapshotCorruptError(
+            f"snapshot at {root} has a malformed {SOURCES_FILENAME}"
+        )
+    return dict(raw)
+
+
 def apply_guard(snapshot_dir: str | Path) -> Path:
-    """Return `snapshot_dir` when it holds a readable snapshot.
+    """Return `snapshot_dir` when it holds a usable snapshot.
 
     Raise `SnapshotMissingError` (naming the path) when no snapshot exists,
-    or `SnapshotCorruptError` when its digest table is unreadable. Call this
+    or `SnapshotCorruptError` (with failure counts) when the digest or
+    sources table is unreadable, a sources entry has no digest, or any
+    stored copy is missing or hashes differently than recorded. Call this
     before any upgrade step that overwrites live state.
     """
     root = Path(snapshot_dir)
@@ -239,7 +311,21 @@ def apply_guard(snapshot_dir: str | Path) -> Path:
             f"refusing upgrade: no snapshot at {root} "
             "(run upgrade.snapshot() first and pass its snapshot directory)"
         )
-    _read_digests(root)
+    digests = _read_digests(root)
+    sources = _read_sources(root)
+    unknown = [rel for rel in sources if rel not in digests]
+    if unknown:
+        raise SnapshotCorruptError(
+            f"snapshot at {root} is unusable: {len(unknown)} of "
+            f"{len(sources)} sources entries have no {DIGESTS_FILENAME} "
+            f"entry: {', '.join(sorted(unknown))}"
+        )
+    bad = verify_snapshot(root)
+    if bad:
+        raise SnapshotCorruptError(
+            f"snapshot at {root} is unusable: {len(bad)} of {len(digests)} "
+            f"stored copies fail verification: {', '.join(bad)}"
+        )
     return root
 
 
@@ -272,6 +358,7 @@ __all__ = [
     "DEFAULT_LABEL",
     "DIGESTS_FILENAME",
     "FILES_DIRNAME",
+    "MODES_FILENAME",
     "SOURCES_FILENAME",
     "SnapshotCorruptError",
     "SnapshotError",

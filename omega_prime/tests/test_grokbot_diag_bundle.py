@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -15,9 +16,16 @@ from omega_prime.grokbot.audit import GrokBotAuditTracer
 from omega_prime.grokbot.diag_bundle import BUNDLE_FILENAME, collect_bundle
 from omega_prime.grokbot.doctor import DiagnosticCheck
 from omega_prime.grokbot.secret_guard import SecretLeakError
-from omega_prime.mcp_server import SERVER_VERSION
 
-_OMK_TOKEN = "omk-a1b2c3d4e5f6g7h8ij"
+_OMK_PREFIX = "omk-"
+
+
+def _omk_token() -> str:
+    """Credential-shaped fixture built at runtime; no complete shape is committed."""
+    return _OMK_PREFIX + hashlib.sha256(b"grokbot-diag-bundle-fixture").hexdigest()[:16]
+
+
+_OMK_TOKEN = _omk_token()
 _MANIFEST_MARKER = "grokbot-fixture-marker-7f3a"
 
 
@@ -104,6 +112,8 @@ def test_secret_bearing_fixture_aborts_without_writing(tmp_path: Path):
 
 
 def test_output_contains_versions_and_digests(tmp_path: Path):
+    from omega_prime.mcp_server import SERVER_VERSION
+
     manifest = _manifest_file(tmp_path)
     raw = manifest.read_bytes()
     out = _collect(tmp_path, manifest_path=manifest)
@@ -121,4 +131,38 @@ def test_no_token_bytes_in_bundle_dir(tmp_path: Path):
     for entry in out.parent.iterdir():
         if entry.is_file():
             assert _OMK_TOKEN.encode() not in entry.read_bytes()
-            assert b"omk-" not in entry.read_bytes()
+            assert _OMK_PREFIX.encode() not in entry.read_bytes()
+
+
+def test_doctor_skipped_without_fixtures(tmp_path: Path, monkeypatch) -> None:
+    """No fixtures means a skipped doctor section, never a live host probe."""
+    monkeypatch.setattr(
+        "omega_prime.grokbot.doctor.run_doctor_checks",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("live doctor must not run")
+        ),
+    )
+    out = collect_bundle(
+        tmp_path / "bundle",
+        manifest_path=_manifest_file(tmp_path),
+        audit_path=_audit_log(tmp_path),
+        supervisor_state_path=_supervisor_state(tmp_path),
+    )
+    bundle = json.loads(out.read_text(encoding="utf-8"))
+    assert bundle["doctor"] == {"present": False, "status": "skipped"}
+
+
+def test_server_version_unavailable_when_import_blocked(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Blocking the heavy import reports an unavailable server version."""
+    monkeypatch.setitem(sys.modules, "omega_prime.mcp_server", None)
+    out = collect_bundle(
+        tmp_path / "bundle",
+        manifest_path=_manifest_file(tmp_path),
+        audit_path=_audit_log(tmp_path),
+        supervisor_state_path=_supervisor_state(tmp_path),
+        doctor_checks=_checks(),
+    )
+    bundle = json.loads(out.read_text(encoding="utf-8"))
+    assert bundle["versions"] == {"server": "unavailable", "package": PACKAGE_VERSION}

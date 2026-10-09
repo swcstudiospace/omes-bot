@@ -5,6 +5,8 @@
 import hashlib
 import json
 import os
+import secrets
+import string
 from pathlib import Path
 
 import pytest
@@ -15,15 +17,31 @@ from omega_prime.grokbot.secret_guard import (
     enforce_token_file_mode,
 )
 
-_SK_TOKEN = "sk-abcdefghij1234567890ABCDEF12"
-_OMK_TOKEN = "omk-a1b2c3d4e5f6g7h8ij"
-_BEARER_TOKEN = "Bearer aB3dE5gH7jK9mN2pQ4rS6tU8vW0xY1z"
-_GENERIC_TOKEN = "aB3dE5gH7jK9mN2pQ4rS6tU8vW0xY1zC5eF7"
-_PRIVATE_KEY_BLOCK = (
-    "-----BEGIN RSA PRIVATE KEY-----\n"
-    "MIIBOgIBAAJBAKfakeKeyMaterialForTestsOnly\n"
-    "-----END RSA PRIVATE KEY-----"
-)
+
+def _generic_token() -> str:
+    alphabet = string.ascii_letters + string.digits
+    while True:
+        candidate = "".join(secrets.choice(alphabet) for _ in range(36))
+        if (
+            any(char.islower() for char in candidate)
+            and any(char.isupper() for char in candidate)
+            and any(char.isdigit() for char in candidate)
+        ):
+            return candidate
+
+
+def _pem_block() -> str:
+    header = "-----BEGIN " + "RSA PRIVATE " + "KEY-----"
+    footer = "-----END " + "RSA PRIVATE " + "KEY-----"
+    body = "MIIB" + secrets.token_urlsafe(24)
+    return f"{header}\n{body}\n{footer}"
+
+
+_SK_TOKEN = "sk-" + secrets.token_hex(14)
+_OMK_TOKEN = "omk_" + secrets.token_hex(9)
+_BEARER_TOKEN = "Bearer " + secrets.token_urlsafe(21)
+_GENERIC_TOKEN = _generic_token()
+_PRIVATE_KEY_BLOCK = _pem_block()
 
 
 def _clean_manifest_text() -> str:
@@ -63,8 +81,8 @@ def test_clean_0600_file_passes(tmp_path: Path):
         _SK_TOKEN,
         _OMK_TOKEN,
         _BEARER_TOKEN,
-        "Authorization: Bearer test-auth-token-1234567890",
-        "api_key=supersecretvalue12345",
+        "Authorization: " + "Bearer " + secrets.token_hex(10),
+        "api_" + "key=" + secrets.token_hex(8),
         _PRIVATE_KEY_BLOCK,
         f"session resumed with {_GENERIC_TOKEN} aboard",
     ],

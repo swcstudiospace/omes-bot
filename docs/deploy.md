@@ -158,16 +158,18 @@ multi-line flow collections are not supported and are reported as `unparseable`.
 ## Staging first, then gated promotion
 
 Promote the same digest through staging before production. There are no `--staging` or `--prod` flags: `check`
-infers a production promotion from a `promotion*` marker file placed alongside the artifact set, and both
-promotion findings below are warnings, so they never change the exit code (exit 0 is preserved).
+infers a production promotion from a promotion marker file placed alongside the artifact set — any file whose
+name (case-insensitive) starts with `promot` (i.e. `promotion*`, `promot*`) or with `prod-`, `prod_` or `prod.`
+— and both promotion findings below are warnings, so they never change the exit code (exit 0 is preserved).
 
 1. `render` the artifact set once, then run `render`+`check`+`verify` against a staging host first. Keep the
    staging receipt (any `*staging*` file) or the image digest file (any `*.digest` file) alongside the artifact
    set; without either, `check` warns `promote-without-staging-evidence`.
 2. Record the approval in the audit log and keep the approval or audit record (any `*approv*` or `*audit*`
    file) alongside the artifact set; without it, `check` warns `missing-promotion-approval-record`.
-3. Promote the same digest: apply the identical artifact set to production with the `promotion*` marker
-   present. Never re-render with different options between staging and production.
+3. Promote the same digest: apply the identical artifact set to production with the promotion marker
+   (`promotion*`, `promot*`, `prod-*`, `prod_*` or `prod.*`) present. Never re-render with different options
+   between staging and production.
 
 ## Stop and drain
 

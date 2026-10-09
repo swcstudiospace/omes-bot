@@ -6,6 +6,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import stat
+import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -13,6 +17,7 @@ import pytest
 from omega_prime.grokbot.audit import GrokBotAuditTracer
 from omega_prime.grokbot.rollback import RollbackError, rollback
 from omega_prime.grokbot.upgrade import (
+    SnapshotCorruptError,
     SnapshotMissingError,
     snapshot,
     verify_snapshot,
@@ -152,3 +157,137 @@ def test_rollback_appends_audit_record(tmp_path: Path) -> None:
     record = json.loads(lines[-1])
     assert record["event"] == "rollback"
     assert tracer.verify_integrity()[0] is True
+
+
+def test_rollback_refuses_unusable_snapshot(tmp_path: Path) -> None:
+    sources = _seed_state(tmp_path / "live")
+    snap = snapshot(sources, tmp_path / "snapshots")
+    digests = _read_table(snap, "digests.json")
+    victim = next(iter(sorted(digests)))
+    (snap / victim).write_bytes(b"tampered")
+
+    with pytest.raises(SnapshotCorruptError, match="fail verification"):
+        rollback(snap, sources)
+
+
+def test_rollback_pre_snapshot_retries_taken_label(tmp_path: Path) -> None:
+    sources = _seed_state(tmp_path / "live")
+    snap = snapshot(sources, tmp_path / "snapshots")
+    _mutate(sources)
+
+    first = rollback(snap, sources)
+    assert Path(str(first["pre_rollback_snapshot"])) == (
+        tmp_path / "snapshots" / "pre-rollback"
+    )
+
+    _mutate(sources)
+    second = rollback(snap, sources)
+    assert Path(str(second["pre_rollback_snapshot"])) == (
+        tmp_path / "snapshots" / "pre-rollback-1"
+    )
+    assert verify_snapshot(Path(str(second["pre_rollback_snapshot"]))) == []
+
+
+def test_rollback_restores_recorded_modes(tmp_path: Path) -> None:
+    sources = _seed_state(tmp_path / "live")
+    os.chmod(sources[0], 0o640)
+    before = {p: stat.S_IMODE(p.stat().st_mode) for p in sources}
+    assert before[sources[0]] == 0o640
+    snap = snapshot(sources, tmp_path / "snapshots")
+    _mutate(sources)
+
+    rollback(snap, sources)
+
+    for path in sources:
+        assert stat.S_IMODE(path.stat().st_mode) == before[path]
+
+
+def test_rollback_old_snapshot_without_modes_restores_private(
+    tmp_path: Path,
+) -> None:
+    sources = _seed_state(tmp_path / "live")
+    os.chmod(sources[0], 0o644)
+    snap = snapshot(sources, tmp_path / "snapshots")
+    (snap / "modes.json").unlink()
+    _mutate(sources)
+
+    rollback(snap, sources)
+
+    assert stat.S_IMODE(sources[0].stat().st_mode) == 0o600
+
+
+def test_atomic_restore_fsyncs_parent_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = _seed_state(tmp_path / "live")
+    snap = snapshot(sources, tmp_path / "snapshots")
+    _mutate(sources)
+    real_open = os.open
+    opened: list[tuple[str, int]] = []
+
+    def _spy_open(path: str | os.PathLike[str], flags: int, *args: int) -> int:
+        opened.append((str(path), flags))
+        return real_open(path, flags, *args)
+
+    monkeypatch.setattr(os, "open", _spy_open)
+    rollback(snap, sources)
+
+    parents = {str(p.parent) for p in sources}
+    assert any(path in parents and flags == os.O_RDONLY for path, flags in opened)
+
+
+def test_rollback_waits_for_audit_lock(tmp_path: Path) -> None:
+    import fcntl
+
+    src = tmp_path / "live"
+    sources = _seed_state(src)
+    audit_log = src / "grokbot_audit.jsonl"
+    tracer = GrokBotAuditTracer(audit_log)
+    tracer.log_event("tool_call", tool_name="read_file")
+    tracer.log_event("tool_call", tool_name="write_file")
+    snap = snapshot([*sources, audit_log], tmp_path / "snapshots")
+    _mutate(sources)
+
+    lock_path = audit_log.with_name(audit_log.name + ".lock")
+    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    locked = threading.Event()
+    release = threading.Event()
+
+    def _holder() -> None:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        locked.set()
+        assert release.wait(timeout=15)
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+    holder = threading.Thread(target=_holder, daemon=True)
+    holder.start()
+    assert locked.wait(timeout=10)
+
+    box: dict[str, object] = {}
+    done = threading.Event()
+
+    def _worker() -> None:
+        box["result"] = rollback(snap, [*sources, audit_log])
+        done.set()
+
+    worker = threading.Thread(target=_worker, daemon=True)
+    worker.start()
+    time.sleep(0.5)
+    assert not done.is_set()
+    release.set()
+    worker.join(timeout=15)
+    holder.join(timeout=15)
+
+    assert done.is_set()
+    lines = audit_log.read_text(encoding="utf-8").splitlines()
+    assert len(lines) == 3
+    assert json.loads(lines[-1])["event"] == "rollback"
+    assert tracer.verify_integrity()[0] is True
+
+
+def test_rollback_schema_doc_mentions_modes() -> None:
+    import omega_prime.grokbot.rollback as rollback_mod
+
+    assert "modes.json" in (rollback_mod.__doc__ or "")
+    assert ".lock" in (rollback_mod.__doc__ or "")
