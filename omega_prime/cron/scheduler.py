@@ -7,7 +7,11 @@ is due again at ``now + interval_seconds``.
 
 from __future__ import annotations
 
+import contextlib
 import json
+import os
+import stat
+import tempfile
 import uuid
 from collections.abc import Callable
 from pathlib import Path
@@ -112,7 +116,28 @@ class JobStore:
     def _save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         text = json.dumps({"jobs": self.jobs}, ensure_ascii=False, indent=2) + "\n"
-        self.path.write_text(text, encoding="utf-8")
+        # Write a sibling temp file and rename it over the store. `write_text`
+        # truncates first, so a concurrent reader or a crash mid-write saw an
+        # empty or partial file and the whole schedule was lost.
+        try:
+            mode: int | None = stat.S_IMODE(self.path.stat().st_mode)
+        except FileNotFoundError:
+            mode = None
+        fd, tmp_name = tempfile.mkstemp(
+            dir=self.path.parent, prefix=f".{self.path.name}.", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(text)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if mode is not None:
+                os.chmod(tmp_name, mode)
+            os.replace(tmp_name, self.path)
+        except BaseException:
+            with contextlib.suppress(OSError):
+                os.unlink(tmp_name)
+            raise
 
 
 def run_due_jobs(
