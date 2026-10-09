@@ -1,12 +1,16 @@
 # Milestones
 
-## v12 — Programming Desk merge (scoped 2026-10-09, in progress)
+## v12 — Programming Desk merge (2026-10-09)
 
-**Status:** Phases 64-67 scoped from verified SEED-005/SEED-014 evidence; Phase 64 in progress.
-**Core value (planned):** one Omega Prime runs the seven-seat Programming Desk natively — desk
-tools live, subbots via `delegate_task`, machine-checked receipts, gates targeting the work
-repo — Grok Bot native end to end from a fresh clone. Source: `programming-desk` @ `9de3aa3`.
-**Requirements:** DESK-01..11, DONE-01, DONE-02 (see REQUIREMENTS.md).
+**Status:** Complete. 4/4 phases, 13/13 requirements Done. Audit passed with no exceptions.
+
+**Core value delivered:** One Omega Prime (`bot-00-omega-prime`) runs the seven-seat Programming Desk. Desk contexts are live, a work root is separate from the install root, `delegate_task` is served, the lead pass runs from the live server, receipts are checked against captured commands, gates can target the work repo, and service clients exist behind env tokens. Source pin: `programming-desk` @ `9de3aa3`.
+
+**Verification:** Final tree: pytest 1942 passed. Phase 66 had first failed one catalog check; the catalog was refreshed before closeout. `mypy omega_prime` exit 0 (312 files). `ruff check` and `ruff format --check` exit 0. Evals 26 passed in Phase 65. `oneclick --dry-run` exit 0. `oneclick --self-test` 22 pass / 0 fail, 109 tools. A loopback SSE session called `lead_roster_status` (seven absorbed seats) and `delegate_task` (`not_configured: provider`).
+
+**Limits:** no live Railway, Greptile, Vercel, Play, or App Store call (no credentials). No live model call for `delegate_task`.
+
+**Archive:** `milestones/v12-phases/`. `.planning/v12-MILESTONE-AUDIT.md`. Requirements `milestones/v12-REQUIREMENTS.md`. Roadmap `milestones/v12-ROADMAP.md`.
 
 ## v11 — Grok Bot native (2026-10-09)
 

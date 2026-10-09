@@ -1,7 +1,7 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v12 - Programming Desk merge (in progress)",
+  "milestone": "v12 - Programming Desk merge",
   "phases": [
     {
       "id": 64,
@@ -21,13 +21,13 @@
     {
       "id": 67,
       "name": "Milestone audit + closeout",
-      "status": "in_progress"
+      "status": "complete"
     }
   ],
   "next": {
-    "command": "/gsd:execute-phase",
-    "label": "Execute Phase 67",
-    "reason": "Phase 66 verified; close the milestone"
+    "command": "/gsd:new-milestone",
+    "label": "Start the next milestone",
+    "reason": "v12 audit passed; nothing in progress"
   },
-  "updated_at": "2026-10-09T22:10:00.000Z"
+  "updated_at": "2026-10-09T23:40:00.000Z"
 }
