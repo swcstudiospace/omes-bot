@@ -88,6 +88,28 @@ template is [omega_prime/grokbot/templates/OMEGA_PRIME.md](omega_prime/grokbot/t
 To turn the Prime capability families on and drive the bot with them, see
 [docs/driving-the-bot.md](docs/driving-the-bot.md).
 
+### Program a repo through Grok Bot
+
+Keep the install steps above. From this checkout:
+
+```bash
+pip install -r requirements-lock.txt
+git submodule update --init --recursive
+python -m omega_prime.setup_check --root .
+python -m omega_prime.tooling.catalog --check
+bash omega_prime/scripts/assemble-prompts.sh --check
+python -m omega_prime.grokbot.oneclick --work-root <repo> --dry-run
+```
+
+A real attach is `python -m omega_prime.grokbot.oneclick --work-root <repo>`
+on loopback with a generated token (`--transport sse --generate-token`).
+`OMEGA_PRIME_WORK_ROOT` is the repo the desk tools act on.
+`OMEGA_PRIME_STATE_DIR` is where desk state is stored. Railway, Greptile,
+Vercel, Play, and ASC stay `not_configured` until their tokens are set.
+The served tool count is the roster intersection `setup_check` reports
+(109 today). Prime families stay off by default. `delegate_task` is served;
+without a provider env it returns `not_configured: provider`.
+
 To call the real tools from outside the bot:
 
 ```bash

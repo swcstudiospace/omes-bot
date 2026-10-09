@@ -205,6 +205,7 @@ def test_roster_status_completeness(tmp_path: Path):
         "packs": [],
         "intake_queue": {},
         "complete": False,
+        "absorbed_seats": [],
     }
     roster = client.ctx.roster
     assert roster is not None
@@ -217,6 +218,49 @@ def test_roster_status_completeness(tmp_path: Path):
     assert status["packs"][0]["pack"] == "lead"
     assert len(status["packs"][0]["tools"]) == 16
     assert status["intake_queue"] == {"open": 1}
+    assert status["absorbed_seats"] == []
+
+
+def test_roster_status_absorbed_seats_from_default_json(tmp_path: Path):
+    client = LeadClient(_ctx(tmp_path))
+    roster = (
+        Path(client.ctx.root) / "omega_prime" / "grokbot" / "rosters" / "default.json"
+    )
+    roster.parent.mkdir(parents=True, exist_ok=True)
+    roster.write_text(
+        json.dumps(
+            {
+                "bot_id": "bot-00-omega-prime",
+                "absorbed_seats": {
+                    "LEAD": {"bot_id": "bot-00-programming-lead", "pack": "lead"},
+                    "SYSTEMS": {"bot_id": "bot-01-systems-backend", "pack": "systems"},
+                    "WEB": {"bot_id": "bot-02-web-edge", "pack": "web"},
+                    "ANDROID": {"bot_id": "bot-03-android", "pack": "mobile"},
+                    "IOS": {"bot_id": "bot-04-ios", "pack": "mobile"},
+                    "INFRA": {"bot_id": "bot-05-infrastructure", "pack": "infra"},
+                    "QUALITY": {"bot_id": "bot-06-quality-security", "pack": "quality"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    status = client.roster_status()
+    assert [row["seat"] for row in status["absorbed_seats"]] == [
+        "LEAD",
+        "SYSTEMS",
+        "WEB",
+        "ANDROID",
+        "IOS",
+        "INFRA",
+        "QUALITY",
+    ]
+    assert {row["absorbed_pack_of"] for row in status["absorbed_seats"]} == {
+        "bot-00-omega-prime"
+    }
+    assert all(
+        row["registered_gateway_seat"] is False for row in status["absorbed_seats"]
+    )
+    assert status["packs"] == []
 
 
 def test_doctor_register_install_and_check(tmp_path: Path):

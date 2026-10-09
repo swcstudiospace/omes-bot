@@ -38,7 +38,9 @@ messaging, seven domain packs (lead, systems, web, mobile,
 infra, quality, app packs), substrate plus ultrathink bridge
 tools, and the seven Prime families (RLM, harness, goals, heartbeat,
 autonomous, agent messaging, kernel) — those are config-gated and default
-off, so a default install serves 108. Most reads run free; writes,
+off, so a default install serves the roster intersection `setup_check`
+reports (109 today). `delegate_task` is served; without a provider env it
+returns `not_configured: provider`. Most reads run free; writes,
 deploys, publishes, and merges
 need your approval first — the bot asks, you approve, then it runs.
 Nothing approval-gated ever self-approves.

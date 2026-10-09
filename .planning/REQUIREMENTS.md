@@ -61,15 +61,15 @@ in `milestones/v11-REQUIREMENTS.md`.
 
 ### Grok Bot clone-and-run proof (Phase 66)
 
-- [ ] **DESK-09**: The host reports the desk truthfully. Manifest capabilities, `/healthz`
+- [x] **DESK-09**: The host reports the desk truthfully. Manifest capabilities, `/healthz`
   tool count, `verify` and the served roster reflect the desk-activated tool set;
   `absorbed_seats` metadata is consumed by code or removed; the Grok Bot template's
   "paused until lead_doctor is green" gate now passes on a launched host.
-- [ ] **DESK-10**: A fresh clone runs the backend through Grok Bot. The documented
+- [x] **DESK-10**: A fresh clone runs the backend through Grok Bot. The documented
   clone → install → self-checks (`setup_check`, `catalog --check`, `assemble --check`) →
   attach sequence is executed for real in this milestone's verification, over a real
   transport, including a desk tool call; README/docs carry the verified checklist.
-- [ ] **DESK-11**: Three-source port evidence is current. A verification pass cites where
+- [x] **DESK-11**: Three-source port evidence is current. A verification pass cites where
   Hermes, Omp and Prime logic live and re-runs their proof points (loop probe, roster/policy
   parity, Prime family flags) on the final tree, with the prime-agent submodule pin recorded.
 

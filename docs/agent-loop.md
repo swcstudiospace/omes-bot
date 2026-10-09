@@ -204,7 +204,8 @@ on. `rlm` needs a live parent agent and `messaging` needs a session name, so
 no production site registers them from `omega-prime.json`: the flag only
 decides whether the assembler offers their tool entries, and an embedder must
 call `register_rlm_tools` / `register_messaging_tools` with its own parent or
-session. `delegate_task` is likewise skipped by the default registry.
+session. `delegate_task` is served. Without a provider env it returns
+`not_configured: provider`. Prime families stay off by default.
 
 `heartbeat_set` only persists a job (`cron/jobs.json` under the root). A job
 fires only in a process that bound the named live session (an

@@ -25,8 +25,10 @@ may serve.
 
 ## What each family gives the bot
 
-Every family is off by default; a default host serves 108 tools and no Prime
-tool.
+Every Prime family is off by default. A default host serves the roster
+intersection `setup_check` reports (109 today) and no Prime tool.
+`delegate_task` is served; without a provider env it returns
+`not_configured: provider`.
 
 | Family and flag | Tools | Behind a Grok Bot |
 | --- | --- | --- |
@@ -157,10 +159,11 @@ that does, with the same families the host serves:
 `--output` is required with `--enable-family`, and the shipped file is never
 written. Add `--check` to compare an existing file instead of writing it: it
 exits 1 when the file is stale or missing, and the fix is to run the same
-command without `--check`. The shipped prompt lists 109 tools and the default
-host serves 108, because `delegate_task` needs a live agent and is never
-served. These five families add 28 to each. Do not pass `rlm` or `messaging`:
-the assembler would list nine tools the host cannot serve.
+command without `--check`. The shipped prompt and the default host share the
+roster intersection `setup_check` reports (109 today). Prime families stay
+off by default. `delegate_task` is served; without a provider env it returns
+`not_configured: provider`. These five families add 28 to each. Do not pass
+`rlm` or `messaging`: the assembler would list nine tools the host cannot serve.
 
 The template tells the bot to read `prompts-assembled/OMEGA_PRIME.xml` on first
 run. Give your bot the effective file instead. This repository builds the file;
@@ -169,14 +172,14 @@ tests, so confirm it with the checks below.
 
 ## Check it
 
-1. Count what the host serves. With the five families on you should see 136;
-   with none, 108.
+1. Count what the host serves. With the five families on you should see 137;
+   with none, 109 (prime families stay off by default).
 
    ```bash
    .venv/bin/python -m omega_prime.setup_check --root .
    ```
 
-   Look for `[ok] registry: registry serves 136 roster tools`.
+   Look for `[ok] registry: registry serves 137 roster tools`.
 
 2. Call a tool over real MCP stdio. `prime_crates` is read-only, so it needs no
    approval:

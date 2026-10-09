@@ -385,7 +385,7 @@ Wait for one bus job. Read-only.
 - Approval: not required
 - Required params: none
 
-Registered packs, tool counts, intake queue. Read-only.
+Registered packs, absorbed desk seats, intake queue. Read-only.
 
 ## sys_index_query
 

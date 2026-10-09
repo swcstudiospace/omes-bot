@@ -16,18 +16,18 @@
     {
       "id": 66,
       "name": "Grok Bot clone-and-run proof",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": 67,
       "name": "Milestone audit + closeout",
-      "status": "pending"
+      "status": "in_progress"
     }
   ],
   "next": {
     "command": "/gsd:execute-phase",
-    "label": "Execute Phase 66",
-    "reason": "Phase 65 verified"
+    "label": "Execute Phase 67",
+    "reason": "Phase 66 verified; close the milestone"
   },
   "updated_at": "2026-10-09T22:10:00.000Z"
 }

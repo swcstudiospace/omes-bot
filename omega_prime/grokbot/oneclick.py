@@ -321,6 +321,7 @@ def run_oneclick(
     log_format: str = "text",
     force: bool = False,
     resume: bool = False,
+    work_root: Path | None = None,
 ) -> int:
     """Execute the 1-click workflow."""
     sse = transport == "sse"
@@ -586,6 +587,7 @@ def run_oneclick(
                 audit=audit,
                 token_store_path=token_store_path,
                 log_format=log_format,
+                work_root=work_root,
             )
         except (KeyboardInterrupt, Exception):
             _finish("interrupted", 130)
@@ -886,6 +888,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Continue into serve even when a previous host is already running",
     )
+    parser.add_argument(
+        "--work-root",
+        type=Path,
+        default=None,
+        help="Repo the desk tools act on (forwarded to the SSE host; "
+        "default: OMEGA_PRIME_WORK_ROOT, else the install root)",
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
@@ -922,6 +931,7 @@ def main(argv: list[str] | None = None) -> int:
         log_format=args.log_format,
         force=args.force,
         resume=args.resume,
+        work_root=args.work_root.resolve() if args.work_root is not None else None,
     )
 
 

@@ -13,12 +13,13 @@ and units: [Deploying the tool host](deploy.md).
 ```
 
 `--root` is the repo checkout (default: cwd). Without
-`--no-roster` the server exposes exactly the shipped roster's
-default set — 108 tools. `delegate_task` is excluded: it needs a live parent
-agent, so orchestration stays in the bot, not behind MCP. The Prime
-families that need no live parent (harness, goals, heartbeat, autonomous,
-kernel) join when their `omega-prime.json` flags are on; RLM and messaging
-need a live parent or session, so the MCP server never registers them.
+`--no-roster` the server exposes the shipped roster's default set — the
+intersection `setup_check` reports (109 today). Prime families stay off by
+default. `delegate_task` is served; without a provider env it returns
+`not_configured: provider`. The Prime families that need no live parent
+(harness, goals, heartbeat, autonomous, kernel) join when their
+`omega-prime.json` flags are on; RLM and messaging need a live parent or
+session, so the MCP server never registers them.
 
 Remote endpoints, all on the same process:
 

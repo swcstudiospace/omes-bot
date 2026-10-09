@@ -62,7 +62,7 @@ shared Hindsight bank. Unwired installs run fully local.
 
 ## Routines
 
-- desk-lead — intake, tickets, dispatch, receipts — paused until lead_doctor is green
+- desk-lead — intake, tickets, dispatch, receipts — paused for prompt install and seat register. Memory, tools, and substrate are green once the host is built; `register` and `install_prompt` are the remaining doctor checks.
 - nightly — curator pass over transcripts
 - sweep — queue reply drafts; does not publish
 - ultrathink — resolve this turn's plan before acting

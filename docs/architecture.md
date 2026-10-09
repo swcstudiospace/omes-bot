@@ -2,7 +2,7 @@
 
 How Omega Prime is put together: one process, one loop, one registry, and the
 planes around them. Counts below are exact at release time (146 tools on the
-roster — 108 served by default with the Prime families gated off — 26 skills,
+roster — 109 served by default with the Prime families gated off — 26 skills,
 4 routines, 980 tests, 26 evals).
 
 ## The shape
