@@ -310,8 +310,10 @@ def rollback(
     ... | None, "dry_run": ...}`` where ``restored`` lists the absolute
     live paths restored (or planned, for ``dry_run=True``) in order.
     ``dry_run=True`` writes nothing — no restores, no pre-rollback
-    snapshot, no audit record, no locks. Otherwise the audit sidecar locks
-    are held across the pre-rollback backup and the replacement writes
+    snapshot, no audit record, no locks. Otherwise every target parent
+    directory is created (0700) before the audit sidecar locks are opened,
+    so restoring a file whose parent was deleted still works; the locks are
+    then held across the pre-rollback backup and the replacement writes
     (see the module docstring), and each restored file regains its
     ``modes.json`` mode (0600 when unrecorded).
     """
@@ -336,6 +338,8 @@ def rollback(
         }
     pre_snapshot: Path | None = None
     restored: list[str] = []
+    for _rel, dest in planned:
+        ensure_private_dir(Path(dest).parent)
     with _hold_audit_locks(dest for _rel, dest in planned):
         live_present = [dest for _rel, dest in planned if Path(dest).is_file()]
         if live_present:

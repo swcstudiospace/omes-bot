@@ -19,15 +19,20 @@ from omega_prime.grokbot.secret_guard import (
 
 
 def _generic_token() -> str:
+    from omega_prime.grokbot.secret_guard import _shannon_entropy
+
     alphabet = string.ascii_letters + string.digits
-    while True:
+    for _ in range(1000):
         candidate = "".join(secrets.choice(alphabet) for _ in range(36))
-        if (
+        if not (
             any(char.islower() for char in candidate)
             and any(char.isupper() for char in candidate)
             and any(char.isdigit() for char in candidate)
         ):
+            continue
+        if _shannon_entropy(candidate) >= 4.5:
             return candidate
+    raise AssertionError("could not draw generic token with entropy >= 4.5")
 
 
 def _pem_block() -> str:

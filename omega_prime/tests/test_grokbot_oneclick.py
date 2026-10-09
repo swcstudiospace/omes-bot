@@ -768,3 +768,70 @@ def test_launch_lock_serializes_check_through_export(
             oneclick._fcntl.flock(fd, oneclick._fcntl.LOCK_UN)
         finally:
             os.close(fd)
+
+
+def test_no_export_lock_base_is_uid_scoped(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The no-export lock base lives in a private per-user dir, not shared tmp."""
+    import tempfile
+
+    from omega_prime.grokbot import receipts
+
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    port = _free_port()
+    base = oneclick._launch_lock_base(None, port)
+    assert base.name == f"omega-prime-oneclick-{port}.launch"
+    assert base.parent.parent == Path(tempfile.gettempdir())
+    assert base.parent.name == f"omega-prime-oneclick-{os.getuid()}"
+    assert base.parent.is_dir()
+    assert stat.S_IMODE(base.parent.stat().st_mode) & 0o077 == 0
+
+    runtime = tmp_path / "run"
+    runtime.mkdir()
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
+    xdg_base = oneclick._launch_lock_base(None, port)
+    assert xdg_base == runtime / f"omega-prime-oneclick-{port}.launch"
+
+    out = tmp_path / "m.json"
+    assert oneclick._launch_lock_base(out, port) == receipts.receipt_path_for_manifest(
+        out
+    )
+
+
+def test_foreign_owned_lock_file_fails_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A lock file owned by another user warns and proceeds, never raises."""
+    base = tmp_path / "omega-prime-oneclick-59999.launch"
+    lock_path = base.with_name(f"{base.name}.lock")
+    lock_path.write_bytes(b"foreign")
+    real_uid = os.getuid()
+    monkeypatch.setattr(os, "getuid", lambda: real_uid + 1)
+    opened: list[str] = []
+    real_open = os.open
+
+    def _spy_open(path: Any, *args: Any, **kwargs: Any) -> Any:
+        opened.append(os.fspath(path))
+        return real_open(path, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", _spy_open)
+    with oneclick._hold_launch_lock(base):
+        pass
+    assert opened == []
+    assert "proceeding without lock" in capsys.readouterr().err
+
+
+def test_unusable_lock_file_fails_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A lock file that cannot be opened warns and proceeds, never raises."""
+    base = tmp_path / "omega-prime-oneclick-59998.launch"
+
+    def _deny_open(*args: Any, **kwargs: Any) -> Any:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(os, "open", _deny_open)
+    with oneclick._hold_launch_lock(base):
+        pass
+    assert "proceeding without lock" in capsys.readouterr().err

@@ -49,30 +49,36 @@ Public functions:
   copies plus all three tables in a hidden temp dir inside `dest_dir`, then
   publish with one `os.replace` to `dest_dir/<label>/` and return that path.
 - `apply_guard(snapshot_dir) -> Path`: return `snapshot_dir` when it holds a
-  usable snapshot (readable digest and sources tables, every stored copy
-  present with a matching hash), else raise `SnapshotMissingError` naming
-  the path or `SnapshotCorruptError` with failure counts.
+  usable snapshot (readable non-empty digest and sources tables, every
+  stored copy present with a matching hash), else raise
+  `SnapshotMissingError` naming the path or `SnapshotCorruptError` with
+  failure counts (an empty digest table is refused as corrupt, so an
+  all-pruned backup can never gate an upgrade).
 - `verify_snapshot(snapshot_dir) -> list[str]`: return the sorted stored
   relative paths whose bytes are missing or hash differently than recorded
   (empty means healthy).
 
 Exceptions (`SnapshotError` base): `SnapshotMissingError` (also a
 `FileNotFoundError`) for a missing snapshot, `SnapshotCorruptError` for an
-unreadable digest table, `SnapshotExistsError` (also a `FileExistsError`)
-when the label is already taken.
+unreadable or empty digest table, `SnapshotExistsError` (also a
+`FileExistsError`) when the label is already taken or an explicitly-named
+source overlaps `dest_dir`.
 
 Guarantees: snapshots never overwrite (re-snapshot under a fresh label); a
 publish that loses a label race reports `SnapshotExistsError` (a concurrent
 `os.replace` onto an existing label is translated, so pre-rollback retry
-works); missing or non-regular sources are skipped, never fatal; a source
-directory containing `dest_dir` has the `dest_dir` subtree pruned from the
-walk, so snapshots never nest backups inside themselves; symlinks are
-followed and stored as regular files; copies are mode 0600 and directories
-mode 0700 because sources may hold tokens, while each live source's own
-mode bits are recorded in `modes.json` for rollback to restore; any
-disk-full or OS error during staging aborts before publish, removes the
-temp dir, and leaves any previous snapshot untouched. Pure functions over
-paths: no host or CLI wiring here.
+works); missing or non-regular sources are skipped, never fatal; an
+explicitly-named source at or under `dest_dir` raises `SnapshotExistsError`
+instead of being silently dropped, so a backup of live state the upgrade
+will overwrite can never come back empty; only files discovered by
+expanding a source directory have the `dest_dir` subtree pruned from the
+walk, so snapshotting a parent of `dest_dir` never nests backups inside
+themselves; symlinks are followed and stored as regular files; copies are
+mode 0600 and directories mode 0700 because sources may hold tokens, while
+each live source's own mode bits are recorded in `modes.json` for rollback
+to restore; any disk-full or OS error during staging aborts before publish,
+removes the temp dir, and leaves any previous snapshot untouched. Pure
+functions over paths: no host or CLI wiring here.
 Secrets are never logged; error messages carry paths, never file contents.
 """
 
@@ -211,8 +217,11 @@ def snapshot(
     (`SnapshotExistsError`); use a fresh label per attempt. A publish that
     loses a concurrent label race (the atomic `os.replace` onto an existing
     label) is translated to `SnapshotExistsError` so callers can retry under
-    a fresh label. Sources inside `dest_dir` are pruned, so snapshotting a
-    parent of `dest_dir` never nests backups. Each live source's mode bits
+    a fresh label. An explicitly-named source at or under `dest_dir` raises
+    `SnapshotExistsError` instead of snapshotting silently empty; only files
+    found by expanding a source directory are pruned when they fall inside
+    `dest_dir`, so snapshotting a parent of `dest_dir` never nests backups.
+    Each live source's mode bits
     are recorded in `modes.json` for rollback to restore. Any failure
     during staging removes the temp dir and raises, leaving `dest_dir`
     without a partial snapshot.
@@ -223,9 +232,19 @@ def snapshot(
     if final.exists() or final.is_symlink():
         raise SnapshotExistsError(f"snapshot {final} already exists; use a fresh label")
     dest_abs = os.path.abspath(dest)
+    raw_paths = list(paths)
+    for raw in raw_paths:
+        candidate = os.path.abspath(raw)
+        overlap = candidate == dest_abs or candidate.startswith(dest_abs + os.sep)
+        if overlap and os.path.lexists(raw):
+            raise SnapshotExistsError(
+                f"refusing snapshot {final}: explicitly-named source {candidate} "
+                f"overlaps dest_dir {dest_abs} (snapshots never nest backups inside "
+                "themselves; snapshot the live state elsewhere)"
+            )
     live = [
         src
-        for src in _expand_sources(paths)
+        for src in _expand_sources(raw_paths)
         if os.path.abspath(src) != dest_abs
         and not os.path.abspath(src).startswith(dest_abs + os.sep)
     ]
@@ -300,10 +319,10 @@ def apply_guard(snapshot_dir: str | Path) -> Path:
     """Return `snapshot_dir` when it holds a usable snapshot.
 
     Raise `SnapshotMissingError` (naming the path) when no snapshot exists,
-    or `SnapshotCorruptError` (with failure counts) when the digest or
-    sources table is unreadable, a sources entry has no digest, or any
-    stored copy is missing or hashes differently than recorded. Call this
-    before any upgrade step that overwrites live state.
+    or `SnapshotCorruptError` (with failure counts) when the digest table is
+    empty, the digest or sources table is unreadable, a sources entry has no
+    digest, or any stored copy is missing or hashes differently than
+    recorded. Call this before any upgrade step that overwrites live state.
     """
     root = Path(snapshot_dir)
     if not root.is_dir():
@@ -312,6 +331,11 @@ def apply_guard(snapshot_dir: str | Path) -> Path:
             "(run upgrade.snapshot() first and pass its snapshot directory)"
         )
     digests = _read_digests(root)
+    if not digests:
+        raise SnapshotCorruptError(
+            f"snapshot at {root} is unusable: {DIGESTS_FILENAME} holds 0 entries "
+            "(refusing empty snapshot; re-snapshot the live state)"
+        )
     sources = _read_sources(root)
     unknown = [rel for rel in sources if rel not in digests]
     if unknown:

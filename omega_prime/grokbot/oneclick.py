@@ -20,6 +20,7 @@ import json
 import os
 import signal
 import socket
+import stat
 import subprocess
 import sys
 import tempfile
@@ -67,28 +68,92 @@ else:
     _fcntl = _fcntl_module
 
 
+def _no_export_lock_dir() -> Path:
+    """Private per-user dir for the no-export launch lock base."""
+    xdg = os.environ.get("XDG_RUNTIME_DIR")
+    if xdg:
+        try:
+            st = os.stat(xdg)
+        except OSError:
+            pass
+        else:
+            try:
+                owned = st.st_uid == os.getuid()
+            except AttributeError:  # pragma: no cover - non-POSIX platforms
+                owned = True
+            if owned and stat.S_ISDIR(st.st_mode):
+                return Path(xdg)
+    try:
+        uid = os.getuid()
+    except AttributeError:  # pragma: no cover - non-POSIX platforms
+        return Path(tempfile.gettempdir())
+    target = Path(tempfile.gettempdir()) / f"omega-prime-oneclick-{uid}"
+    ensure_private_dir(target)
+    return target
+
+
 def _launch_lock_base(export_manifest: Path | None, port: int) -> Path:
     """Per-launch identity whose ``<name>.lock`` sidecar serializes launches.
 
     Launches exporting the same manifest share the receipt-path lock; launches
-    without an export share a port-keyed lock under the system temp dir (never
-    the repo tree, so the guard leaves no stray files behind).
+    without an export share a port-keyed lock under a private per-user dir
+    (never the repo tree, so the guard leaves no stray files behind).
     """
     if export_manifest is not None:
         return _receipts.receipt_path_for_manifest(export_manifest)
-    return Path(tempfile.gettempdir()) / f"omega-prime-oneclick-{port}.launch"
+    return _no_export_lock_dir() / f"omega-prime-oneclick-{port}.launch"
 
 
 @contextlib.contextmanager
 def _hold_launch_lock(base: Path) -> Iterator[None]:
-    """Hold an exclusive ``flock`` on ``<base>.lock`` (``_io`` sidecar use)."""
+    """Hold an exclusive ``flock`` on ``<base>.lock`` (``_io`` sidecar use).
+
+    A foreign-owned or otherwise unusable lock file never blocks a launch:
+    warn on stderr and proceed without the lock (fail-open for availability;
+    the rerun guard plus failed-status receipt still protect correctness).
+    """
     target = Path(base)
-    ensure_private_dir(target.parent)
     lock_path = target.with_name(f"{target.name}.lock")
-    fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
+    try:
+        ensure_private_dir(target.parent)
+        try:
+            st = os.stat(lock_path)
+        except FileNotFoundError:
+            pass
+        else:
+            try:
+                foreign = st.st_uid != os.getuid()
+            except AttributeError:  # pragma: no cover - non-POSIX platforms
+                foreign = False
+            if foreign:
+                print(
+                    f"{_PREFIX}: warning: lock {lock_path} owned by another user; "
+                    "proceeding without lock",
+                    file=sys.stderr,
+                )
+                yield
+                return
+        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
+    except OSError as exc:
+        print(
+            f"{_PREFIX}: warning: cannot use lock {lock_path} ({exc}); "
+            "proceeding without lock",
+            file=sys.stderr,
+        )
+        yield
+        return
     try:
         if _fcntl is not None:
-            _fcntl.flock(fd, _fcntl.LOCK_EX)
+            try:
+                _fcntl.flock(fd, _fcntl.LOCK_EX)
+            except OSError as exc:
+                print(
+                    f"{_PREFIX}: warning: cannot lock {lock_path} ({exc}); "
+                    "proceeding without lock",
+                    file=sys.stderr,
+                )
+                yield
+                return
         yield
     finally:
         os.close(fd)  # closing the descriptor releases the lock

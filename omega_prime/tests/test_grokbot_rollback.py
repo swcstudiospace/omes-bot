@@ -7,6 +7,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import stat
 import threading
 import time
@@ -291,3 +292,22 @@ def test_rollback_schema_doc_mentions_modes() -> None:
 
     assert "modes.json" in (rollback_mod.__doc__ or "")
     assert ".lock" in (rollback_mod.__doc__ or "")
+
+
+def test_rollback_restores_audit_log_with_missing_parent(tmp_path: Path) -> None:
+    src = tmp_path / "live"
+    sources = _seed_state(src)
+    audit_log = src / "logs" / "grokbot_audit.jsonl"
+    tracer = GrokBotAuditTracer(audit_log)
+    tracer.log_event("tool_call", tool_name="read_file")
+    snap = snapshot([*sources, audit_log], tmp_path / "snapshots")
+    _mutate(sources)
+    shutil.rmtree(src / "logs")
+
+    result = rollback(snap, [*sources, audit_log])
+
+    assert result["restored"] == [str(p) for p in [*sources, audit_log]]
+    lines = audit_log.read_text(encoding="utf-8").splitlines()
+    assert json.loads(lines[-1])["event"] == "rollback"
+    assert stat.S_IMODE((src / "logs").stat().st_mode) == 0o700
+    assert tracer.verify_integrity()[0] is True

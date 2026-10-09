@@ -258,3 +258,27 @@ def test_snapshot_schema_doc_mentions_modes() -> None:
     import omega_prime.grokbot.upgrade as upgrade_mod
 
     assert "modes.json" in (upgrade_mod.__doc__ or "")
+
+
+def test_snapshot_rejects_explicit_source_under_dest_dir(tmp_path: Path) -> None:
+    src = tmp_path / "live"
+    dest = tmp_path / "snapshots"
+    sources = _seed_state(src)
+    inner = _write(dest / "state.json", b'{"v": 1}')
+
+    with pytest.raises(SnapshotExistsError, match="overlaps dest_dir"):
+        snapshot([inner], dest, label="explicit-overlap")
+    with pytest.raises(SnapshotExistsError, match="overlaps dest_dir"):
+        snapshot([*sources, inner], dest, label="mixed-overlap")
+    with pytest.raises(SnapshotExistsError, match="overlaps dest_dir"):
+        snapshot([dest], dest, label="dest-itself")
+    assert not (dest / "explicit-overlap").exists()
+    assert not (dest / "mixed-overlap").exists()
+    assert not (dest / "dest-itself").exists()
+
+
+def test_apply_guard_refuses_empty_snapshot(tmp_path: Path) -> None:
+    snap = snapshot([tmp_path / "live" / "rotated-away.json"], tmp_path / "snapshots")
+    assert _read_table(snap, "digests.json") == {}
+    with pytest.raises(SnapshotCorruptError, match="0 entries"):
+        apply_guard(snap)
