@@ -58,7 +58,7 @@ def _clean_manifest_text() -> str:
         },
         "mcp_server": {
             "transport": "sse",
-            "url": "https://grok.internal:8000/sse",
+            "url": "/sse",
             "auth": {"type": "none", "token_env": "MCP_AUTH_TOKEN"},
             "rostered_tool_count": 128,
             "tools": ["read_file", "run_terminal", "supervisor_status"],

@@ -917,3 +917,42 @@ def test_export_oserror_propagates_through_launch(
         )
     assert served == []
     assert "proceeding without lock" not in capsys.readouterr().err
+
+
+def test_lock_cancel_during_flock_closes_fd(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A cancel while blocked in flock still closes the open descriptor."""
+    if oneclick._fcntl is None:
+        pytest.skip("flock unavailable on this platform")
+    base = tmp_path / "omega-prime-oneclick-59994.launch"
+    opened: list[int] = []
+    closed: list[int] = []
+    real_open = os.open
+    real_close = os.close
+
+    def _spy_open(path: Any, *args: Any, **kwargs: Any) -> int:
+        fd = real_open(path, *args, **kwargs)
+        opened.append(fd)
+        return fd
+
+    def _track_close(fd: int, *args: Any, **kwargs: Any) -> None:
+        closed.append(fd)
+        real_close(fd, *args, **kwargs)
+
+    monkeypatch.setattr(os, "open", _spy_open)
+    monkeypatch.setattr(os, "close", _track_close)
+
+    def _raise_cancel(fd: int, op: int) -> None:
+        raise KeyboardInterrupt()
+
+    monkeypatch.setattr(oneclick._fcntl, "flock", _raise_cancel)
+    ran: list[bool] = []
+    with pytest.raises(KeyboardInterrupt), oneclick._hold_launch_lock(base):
+        ran.append(True)
+    assert ran == []
+    assert len(opened) == 1
+    assert opened[0] in closed
+    with pytest.raises(OSError):
+        os.fstat(opened[0])
+    assert "proceeding without lock" not in capsys.readouterr().err

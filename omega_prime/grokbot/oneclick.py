@@ -115,52 +115,56 @@ def _hold_launch_lock(base: Path) -> Iterator[None]:
     Acquisition (dir setup, ownership check, open, flock) is tried/excepted;
     the body ``yield`` sits outside that ``try`` so body failures (including
     an ``OSError`` from manifest export, e.g. disk full) propagate untouched
-    instead of being mistaken for lock-acquisition failures.
+    instead of being mistaken for lock-acquisition failures. An outer
+    ``try/finally`` covers setup plus body so a cancel (``KeyboardInterrupt``)
+    while blocked in ``flock`` still closes the open descriptor.
     """
     target = Path(base)
     lock_path = target.with_name(f"{target.name}.lock")
     fd: int | None = None
     try:
-        skip = False
-        ensure_private_dir(target.parent)
         try:
-            st = os.stat(lock_path)
-        except FileNotFoundError:
-            pass
-        else:
+            skip = False
+            ensure_private_dir(target.parent)
             try:
-                foreign = st.st_uid != os.getuid()
-            except AttributeError:  # pragma: no cover - non-POSIX platforms
-                foreign = False
-            if foreign:
-                print(
-                    f"{_PREFIX}: warning: lock {lock_path} owned by another user; "
-                    "proceeding without lock",
-                    file=sys.stderr,
-                )
-                skip = True
-        if not skip:
-            fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
-    except OSError as exc:
-        print(
-            f"{_PREFIX}: warning: cannot use lock {lock_path} ({exc}); "
-            "proceeding without lock",
-            file=sys.stderr,
-        )
-        fd = None
-    else:
-        if fd is not None and _fcntl is not None:
-            try:
-                _fcntl.flock(fd, _fcntl.LOCK_EX)
-            except OSError as exc:
-                print(
-                    f"{_PREFIX}: warning: cannot lock {lock_path} ({exc}); "
-                    "proceeding without lock",
-                    file=sys.stderr,
-                )
-                os.close(fd)
+                st = os.stat(lock_path)
+            except FileNotFoundError:
+                pass
+            else:
+                try:
+                    foreign = st.st_uid != os.getuid()
+                except AttributeError:  # pragma: no cover - non-POSIX platforms
+                    foreign = False
+                if foreign:
+                    print(
+                        f"{_PREFIX}: warning: lock {lock_path} owned by another user; "
+                        "proceeding without lock",
+                        file=sys.stderr,
+                    )
+                    skip = True
+            if not skip:
+                fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
+                if _fcntl is not None:
+                    try:
+                        _fcntl.flock(fd, _fcntl.LOCK_EX)
+                    except OSError as exc:
+                        print(
+                            f"{_PREFIX}: warning: cannot lock {lock_path} ({exc}); "
+                            "proceeding without lock",
+                            file=sys.stderr,
+                        )
+                        os.close(fd)
+                        fd = None
+        except OSError as exc:
+            print(
+                f"{_PREFIX}: warning: cannot use lock {lock_path} ({exc}); "
+                "proceeding without lock",
+                file=sys.stderr,
+            )
+            if fd is not None:
+                with contextlib.suppress(OSError):
+                    os.close(fd)
                 fd = None
-    try:
         yield
     finally:
         if fd is not None:
