@@ -38,6 +38,7 @@ PRIME_FAMILIES: tuple[str, ...] = (
     "heartbeat",
     "autonomous",
     "messaging",
+    "kernel",
 )
 
 _ENV_PREFIX = "OMEGA_PRIME_"

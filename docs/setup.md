@@ -34,7 +34,7 @@ Skip what you don't use: every unconfigured client reports
 ## 3. Optional: attach the tool host
 
 Without this step Omega Prime still answers from its prompt, skills, and
-routines. With it, the bot also calls the real Omega Prime tools (135 on
+routines. With it, the bot also calls the real Omega Prime tools (146 on
 the roster; 108 served by default — the Prime families are config-gated,
 default off).
 
@@ -85,6 +85,9 @@ Builders can also run the local verification:
 ```bash
 .venv/bin/python -m omega_prime.setup_check --root .
 ```
+
+The Prime capability families are off by default. To turn them on and drive
+the bot with them, see [Driving the bot](driving-the-bot.md).
 
 ## Contributor CI
 

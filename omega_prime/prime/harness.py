@@ -11,8 +11,10 @@ capability module and is surfaced here as typed requests.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from pathlib import Path
 from typing import Any, cast
 
+from omega_prime.agent.refine import refine
 from omega_prime.learning.harness import (
     KINDS,
     SCOPES,
@@ -36,6 +38,17 @@ _UPSERT_FIELDS = frozenset(
 )
 _GET_FIELDS = frozenset({"schema_version", "kind", "scope", "id"})
 _LIST_FIELDS = frozenset({"schema_version", "kind", "scope"})
+_DELETE_FIELDS = frozenset({"schema_version", "kind", "scope", "id"})
+_REFINE_FIELDS = frozenset(
+    {"schema_version", "trigger", "proposals", "trajectory", "scope"}
+)
+_ROLLBACK_FIELDS = frozenset({"schema_version", "scope"})
+
+
+def _scope_of(payload: dict, *, what: str) -> str:
+    if "scope" not in payload:
+        return "local"
+    return require_member(payload, "scope", SCOPES, what=what)
 
 
 @dataclass(frozen=True)
@@ -128,8 +141,121 @@ class EntryView:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class GetRequest:
+    kind: str
+    id: str
+    scope: str = "local"
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> GetRequest:
+        payload = require_payload(raw, what="GetRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="GetRequest")
+        reject_unknown(payload, _GET_FIELDS, what="GetRequest")
+        return cls(
+            kind=require_member(payload, "kind", KINDS, what="GetRequest"),
+            id=require_str(payload, "id", what="GetRequest"),
+            scope=_scope_of(payload, what="GetRequest"),
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class ListRequest:
+    kind: str | None = None
+    scope: str = "local"
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> ListRequest:
+        payload = require_payload(raw, what="ListRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="ListRequest")
+        reject_unknown(payload, _LIST_FIELDS, what="ListRequest")
+        kind = payload.get("kind")
+        if kind is not None:
+            kind = require_member(payload, "kind", KINDS, what="ListRequest")
+        return cls(kind=kind, scope=_scope_of(payload, what="ListRequest"))
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class DeleteRequest:
+    kind: str
+    id: str
+    scope: str = "local"
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> DeleteRequest:
+        payload = require_payload(raw, what="DeleteRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="DeleteRequest")
+        reject_unknown(payload, _DELETE_FIELDS, what="DeleteRequest")
+        return cls(
+            kind=require_member(payload, "kind", KINDS, what="DeleteRequest"),
+            id=require_str(payload, "id", what="DeleteRequest"),
+            scope=_scope_of(payload, what="DeleteRequest"),
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class RefineRequest:
+    trigger: str
+    proposals: list
+    trajectory: Any
+    scope: str = "local"
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> RefineRequest:
+        payload = require_payload(raw, what="RefineRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="RefineRequest")
+        reject_unknown(payload, _REFINE_FIELDS, what="RefineRequest")
+        proposals = payload.get("proposals")
+        if not isinstance(proposals, list) or any(
+            not isinstance(p, dict) for p in proposals
+        ):
+            raise PrimeError(
+                "bad_type", "RefineRequest.proposals must be a list of objects"
+            )
+        if "trajectory" not in payload:
+            raise PrimeError("bad_type", "RefineRequest.trajectory is required")
+        return cls(
+            trigger=require_str(payload, "trigger", what="RefineRequest"),
+            proposals=proposals,
+            trajectory=payload["trajectory"],
+            scope=_scope_of(payload, what="RefineRequest"),
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class RollbackRequest:
+    scope: str = "local"
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> RollbackRequest:
+        payload = require_payload(raw, what="RollbackRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="RollbackRequest")
+        reject_unknown(payload, _ROLLBACK_FIELDS, what="RollbackRequest")
+        return cls(scope=_scope_of(payload, what="RollbackRequest"))
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
 class HarnessConnector:
-    """The typed boundary over ``HarnessState`` (one connector per root)."""
+    """The typed boundary over ``HarnessState`` (one connector per root).
+
+    Local and global scopes live in sibling subdirectories of the root, the
+    same layout the registered ``harness_*`` tools have always used, so a
+    global write never collides with the session-local store.
+    """
 
     def __init__(self, root: Any) -> None:
         self._root = root
@@ -137,7 +263,10 @@ class HarnessConnector:
     def _state(self, scope: str) -> HarnessState:
         if scope not in SCOPES:
             raise PrimeError("bad_value", f"scope must be one of {', '.join(SCOPES)}")
-        return HarnessState(self._root, scope=scope).load()
+        base = Path(self._root) / (
+            "harness-global" if scope == "global" else "harness-local"
+        )
+        return HarnessState(base, scope=scope).load()  # type: ignore[arg-type]
 
     @staticmethod
     def _kind(value: str) -> HarnessKind:
@@ -159,35 +288,57 @@ class HarnessConnector:
         state.save()
         return {"entry": EntryView.from_entry(entry).to_dict()}
 
-    def get(self, kind: str, id: str, *, scope: str = "local") -> dict:
-        state = self._state(scope)
-        entry = state.get(self._kind(kind), id)
+    def get(self, request: GetRequest) -> dict:
+        state = self._state(request.scope)
+        entry = state.get(self._kind(request.kind), request.id)
         return {
             "entry": None if entry is None else EntryView.from_entry(entry).to_dict()
         }
 
-    def list_entries(self, kind: str | None = None, *, scope: str = "local") -> dict:
-        state = self._state(scope)
-        checked = None if kind is None else self._kind(kind)
+    def list_entries(self, request: ListRequest) -> dict:
+        state = self._state(request.scope)
+        checked = None if request.kind is None else self._kind(request.kind)
         return {
             "entries": [
                 EntryView.from_entry(e).to_dict() for e in state.list_entries(checked)
             ]
         }
 
-    def delete(self, kind: str, id: str, *, scope: str = "local") -> dict:
-        state = self._state(scope)
-        deleted = state.delete(self._kind(kind), id)
+    def delete(self, request: DeleteRequest) -> dict:
+        state = self._state(request.scope)
+        deleted = state.delete(self._kind(request.kind), request.id)
         if deleted:
             state.save()
         return {"deleted": deleted}
 
-    def rollback(self, *, scope: str = "local") -> dict:
-        state = self._state(scope)
+    def refine(self, request: RefineRequest) -> dict:
+        state = self._state(request.scope)
+        result = refine(
+            state,
+            trigger=request.trigger,
+            proposals=list(request.proposals),
+            trajectory=request.trajectory,
+        )
+        if result["applied"]:
+            state.save()
+        return result
+
+    def rollback(self, request: RollbackRequest) -> dict:
+        state = self._state(request.scope)
         restored = state.rollback()
         if restored:
             state.save()
         return {"restored": restored}
 
 
-__all__ = ["SCHEMA_VERSION", "EntryView", "HarnessConnector", "UpsertRequest"]
+__all__ = [
+    "SCHEMA_VERSION",
+    "DeleteRequest",
+    "EntryView",
+    "GetRequest",
+    "HarnessConnector",
+    "ListRequest",
+    "RefineRequest",
+    "RollbackRequest",
+    "UpsertRequest",
+]

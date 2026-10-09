@@ -36,6 +36,48 @@ SCHEMA_VERSION = 1
 _SPAWN_FIELDS = frozenset({"schema_version", "prompt", "name", "model", "thinking"})
 _COLLECT_FIELDS = frozenset({"schema_version", "targets", "timeout_ms"})
 _PROGRESS_FIELDS = frozenset({"schema_version", "child_id", "message"})
+_CREATE_SESSION_FIELDS = frozenset(
+    {"schema_version", "prompt", "name", "model", "thinking", "cwd"}
+)
+_DELETE_FIELDS = frozenset({"schema_version", "target"})
+_RENAME_FIELDS = frozenset({"schema_version", "target", "name"})
+_LIST_SUBAGENTS_FIELDS = frozenset({"schema_version"})
+
+
+def _check_selector(value: Any, *, what: str) -> Any:
+    """Validate one child selector without narrowing the host's shapes.
+
+    The host accepts a spawn handle, a subagent row, or a name/id string;
+    over the JSON boundary those arrive as a dict row or a string. A
+    malformed selector is a typed error, never an implicit empty selection.
+    """
+    if isinstance(value, bool):
+        raise PrimeError("bad_type", f"{what} must be a string or handle row")
+    if isinstance(value, str):
+        if not value.strip():
+            raise PrimeError("bad_value", f"{what} must be a non-empty string")
+        return value
+    if isinstance(value, dict):
+        child_id = value.get("rlm_child_id")
+        if not isinstance(child_id, str) or not child_id.strip():
+            raise PrimeError(
+                "bad_type", f"{what} handle rows must carry a rlm_child_id string"
+            )
+        return value
+    raise PrimeError("bad_type", f"{what} must be a string or handle row")
+
+
+def _nonblank_name(name: str, *, what: str) -> str:
+    """Reject a present-but-blank child name."""
+    if not name.strip():
+        raise PrimeError("bad_value", f"{what}.name must not be blank")
+    return name
+
+
+def _optional_name(payload: dict, *, what: str) -> str | None:
+    """An optional child name: ``None``/absent stays allowed, blank does not."""
+    name = optional_str(payload, "name", what=what)
+    return None if name is None else _nonblank_name(name, what=what)
 
 
 @dataclass(frozen=True)
@@ -52,7 +94,9 @@ class SpawnRequest:
         reject_unknown(payload, _SPAWN_FIELDS, what="SpawnRequest")
         return cls(
             prompt=require_str(payload, "prompt", what="SpawnRequest"),
-            name=require_str(payload, "name", what="SpawnRequest"),
+            name=_nonblank_name(
+                require_str(payload, "name", what="SpawnRequest"), what="SpawnRequest"
+            ),
             model=optional_str(payload, "model", what="SpawnRequest"),
             thinking=optional_str(payload, "thinking", what="SpawnRequest"),
         )
@@ -72,16 +116,26 @@ class CollectRequest:
         check_schema_version(payload, SCHEMA_VERSION, what="CollectRequest")
         reject_unknown(payload, _COLLECT_FIELDS, what="CollectRequest")
         targets = payload.get("targets")
-        if targets is not None and not isinstance(targets, (str, list)):
+        if targets is None or targets == []:
+            checked = targets
+        elif isinstance(targets, list):
+            checked = []
+            for entry in targets:
+                if isinstance(entry, bool) or not isinstance(entry, (str, dict)):
+                    raise PrimeError(
+                        "bad_type",
+                        "CollectRequest.targets entries must be strings or handle rows",
+                    )
+                checked.append(_check_selector(entry, what="CollectRequest.targets"))
+        elif isinstance(targets, (str, dict)):
+            checked = _check_selector(targets, what="CollectRequest.targets")
+        else:
             raise PrimeError(
-                "bad_type", "CollectRequest.targets must be a string, list, or null"
-            )
-        if isinstance(targets, list) and not all(isinstance(t, str) for t in targets):
-            raise PrimeError(
-                "bad_type", "CollectRequest.targets entries must be strings"
+                "bad_type",
+                "CollectRequest.targets must be a string, list, dict, or null",
             )
         return cls(
-            targets=targets,
+            targets=checked,
             timeout_ms=require_int(payload, "timeout_ms", what="CollectRequest")
             if "timeout_ms" in payload
             else 0,
@@ -104,6 +158,81 @@ class ProgressNoteRequest:
         return cls(
             child_id=require_str(payload, "child_id", what="ProgressNoteRequest"),
             message=require_str(payload, "message", what="ProgressNoteRequest"),
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class CreateSessionRequest:
+    prompt: str
+    name: str | None = None
+    model: str | None = None
+    thinking: str | None = None
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> CreateSessionRequest:
+        payload = require_payload(raw, what="CreateSessionRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="CreateSessionRequest")
+        reject_unknown(payload, _CREATE_SESSION_FIELDS, what="CreateSessionRequest")
+        # The pinned kernel SDK sends ``cwd=None``; any directory is refused
+        # because children share the host process directory.
+        if payload.get("cwd") is not None:
+            raise PrimeError(
+                "bad_value",
+                "CreateSessionRequest.cwd is not supported: per-session working "
+                "directories do not exist, children share the host process directory",
+            )
+        return cls(
+            prompt=require_str(payload, "prompt", what="CreateSessionRequest"),
+            name=_optional_name(payload, what="CreateSessionRequest"),
+            model=optional_str(payload, "model", what="CreateSessionRequest"),
+            thinking=optional_str(payload, "thinking", what="CreateSessionRequest"),
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class DeleteRequest:
+    target: Any
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> DeleteRequest:
+        payload = require_payload(raw, what="DeleteRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="DeleteRequest")
+        reject_unknown(payload, _DELETE_FIELDS, what="DeleteRequest")
+        if "target" not in payload:
+            raise PrimeError("bad_type", "DeleteRequest.target is required")
+        return cls(
+            target=_check_selector(payload["target"], what="DeleteRequest.target")
+        )
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION, **asdict(self)}
+
+
+@dataclass(frozen=True)
+class RenameRequest:
+    target: Any
+    name: str
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> RenameRequest:
+        payload = require_payload(raw, what="RenameRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="RenameRequest")
+        reject_unknown(payload, _RENAME_FIELDS, what="RenameRequest")
+        target = payload.get("target")
+        if target is not None:
+            target = _check_selector(target, what="RenameRequest.target")
+        return cls(
+            target=target,
+            name=_nonblank_name(
+                require_str(payload, "name", what="RenameRequest"),
+                what="RenameRequest",
+            ),
         )
 
     def to_dict(self) -> dict:
@@ -178,6 +307,25 @@ class ChildResultView:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class ListSubagentsRequest:
+    """The (fieldless) typed gate for the list operation.
+
+    Carries only the schema version so an explicit future version or an
+    unknown field is a strict typed error instead of silent acceptance.
+    """
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> ListSubagentsRequest:
+        payload = require_payload(raw, what="ListSubagentsRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="ListSubagentsRequest")
+        reject_unknown(payload, _LIST_SUBAGENTS_FIELDS, what="ListSubagentsRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
 class RlmConnector:
     """The typed boundary over an ``RlmHost`` (or ``NoRlmHost``)."""
 
@@ -209,6 +357,30 @@ class RlmConnector:
         result = self._host.progress_note(request.child_id, request.message)
         return {"accepted": result.accepted, "retry_after_ms": result.retry_after_ms}
 
+    def create_session(
+        self, request: CreateSessionRequest, *, session_store: Any = None
+    ) -> dict:
+        handle = self._host.create_session(
+            request.prompt,
+            name=request.name,
+            model=request.model,
+            thinking=request.thinking,
+            session_store=session_store,
+        )
+        return {
+            "active_session_id": handle.active_session_id,
+            "session_id": handle.session_id,
+            "name": handle.name,
+            "session_file": str(handle.session_file),
+            "model": handle.model,
+        }
+
+    def delete_subagent(self, request: DeleteRequest) -> dict:
+        return dict(self._host.delete_subagent(request.target))
+
+    def rename(self, request: RenameRequest) -> dict:
+        return dict(self._host.rename(request.target, request.name))
+
 
 def _subagent_view(subagent: RLMSubagent) -> dict:
     if subagent.status not in SUBAGENT_STATUSES:
@@ -220,6 +392,10 @@ def _subagent_view(subagent: RLMSubagent) -> dict:
         raise PrimeError(
             "bad_value", f"activity kind {activity.kind!r} not in ACTIVITY_KINDS"
         )
+    # Session identity rides the typed view (RLM-03): the durable child
+    # session hex once the host populates it, None on rows predating the
+    # durability cutover. ``answer_preview`` stays off this channel —
+    # parent answer content is visible only through collect (RLM-04).
     return {
         "rlm_child_id": subagent.rlm_child_id,
         "session_name": subagent.session_name,
@@ -229,6 +405,8 @@ def _subagent_view(subagent: RLMSubagent) -> dict:
         if activity is None
         else {"kind": activity.kind, "tool_name": activity.tool_name},
         "progress_note": subagent.progress_note,
+        "session_id": getattr(subagent, "session_id", None),
+        "active_session_id": getattr(subagent, "active_session_id", None),
     }
 
 
@@ -236,7 +414,11 @@ __all__ = [
     "SCHEMA_VERSION",
     "ChildResultView",
     "CollectRequest",
+    "CreateSessionRequest",
+    "DeleteRequest",
+    "ListSubagentsRequest",
     "ProgressNoteRequest",
+    "RenameRequest",
     "RlmConnector",
     "SpawnRequest",
 ]

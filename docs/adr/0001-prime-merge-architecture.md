@@ -36,19 +36,25 @@ product does not otherwise need.
 
 Consequences:
 
-- The Rust workspace stays an ignored, read-only checkout; CI
-  (`rust-parity.yml`) builds and tests it at the pinned commit as the
-  parity oracle, with cargo-deny for license compliance. It is never
-  imported at runtime.
+- The Rust workspace is currently an ignored, read-only checkout; CI
+  (`rust-parity.yml`) configures builds/tests at the pinned commit, with
+  cargo-deny for license compliance. The explicit native bridge loads only
+  the approved linked crates, not the full Prime application/session engine.
+  Retained nonzero upstream Rust diagnostics are not a differential-pass claim.
 - Each ported capability family (RLM recursion, continual harness, goals,
   heartbeats, autonomous mode, agent messaging) lands as pure Python behind
-  a default-off config flag (`omega-prime.json`); with all flags off the
-  pre-v10 behavior is bit-for-bit preserved (LOOP-07 regression tests).
+  a default-off config flag (`omega-prime.json`). Six source-executed pre-v10
+  transcripts preserve the checked consumer behavior without normalization.
+  The unmodified historical suite is 376 passed/two obsolete incidental-pin
+  failures; the literal fully green LOOP-07 criterion remains an acceptance
+  gate, not an asserted bit-for-bit prompt or complete-suite guarantee.
 - The "connectors" of the merge are typed Python adapters
   (`omega_prime/prime/`) with versioned schemas — the typed boundary
   between the tool surface and the capability modules, not a wire protocol.
-- Fidelity is pinned by behavior-parity fixtures (`omega_prime/tests/parity/`)
-  derived from the Rust/Python sources with per-fixture source citations.
+- Source-cited capability fixtures (`omega_prime/tests/parity/`) check their
+  documented source-derived behavior. The separate `79ff51af` transcript
+  fixture records actual historical loop execution; these are distinct proof
+  types, neither an unqualified full native application parity claim.
 
 ## License consequence
 

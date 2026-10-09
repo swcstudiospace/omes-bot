@@ -35,7 +35,10 @@ def finish_text_response(
         content = ""
     elif not isinstance(content, str):
         content = str(content)
-    messages.append({"role": "assistant", "content": content})
+    row = {"role": "assistant", "content": content}
+    if "prime_message" in assistant_message:
+        row["prime_message"] = assistant_message["prime_message"]
+    messages.append(row)
     return FinalResponseVerdict(
         action="break",
         final_response=content,

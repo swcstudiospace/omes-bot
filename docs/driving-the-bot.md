@@ -1,0 +1,233 @@
+# Driving the bot
+
+How to run the Grok Bot with Omega Prime's Prime capability families on, what
+the bot gets from each one, and what it does not. [Setup](setup.md) covers
+install and secrets; this page starts after it.
+
+## What you are driving
+
+| Piece | What it is | Who runs it |
+| --- | --- | --- |
+| The bot | Your Grok Bot copy of the template. It runs on Grok's cloud computer with Grok's default model, so Grok owns the conversation loop. | Grok |
+| The tool host | `python -m omega_prime.mcp_server`: one process serving the tool registry over MCP stdio, behind the roster, the seat policy, and approvals. | You, on a machine you control |
+| The effective prompt | The assembled system prompt. The bot calls a tool only when its prompt lists it. | You, with the assembler |
+
+`OmegaPrimeAgent`, the Python conversation loop ([Agent loop](agent-loop.md)),
+is a library for embedders. No command in this repository starts it, so Prime's
+loop-level behavior (goal continuation, autonomous limits and gates, heartbeat
+firing, RLM children, agent messaging) does not run behind a Grok Bot. What the
+bot gets is the tools.
+
+Two files are both called a roster: `omega_prime/grokbot/rosters/default.json`
+feeds the assembler (bot id, branch, version), and
+`omega_prime/contracts/tool-rosters/omega-prime.yaml` lists the tools the host
+may serve.
+
+## What each family gives the bot
+
+Every family is off by default; a default host serves 108 tools and no Prime
+tool.
+
+| Family and flag | Tools | Behind a Grok Bot |
+| --- | --- | --- |
+| Harness `prime.harness.enabled` | `harness_upsert`, `harness_get`, `harness_list`, `harness_delete`, `harness_refine`, `harness_rollback` | Works. Stores supplemental entries (kinds `prompt`, `memory`, `skill`, `subagent`, `factory`). `harness_refine` applies only evidence-backed proposals and snapshots first; `harness_rollback` restores the last snapshot. Nothing injects entries into the prompt: the bot reads them with `harness_list` or `harness_get`. Gated: upsert, delete, refine, rollback. |
+| Goals `prime.goals.enabled` | `goal_set`, `goal_pause`, `goal_resume`, `goal_clear`, `goal_status` | Stores one goal (objective, steps, token budget). Nothing accrues usage or continues turns, so budget and stale checks never trigger. Gated: all but `goal_status`. |
+| Heartbeat `prime.heartbeat.enabled` | `heartbeat_set`, `heartbeat_list`, `heartbeat_clear` | Persists jobs in `cron/jobs.json`. Jobs never fire: firing needs a process that bound a named live session. Gated: set, clear. |
+| Autonomous `prime.autonomous.enabled` | `autonomous_start`, `autonomous_status`, `autonomous_stop` | Records a run's limits in the host process. Nothing counts turns or runs the quality gate, and the record is lost on restart. Gated: start, stop. |
+| Kernel `prime.kernel.enabled` | `prime_cell`, `prime_bash`, `prime_skill_list`, `prime_crates`, `prime_goal`, `prime_autonomous`, `prime_factory_run`, `prime_factory_status`, `prime_factory_stop`, `prime_factory_resume`, `prime_factory_graph` | Works: real execution (below). Gated: `prime_cell`, `prime_bash`, `prime_goal`, `prime_autonomous`, `prime_factory_run`, `prime_factory_stop`, `prime_factory_resume`. |
+| RLM `prime.rlm.enabled` | `rlm_*` (7) | Not served. It needs a live parent agent, so only an embedder registers it. |
+| Messaging `prime.messaging.enabled` | `agent_message_send`, `agent_observe` | Not served. It needs a live session registry. |
+
+Kernel tools:
+
+- `prime_cell` runs Python in one persistent namespace. It returns `ok`,
+  `value` (the repr of a trailing expression), `error`, and the `stdout` and
+  `stderr` the cell printed while it ran. Top-level `await` works, and `exit()`
+  or `sys.exit()` is a cell error, not the end of the host. A valid
+  `await rlm.spawn(prompt, name=...)` from a cell fails with
+  `rlm run requires an explicit model selector`: the host configures no model
+  and no child runner.
+- `prime_bash` runs a command through Prime's `rlm.bash` and returns
+  `exit_code` and `stdout` (stderr is merged into it).
+- `prime_crates` reports the nine linked Rust crates (`pa-telemetry`,
+  `pa-types`, `pa-ai`, `pa-models`, `pa-agent`, `pa-core`, `pa-daemon`,
+  `pa-tui`, `pa-cli`) and whether the native extension loaded.
+- `prime_goal` and `prime_autonomous` run Prime's own `/goal` and `/autonomous`
+  commands through `pa-core`. They keep their own state under `prime-kernel/`
+  and do not see the `goal_*` or `autonomous_*` records: `prime_goal` with
+  `status` answers `No active goal.` right after `goal_set`.
+- The factory tools call the pinned `rlm.factory` and need a spec id: a stored
+  harness `factory` entry or a built-in machine (`builder`, `pr-manager`,
+  `review-sweep`). A `builder` run starts, then pauses with `spawn admission
+  failed: repl runtime is not serving`, so treat the factory as unproven.
+  `prime_factory_graph` answers `the factory is disabled` until
+  `prime_factory_run` has enabled it.
+
+## Turn families on
+
+Save this as `omega-prime.json` in the directory you pass as `--root`:
+
+```json
+{
+  "prime": {
+    "harness": { "enabled": true },
+    "goals": { "enabled": true },
+    "heartbeat": { "enabled": true },
+    "autonomous": { "enabled": true },
+    "kernel": { "enabled": true }
+  }
+}
+```
+
+Or set `OMEGA_PRIME_PRIME_<FAMILY>_ENABLED=1` in the host's environment
+(`true`, `yes`, and `on` also enable; any other value, including an empty one,
+turns the family off and overrides the file). The environment wins over the
+file. The host reads both at startup, so restart it after any change. Leave
+`rlm` and `messaging` off: the host cannot serve them.
+
+The kernel family needs the pinned `prime-agent/` checkout for every tool (see
+[Build from source](../README.md#build-from-source-both-toolchains)). Three
+tools also need the native extension: `prime_crates` reports `loaded: false`
+without it, and `prime_goal` and `prime_autonomous` fail with
+`ImportError: omega_prime_prime extension is not built`. Build it from the
+repository root:
+
+```bash
+cargo build --locked --manifest-path native/omega-prime-prime/Cargo.toml \
+  --target-dir prime-agent/target
+```
+
+## Start the tool host
+
+```bash
+.venv/bin/python -m omega_prime.mcp_server --root . \
+  --approve goal_set:alice --approve goal_clear:alice
+```
+
+| Flag | Meaning |
+| --- | --- |
+| `--root DIR` | Repository checkout holding `omega_prime/` and `omega-prime.json` (default: the current directory). |
+| `--home DIR` | The bot's home: the working directory of the `execute_code` and `mcp_call` tools (default: `~`). |
+| `--no-roster` | Serve every registered tool instead of the roster's default set. |
+| `--approve TOOL:APPROVER` | Pre-approve one gated tool. Repeatable. A malformed value, or an approver equal to the bot's own id, exits 2. |
+
+Export the secrets from [Setup](setup.md#2-secrets) in the host's environment,
+then add the command as a custom MCP server in your Grok Bot's settings.
+
+### Approvals
+
+The host has no approval prompt. A gated tool answers
+`{"error": "approval required", "tool": "goal_set"}` unless the host was
+started with `--approve` for it. An approval covers every later call to that
+tool until the process exits; restart to revoke. The approver name is
+recorded, not authenticated, and the host does not check the tool name: a typo
+approves nothing.
+
+`prime_cell` and `prime_bash` run code as the host's user, and the default host
+already serves ungated tools that run code and write files (`run_terminal`,
+`execute_code`, `mcp_call`, `write_file`, `patch_file`). Sandbox the host
+whether or not any Prime flag is on ([Tool host](tool-host.md#openshell)).
+
+### State on disk
+
+The Prime families write under `--root`, and the repository ignores these paths:
+
+| Path | Holds |
+| --- | --- |
+| `goals/` | The `goal_*` record. |
+| `harness-local/`, `harness-global/` | Harness entries. `global_: true` writes the cross-session store. |
+| `cron/jobs.json` | Heartbeat jobs. |
+| `prime-kernel/`, `prime-agent-dir/` | Kernel state, including `prime_goal`'s record. `prime-agent-dir/` appears with the first `prime_factory_run`. |
+
+An autonomous run is held in the host process and is not written to disk.
+
+## Build the effective prompt
+
+The bot calls a tool only when its prompt lists it, and the shipped prompt
+(`omega_prime/prompts-assembled/OMEGA_PRIME.xml`) names no Prime tool. Build one
+that does, with the same families the host serves:
+
+```bash
+.venv/bin/python -m omega_prime.assemble \
+  --enable-family harness --enable-family goals --enable-family heartbeat \
+  --enable-family autonomous --enable-family kernel \
+  --output build/OMEGA_PRIME.effective.xml
+```
+
+`--output` is required with `--enable-family`, and the shipped file is never
+written. Add `--check` to compare an existing file instead of writing it: it
+exits 1 when the file is stale or missing, and the fix is to run the same
+command without `--check`. The shipped prompt lists 109 tools and the default
+host serves 108, because `delegate_task` needs a live agent and is never
+served. These five families add 28 to each. Do not pass `rlm` or `messaging`:
+the assembler would list nine tools the host cannot serve.
+
+The template tells the bot to read `prompts-assembled/OMEGA_PRIME.xml` on first
+run. Give your bot the effective file instead. This repository builds the file;
+how Grok takes it is a Grok Bot setting this repository neither controls nor
+tests, so confirm it with the checks below.
+
+## Check it
+
+1. Count what the host serves. With the five families on you should see 136;
+   with none, 108.
+
+   ```bash
+   .venv/bin/python -m omega_prime.setup_check --root .
+   ```
+
+   Look for `[ok] registry: registry serves 136 roster tools`.
+
+2. Call a tool over real MCP stdio. `prime_crates` is read-only, so it needs no
+   approval:
+
+   ```bash
+   .venv/bin/python - <<'EOF'
+   import json, sys
+   from omega_prime.tools.mcp_session import mcp_session_call
+
+   out = mcp_session_call(
+       [sys.executable, "-m", "omega_prime.mcp_server", "--root", "."],
+       "prime_crates", {}, cwd=".", timeout=60,
+   )
+   print(json.dumps(json.loads(out["result"]["content"][0]["text"]), indent=2))
+   EOF
+   ```
+
+   Expect `"loaded": true`, `"error": null`, and the nine crate names.
+
+3. In the bot, send the smoke prompt from [Setup](setup.md#4-smoke-prompt). The
+   tool list should now include the Prime tools in your effective prompt. Then
+   ask it to call `prime_crates`; it should return the payload from step 2.
+   The prompt does not mark which tools are gated; the
+   [tool catalog](tool-catalog.md) does.
+
+## Asking for things
+
+Plain requests work. The bot picks the tool; the right column is what to
+expect.
+
+| You say | Likely call | Notes |
+| --- | --- | --- |
+| "Remember: run the linter before every PR." | `harness_upsert`, kind `memory` | Gated. Read back with `harness_list`. |
+| "Set a goal: ship the migration. Steps: schema, backfill, cutover." | `goal_set`, later `goal_status` | Gated. Stored only; the bot must read it back. |
+| "Try `import json; json.dumps({'a': 1})` in the Prime REPL." | `prime_cell` | Gated. Variables persist between cells. |
+| "Which Prime crates are linked in?" | `prime_crates` | Free. |
+| "Run the tests through Prime's bash." | `prime_bash` | Gated. Runs as the host's user. |
+
+## Troubleshooting
+
+| Symptom | Cause | Fix |
+| --- | --- | --- |
+| A Prime tool is missing from the host's tool list | The family's flag is off in the host process, `--root` points where your `omega-prime.json` is not, or the host was not restarted after the change. | Run `setup_check --root <the same root>`, then restart the host. |
+| `approval required` | The tool is gated and the host was not started with `--approve` for it. | Add `--approve TOOL:YOU` and restart. |
+| `policy forbids <tool>` | The name is not on the roster, or the seat policy (`omega_prime/contracts/policies/omega-prime.json`) forbids it. | Only rostered tools are served. |
+| `Unknown tool: <name>` | The tool is on the roster but the host did not register it: its family is off, or it is `rlm_*`, `agent_message_send`, `agent_observe`, or `delegate_task`, which the host never serves. | Turn the family on and restart the host. The others need an embedder. |
+| `unknown_field`, `bad_type`, `bad_value`, or `unsupported_schema_version`, for example `unknown_field: goal_set does not accept: scope` | The call was rejected before any effect; nothing was written. A gated tool answers `approval required` before its arguments are checked. | Fix the arguments. Each tool's parameters are in the [tool catalog](tool-catalog.md). |
+| `prime_crates` shows `loaded: false`, or `ImportError: omega_prime_prime extension is not built` | The native extension is missing. `prime_cell`, `prime_bash`, and the rest of the kernel family still work. | Build it with the `cargo build` command above. |
+| `the factory is disabled; run /factory on to enable it` | The factory is off until `prime_factory_run` enables it. | Approve and call `prime_factory_run` with a valid spec id. |
+| A heartbeat job never fires | The host has no loop bound to a named session. | Expected here. Jobs fire only under an embedded `OmegaPrimeAgent(..., session_name=...)`; see [Agent loop](agent-loop.md). |
+| The host serves Prime tools but the bot never calls them | Its prompt does not list them. | Build and load the effective prompt. |
+
+More on the typed errors and handler rules: [Migration to v10](migration.md).
+Per-tool approval and parameters: [Tool catalog](tool-catalog.md).

@@ -10,6 +10,7 @@ from omega_prime.providers.grok import GrokProvider
 from omega_prime.providers.http import HttpTransport
 from omega_prime.providers.ollama import OllamaProvider
 from omega_prime.providers.openai import OpenAIProvider
+from omega_prime.providers.prime import PrimeProviderModel
 
 __all__ = [
     "AnthropicProvider",
@@ -19,6 +20,7 @@ __all__ = [
     "HttpTransport",
     "OllamaProvider",
     "OpenAIProvider",
+    "PrimeProviderModel",
     "Provider",
     "ProviderError",
     "ProviderModel",

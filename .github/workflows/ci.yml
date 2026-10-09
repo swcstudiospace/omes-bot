@@ -20,6 +20,21 @@ jobs:
         id: setup_python
         with:
           python-version: ${{ matrix.python-version }}
+      - name: read Prime pin
+        id: prime_pin
+        run: |
+          python3 - <<'EOF' >> "$GITHUB_OUTPUT"
+          import json
+          pin = json.load(open("omega_prime/contracts/prime-agent.pin.json"))
+          print(f"commit={pin['commit']}")
+          EOF
+      - name: checkout Prime test prerequisite
+        id: prime_checkout
+        uses: actions/checkout@v4
+        with:
+          repository: PrimeIntellect-ai/prime-agent
+          ref: ${{ steps.prime_pin.outputs.commit }}
+          path: prime-agent
       - name: interpreter identity
         id: interpreter_identity
         env:
@@ -60,7 +75,7 @@ jobs:
           STEPS_JSON: ${{ toJSON(steps) }}
           JOB_STATUS: ${{ job.status }}
           REQUESTED_PYTHON: ${{ matrix.python-version }}
-          STAGES: checkout setup_python interpreter_identity pip_identity install resolved_distributions pip_check discord_library_import discord_product_import suite evals assembly
+          STAGES: checkout setup_python prime_pin prime_checkout interpreter_identity pip_identity install resolved_distributions pip_check discord_library_import discord_product_import suite evals assembly
           GUARD_TESTCASE: omega_prime/tests/test_deps_matrix.py::test_discord_module_imports_without_the_library
           GUARD_CLASSNAME: omega_prime.tests.test_deps_matrix
           GUARD_NAME: test_discord_module_imports_without_the_library

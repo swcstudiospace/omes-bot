@@ -137,7 +137,7 @@ Find stored session messages whose content contains the query as a literal subst
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+Delegate one goal, or a batch of goals, to a child agent. The result is the child's final response. background returns a handle and the child runs when that handle is joined.
 
 ## execute_code
 
@@ -878,10 +878,10 @@ Refresh the lease TTL for an active claim using the token from the claim result.
 ## rlm_spawn
 
 - Family: RLM
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: prompt, name
 
-Not served by the default registry.
+Spawn a recursive child agent and return once its task is admitted. name is required and must be unique among siblings. Returns a handle with rlm_child_id; collect results with rlm_collect.
 
 ## rlm_collect
 
@@ -889,7 +889,7 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+Collect typed results from direct RLM children. targets selects children (handle, subagent row, name, or a mixed list); omitted selects all direct children not being deleted. timeout_ms=0 is a non-blocking snapshot; a positive timeout returns current snapshots on elapse and never errors.
 
 ## rlm_list_subagents
 
@@ -897,55 +897,55 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+List direct RLM children retained by the current parent session.
 
 ## rlm_delete_subagent
 
 - Family: RLM
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: target
 
-Not served by the default registry.
+Reap one direct RLM child and drop its retained result.
 
 ## rlm_create_session
 
 - Family: RLM
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: prompt
 
-Not served by the default registry.
+Create and prompt a durable named session that survives this turn.
 
 ## rlm_progress_note
 
 - Family: RLM
 - Approval: not required
-- Required params: none
+- Required params: child_id, message
 
-Not served by the default registry.
+Record a progress note on a child (max 512 UTF-16 code units, throttled to about one per 10s; a throttled note returns accepted=false with retry_after_ms and never errors).
 
 ## rlm_rename
 
 - Family: RLM
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: target, name
 
-Not served by the default registry.
+Rename this session (target 'self') or one direct child.
 
 ## harness_upsert
 
 - Family: Harness
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: kind, id, title, body
 
-Not served by the default registry.
+Create or update one supplemental harness entry (prompt note, memory, skill description, subagent spec, or factory spec). Session-local by default; global_=true writes the cross-session store.
 
 ## harness_get
 
 - Family: Harness
 - Approval: not required
-- Required params: none
+- Required params: kind, id
 
-Not served by the default registry.
+Read one harness entry by kind and id.
 
 ## harness_list
 
@@ -953,63 +953,63 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+List harness entries, optionally one kind.
 
 ## harness_delete
 
 - Family: Harness
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: kind, id
 
-Not served by the default registry.
+Delete one harness entry.
 
 ## harness_refine
 
 - Family: Harness
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: trigger, proposals, trajectory
 
-Not served by the default registry.
+Review proposals against the current trajectory and apply only the evidence-backed ones. Every applied refinement is snapshotted for rollback; the base system prompt is never rewritten.
 
 ## harness_rollback
 
 - Family: Harness
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Restore the most recent pre-refinement snapshot exactly.
 
 ## goal_set
 
 - Family: Goals
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: objective
 
-Not served by the default registry.
+Set a persistent goal (objective + optional steps and token budget). The goal persists across turns until completed, paused, or cleared.
 
 ## goal_pause
 
 - Family: Goals
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Pause the active goal.
 
 ## goal_resume
 
 - Family: Goals
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Resume a paused goal.
 
 ## goal_clear
 
 - Family: Goals
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Clear the goal and its steps.
 
 ## goal_status
 
@@ -1017,15 +1017,15 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+Read the goal's objective, steps, budget accrual, and stale state.
 
 ## heartbeat_set
 
 - Family: Heartbeat
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: session, prompt, interval_seconds
 
-Not served by the default registry.
+Schedule a recurring heartbeat that re-enters a named session with a prompt on an interval.
 
 ## heartbeat_list
 
@@ -1033,23 +1033,23 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+List all heartbeat jobs.
 
 ## heartbeat_clear
 
 - Family: Heartbeat
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: job_id
 
-Not served by the default registry.
+Remove one heartbeat by job id.
 
 ## autonomous_start
 
 - Family: Autonomous
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Start a bounded autonomous run: turn/token/minute budgets plus an optional quality gate (argv). Reaching a limit stops cleanly and does not imply task success.
 
 ## autonomous_status
 
@@ -1057,23 +1057,23 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+Read the current autonomous run's budget usage and stop state.
 
 ## autonomous_stop
 
 - Family: Autonomous
-- Approval: not required
+- Approval: required
 - Required params: none
 
-Not served by the default registry.
+Stop the current autonomous run.
 
 ## agent_message_send
 
 - Family: Messaging
-- Approval: not required
-- Required params: none
+- Approval: required
+- Required params: recipient, body
 
-Not served by the default registry.
+Send a message to another registered session. A missing recipient is a structured error, never a silent drop.
 
 ## agent_observe
 
@@ -1081,4 +1081,92 @@ Not served by the default registry.
 - Approval: not required
 - Required params: none
 
-Not served by the default registry.
+Read this session's inbox (marks messages read).
+
+## prime_cell
+
+- Family: Kernel
+- Approval: required
+- Required params: code
+
+Execute one cell in Prime Agent's persistent kernel. The namespace survives later prime_cell calls. Top-level await uses the pinned rlm.repl compiler. rlm.spawn and the other rlm calls reach the in-process host. Returns ok, value (repr of a trailing expression), error, and the cell's captured stdout and stderr.
+
+## prime_factory_run
+
+- Family: Kernel
+- Approval: required
+- Required params: spec_id
+
+Run a Prime factory spec through the pinned rlm.factory executor.
+
+## prime_factory_status
+
+- Family: Kernel
+- Approval: not required
+- Required params: run_id
+
+Read one Prime factory run from the pinned executor.
+
+## prime_factory_stop
+
+- Family: Kernel
+- Approval: required
+- Required params: run_id
+
+Stop one Prime factory run.
+
+## prime_factory_resume
+
+- Family: Kernel
+- Approval: required
+- Required params: run_id
+
+Resume one Prime factory run.
+
+## prime_factory_graph
+
+- Family: Kernel
+- Approval: not required
+- Required params: none
+
+Return the Prime factory graph for a spec, or the authoring help graph.
+
+## prime_bash
+
+- Family: Kernel
+- Approval: required
+- Required params: command
+
+Run a shell command through Prime Agent's rlm.bash, not a reimplementation.
+
+## prime_skill_list
+
+- Family: Kernel
+- Approval: not required
+- Required params: none
+
+List Prime Agent skill packages in the pinned checkout.
+
+## prime_crates
+
+- Family: Kernel
+- Approval: not required
+- Required params: none
+
+Report the nine Prime crates. When the native extension is built, they are linked into this process; otherwise the list is the checkout workspace and loaded is false.
+
+## prime_goal
+
+- Family: Kernel
+- Approval: required
+- Required params: args
+
+Apply a Prime /goal command in this process. pa-core parses the arguments and updates the thread goal. The result is Prime's camelCase GoalState.
+
+## prime_autonomous
+
+- Family: Kernel
+- Approval: required
+- Required params: args
+
+Apply a Prime /autonomous command in this process. pa-core parses the arguments, updates the live run, and formats the status block.

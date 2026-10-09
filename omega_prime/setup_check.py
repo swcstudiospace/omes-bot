@@ -86,6 +86,7 @@ def check_registry(root: Path) -> tuple[bool, str]:
     from omega_prime.tools.goals import GOAL_TOOL_NAMES
     from omega_prime.tools.harness import HARNESS_TOOL_NAMES
     from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
+    from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
     from omega_prime.tools.rlm import RLM_TOOL_NAMES
 
     gated = (
@@ -95,6 +96,7 @@ def check_registry(root: Path) -> tuple[bool, str]:
         | set(HEARTBEAT_TOOL_NAMES)
         | set(AUTONOMOUS_TOOL_NAMES)
         | set(MESSAGING_TOOL_NAMES)
+        | set(KERNEL_TOOL_NAMES)
     )
     missing = [
         name for name in missing if name != "delegate_task" and name not in gated

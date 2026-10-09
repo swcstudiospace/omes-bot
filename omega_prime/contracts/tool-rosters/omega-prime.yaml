@@ -17,8 +17,10 @@
 # then Goals names from register_goal_tools, then Heartbeat names from
 # register_heartbeat_tools, then Autonomous names from
 # register_autonomous_tools, then Messaging names from
-# register_messaging_tools (each gated: prime.<family>.enabled, default off —
-# registered only when enabled).
+# register_messaging_tools, then Kernel names from
+# register_prime_kernel_tools (each gated: prime.<family>.enabled, default
+# off — registered only when enabled). The kernel family loads the pinned
+# Prime rlm package and the nine pa-* crates in-process.
 # This list is exactly those names, in that order.
 # Absorbed desk contracts (Phase 32): tool-rosters lead/systems/web/
 # android/ios/infra/quality/_core.yaml and tool-packs clippyos/desklanes/
@@ -162,3 +164,14 @@ tools:
   - autonomous_stop
   - agent_message_send
   - agent_observe
+  - prime_cell
+  - prime_factory_run
+  - prime_factory_status
+  - prime_factory_stop
+  - prime_factory_resume
+  - prime_factory_graph
+  - prime_bash
+  - prime_skill_list
+  - prime_crates
+  - prime_goal
+  - prime_autonomous

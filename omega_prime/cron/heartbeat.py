@@ -41,7 +41,7 @@ def schedule_heartbeat(
         raise ValueError("a heartbeat needs a positive interval_seconds")
     job_id = store.schedule(prompt, due_at, interval_seconds=interval_seconds)
     for job in store.jobs:
-        if job["id"] == job_id:
+        if isinstance(job, dict) and job.get("id") == job_id:
             job["kind"] = HEARTBEAT_KIND
             job["session"] = session
             break
@@ -51,13 +51,21 @@ def schedule_heartbeat(
 
 def list_heartbeats(store: JobStore) -> list[dict]:
     """All heartbeat jobs, complete or not."""
-    return [job for job in store.jobs if job.get("kind") == HEARTBEAT_KIND]
+    return [
+        job
+        for job in store.jobs
+        if isinstance(job, dict) and job.get("kind") == HEARTBEAT_KIND
+    ]
 
 
 def clear_heartbeat(store: JobStore, job_id: str) -> dict:
     """Remove one heartbeat by id. Unknown id is a structured result."""
     for index, job in enumerate(store.jobs):
-        if job["id"] == job_id and job.get("kind") == HEARTBEAT_KIND:
+        if (
+            isinstance(job, dict)
+            and job.get("id") == job_id
+            and job.get("kind") == HEARTBEAT_KIND
+        ):
             store.jobs.pop(index)
             store._save()
             return {"cleared": job_id}

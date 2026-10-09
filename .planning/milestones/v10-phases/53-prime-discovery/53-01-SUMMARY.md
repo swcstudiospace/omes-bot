@@ -73,7 +73,10 @@ Exit code: 101 — 622 passed, 3 failed, all three in
 (ACP-stdio settle/timeout assertions; pa-cli is out of v10 port scope —
 daemon/CLI are not ported). Reproduced under full parallelism; see
 54-CONTEXT for the CI treatment (documented exclusion set with reason,
-per prime-agent AGENTS.md).
+per prime-agent AGENTS.md). 622 counts `test result: ok` lines before
+fail-fast stopped in `acp_mode_e2e`; it is not a workspace total. Later
+path-clean accounting is in `VENDOR.md`: 5089 passed, 2 failed, 19
+ignored, 3 filtered.
 
 Command: `.venv/bin/python -m pytest omega_prime/tests -q`
 Exit code: 0 (`378 passed`)

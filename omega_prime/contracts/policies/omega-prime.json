@@ -137,7 +137,18 @@
       "autonomous_status",
       "autonomous_stop",
       "agent_message_send",
-      "agent_observe"
+      "agent_observe",
+      "prime_cell",
+      "prime_factory_run",
+      "prime_factory_status",
+      "prime_factory_stop",
+      "prime_factory_resume",
+      "prime_factory_graph",
+      "prime_bash",
+      "prime_skill_list",
+      "prime_crates",
+      "prime_goal",
+      "prime_autonomous"
     ]
   },
   "paths": {

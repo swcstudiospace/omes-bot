@@ -1,15 +1,12 @@
-"""Phase 12: the provider contract, five adapters, the install surface."""
+"""Provider contracts and actual request/response behavior."""
 
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pytest
 
 from omega_prime.agent.conversation_loop import Agent, run_conversation
-from omega_prime.agent.model import ScriptedModel
-from omega_prime.assemble import assembled_path, render, template_gaps
 from omega_prime.providers.anthropic import AnthropicProvider
 from omega_prime.providers.base import ProviderError, ProviderModel
 from omega_prime.providers.fake import FakeTransport
@@ -17,93 +14,6 @@ from omega_prime.providers.gemini import GeminiProvider
 from omega_prime.providers.grok import XAI_DEFAULT_BASE_URL, GrokProvider
 from omega_prime.providers.ollama import OllamaProvider
 from omega_prime.providers.openai import OpenAIProvider
-from omega_prime.receipts import ReceiptError, validate_receipt
-from omega_prime.substrate.client import SubstrateClient
-from omega_prime.tools.agent_message import (
-    MESSAGING_TOOL_NAMES,
-    register_messaging_tools,
-)
-from omega_prime.tools.autonomous import (
-    AUTONOMOUS_TOOL_NAMES,
-    register_autonomous_tools,
-)
-from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
-from omega_prime.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
-from omega_prime.tools.discord import (
-    DISCORD_TOOL_NAMES,
-    DiscordClient,
-    register_discord_tools,
-)
-from omega_prime.tools.goals import GOAL_TOOL_NAMES, register_goal_tools
-from omega_prime.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
-from omega_prime.tools.harness import HARNESS_TOOL_NAMES, register_harness_tools
-from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES, register_heartbeat_tools
-from omega_prime.tools.ide import IDE_TOOL_NAMES, register_ide_tools
-from omega_prime.tools.infra import (
-    INFRA_TOOL_NAMES,
-    InfraClient,
-    InfraContext,
-    register_infra_tools,
-)
-from omega_prime.tools.lead import (
-    LEAD_TOOL_NAMES,
-    LeadClient,
-    LeadContext,
-    register_lead_tools,
-)
-from omega_prime.tools.mobile import (
-    MOBILE_TOOL_NAMES,
-    MobileClient,
-    MobileContext,
-    register_mobile_tools,
-)
-from omega_prime.tools.offer import offered_schemas
-from omega_prime.tools.packs import (
-    PACKS_TOOL_NAMES,
-    PacksClient,
-    PacksContext,
-    register_packs_tools,
-)
-from omega_prime.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
-from omega_prime.tools.quality import (
-    QUALITY_TOOL_NAMES,
-    QualityClient,
-    QualityContext,
-    register_quality_tools,
-)
-from omega_prime.tools.registry import ToolRegistry
-from omega_prime.tools.rlm import RLM_TOOL_NAMES, register_rlm_tools
-from omega_prime.tools.substrate_tools import (
-    SUBSTRATE_TOOL_NAMES,
-    register_substrate_tools,
-)
-from omega_prime.tools.systems import (
-    SYS_TOOL_NAMES,
-    SystemsClient,
-    SystemsContext,
-    register_systems_tools,
-)
-from omega_prime.tools.telegram import (
-    TELEGRAM_TOOL_NAMES,
-    TelegramClient,
-    register_telegram_tools,
-)
-from omega_prime.tools.ultrathink import (
-    ULT_TOOL_NAMES,
-    UltrathinkClient,
-    UltrathinkContext,
-    register_ultrathink_tools,
-)
-from omega_prime.tools.webpack import (
-    WEB_TOOL_NAMES,
-    WebClient,
-    WebContext,
-    register_web_tools,
-)
-from omega_prime.tools.x import X_TOOL_NAMES, XClient, register_x_tools
-
-OMEGA_PRIME = Path(__file__).resolve().parents[1]
-ROSTER = OMEGA_PRIME / "contracts" / "tool-rosters" / "omega-prime.yaml"
 
 
 def test_fake_transport_completes_a_turn_through_the_contract():
@@ -316,115 +226,6 @@ def test_ollama_adapter_answers_the_contract_without_a_key():
     )
     with pytest.raises(ProviderError):
         empty.complete([{"role": "user", "content": "x"}])
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
-
-
-def test_install_surface_names_only_what_exists(tmp_path: Path):
-    registry = ToolRegistry()
-    register_coding_tools(registry, tmp_path)
-    register_growth_tools(
-        registry,
-        skills_root=tmp_path / "skills",
-        memory_dir=tmp_path / "memory",
-        session_db=tmp_path / "sessions.db",
-    )
-    register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
-    register_platform_tools(registry, home=tmp_path)
-    register_ide_tools(registry, tmp_path)
-    register_x_tools(registry, XClient(FakeTransport(), token="fake"))
-    register_telegram_tools(
-        registry, TelegramClient(make_bot=lambda token: None, token="fake")
-    )
-    register_discord_tools(
-        registry, DiscordClient(make_client=lambda: None, token="fake")
-    )
-    register_lead_tools(registry, LeadClient(LeadContext(root=tmp_path)))
-    register_systems_tools(registry, SystemsClient(SystemsContext(root=tmp_path)))
-    register_web_tools(registry, WebClient(WebContext(root=tmp_path)))
-    register_mobile_tools(registry, MobileClient(MobileContext(root=tmp_path)))
-    register_infra_tools(registry, InfraClient(InfraContext()))
-    register_quality_tools(registry, QualityClient(QualityContext(root=tmp_path)))
-    register_packs_tools(registry, PacksClient(PacksContext()))
-    register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext()))
-    register_substrate_tools(registry, SubstrateClient())
-    register_rlm_tools(
-        registry,
-        Agent(model=ScriptedModel([]), tools={}),
-        run_child=lambda prompt, model=None, thinking=None: "ok",
-    )
-    register_harness_tools(registry, tmp_path)
-    register_goal_tools(registry, tmp_path)
-    register_heartbeat_tools(registry, tmp_path)
-    register_autonomous_tools(registry, tmp_path)
-    register_messaging_tools(registry, "test-session")
-
-    roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
-    assert roster == list(
-        CODING_TOOL_NAMES
-        + GROWTH_TOOL_NAMES
-        + DELEG_TOOL_NAMES
-        + PLATFORM_TOOL_NAMES
-        + IDE_TOOL_NAMES
-        + X_TOOL_NAMES
-        + TELEGRAM_TOOL_NAMES
-        + DISCORD_TOOL_NAMES
-        + LEAD_TOOL_NAMES
-        + SYS_TOOL_NAMES
-        + WEB_TOOL_NAMES
-        + MOBILE_TOOL_NAMES
-        + INFRA_TOOL_NAMES
-        + QUALITY_TOOL_NAMES
-        + PACKS_TOOL_NAMES
-        + ULT_TOOL_NAMES
-        + SUBSTRATE_TOOL_NAMES
-        + RLM_TOOL_NAMES
-        + HARNESS_TOOL_NAMES
-        + GOAL_TOOL_NAMES
-        + HEARTBEAT_TOOL_NAMES
-        + AUTONOMOUS_TOOL_NAMES
-        + MESSAGING_TOOL_NAMES
-    )
-    offered = offered_schemas(registry, roster)
-    assert [item["function"]["name"] for item in offered] == roster
-
-    assert template_gaps(OMEGA_PRIME) == []
-    assert assembled_path(OMEGA_PRIME).read_text(encoding="utf-8") == render(
-        OMEGA_PRIME, OMEGA_PRIME / "grokbot" / "rosters" / "default.json"
-    )
-
-    with pytest.raises(ReceiptError):
-        validate_receipt(
-            {
-                "commands": [{"cmd": "true", "exit_code": 0}],
-                "claims": [{"claim": "done", "evidence_command_index": 5}],
-                "unverified": [],
-            }
-        )
-    validate_receipt(
-        {
-            "commands": [
-                {"cmd": "python3 -m pytest omega_prime/tests -q", "exit_code": 0}
-            ],
-            "claims": [{"claim": "suite passes", "evidence_command_index": 0}],
-            "unverified": [],
-        }
-    )
 
 
 def test_usage_normalizes_across_providers():

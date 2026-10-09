@@ -1,6 +1,7 @@
-# Dependabot: pip + github-actions. Cargo is deliberately excluded —
-# prime-agent is an ignored upstream checkout (the parity oracle), not a
-# dependency of this repo (see VENDOR.md).
+# pip and Actions updates are automatic. Cargo's pinned Prime path dependencies
+# live in the ignored prime-agent/ checkout, so Cargo Dependabot cannot fetch
+# their manifests. rust-parity.yml builds and license-checks both actual graphs;
+# Cargo update automation is an explicit open REPO-04 audit gate.
 version: 2
 updates:
   - package-ecosystem: pip

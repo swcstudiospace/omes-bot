@@ -33,7 +33,39 @@ shared Hindsight bank. Unwired installs run fully local.
 
 ## Enabled skills
 
+- android
+- code-review
+- contract-first-changes
+- debugging
+- deno-typescript
+- desk-bootstrap
+- desk-doctor
+- desk-gateway
+- gotxcot-uplift
+- greptile-merge-gate
+- hindsight-memory
+- ios
+- lead-pack
+- python
+- ragflow-docs
+- railway-tailscale
+- remote-dev-machine
+- rust
+- security-secrets-handling
+- security-supply-chain
+- terraform-k8s
+- tool-packs
+- trackplan-dispatch
+- ultrathink
+- vercel
+- verification-receipts
+
 ## Routines
+
+- desk-lead — intake, tickets, dispatch, receipts — paused until lead_doctor is green
+- nightly — curator pass over transcripts
+- sweep — queue reply drafts; does not publish
+- ultrathink — resolve this turn's plan before acting
 
 ## Avatar
 

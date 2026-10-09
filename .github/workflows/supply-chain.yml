@@ -6,8 +6,8 @@ on:
   schedule:
     - cron: "17 4 * * 1" # weekly, Monday 04:17 UTC
 
-# Python dependency audit. The Rust side (cargo-deny against the pinned
-# prime-agent workspace) lives in rust-parity.yml.
+# Python dependency audit. Pinned upstream and the product's native bridge
+# license gates run independently in rust-parity.yml.
 
 jobs:
   pip-audit:

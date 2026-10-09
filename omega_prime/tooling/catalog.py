@@ -30,6 +30,7 @@ from omega_prime.tools.lead import LEAD_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
+from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
 from omega_prime.tools.quality import QUALITY_TOOL_NAMES
 from omega_prime.tools.rlm import RLM_TOOL_NAMES
 from omega_prime.tools.substrate_tools import SUBSTRATE_TOOL_NAMES
@@ -63,6 +64,7 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Heartbeat", HEARTBEAT_TOOL_NAMES),
     ("Autonomous", AUTONOMOUS_TOOL_NAMES),
     ("Messaging", MESSAGING_TOOL_NAMES),
+    ("Kernel", KERNEL_TOOL_NAMES),
 )
 
 HEADER = """# Tool catalog
@@ -73,6 +75,39 @@ Rebuild with `--out docs/tool-catalog.md`; CI fails when this file drifts.
 """
 
 
+def full_inventory_registry(root: Path, home: Path):
+    """Registry with every rostered family registered for metadata reads.
+
+    The default registry config-gates Prime families (default off) and skips
+    live-parent families, so asking it for absent tools would invent
+    default-false/empty metadata (WARN-03). The catalog instead registers the
+    actual family definitions: real ``register_*`` calls against the real
+    root, a throwaway session registry for messaging, and unbound RLM and
+    delegate parents. Handlers are never dispatched here, so no capability
+    operation executes during generation.
+    """
+    from omega_prime.agent.messaging import SessionRegistry
+    from omega_prime.tools.agent_message import register_messaging_tools
+    from omega_prime.tools.autonomous import register_autonomous_tools
+    from omega_prime.tools.delegate import register_delegate_tools
+    from omega_prime.tools.goals import register_goal_tools
+    from omega_prime.tools.harness import register_harness_tools
+    from omega_prime.tools.heartbeat import register_heartbeat_tools
+    from omega_prime.tools.prime_runtime import register_prime_kernel_tools
+    from omega_prime.tools.rlm import register_rlm_tools
+
+    registry = default_registry(root, home)
+    register_harness_tools(registry, root, enabled=True)
+    register_goal_tools(registry, root, enabled=True)
+    register_heartbeat_tools(registry, root, enabled=True)
+    register_autonomous_tools(registry, root, enabled=True)
+    register_messaging_tools(registry, "catalog", session_registry=SessionRegistry())
+    register_rlm_tools(registry, None)
+    register_prime_kernel_tools(registry, root)
+    register_delegate_tools(registry, None)
+    return registry
+
+
 def render(root: str | Path, home: str | Path) -> str:
     """Render the catalog for the roster under ``root``."""
     root = Path(root)
@@ -80,7 +115,7 @@ def render(root: str | Path, home: str | Path) -> str:
         root / "omega_prime" / "contracts" / "tool-rosters" / "omega-prime.yaml"
     )
     roster = roster_names(roster_path.read_text(encoding="utf-8"))
-    registry = default_registry(root, Path(home))
+    registry = full_inventory_registry(root, Path(home))
     schemas = {}
     for item in registry.schemas():
         fn = item.get("function", {})
@@ -92,7 +127,12 @@ def render(root: str | Path, home: str | Path) -> str:
             families[name] = family
     lines = [HEADER.rstrip("\n"), ""]
     for name in roster:
-        fn = schemas.get(name, {})
+        fn = schemas.get(name)
+        if fn is None:
+            raise SystemExit(
+                f"tool catalog: roster names {name!r} with no registered "
+                "definition; register its family before regenerating"
+            )
         lines.append(f"## {name}")
         lines.append("")
         lines.append(f"- Family: {families.get(name, 'Unregistered')}")
@@ -104,7 +144,7 @@ def render(root: str | Path, home: str | Path) -> str:
             f"- Required params: {', '.join(required) if required else 'none'}"
         )
         lines.append("")
-        lines.append(fn.get("description", "Not served by the default registry."))
+        lines.append(fn.get("description", ""))
         lines.append("")
     return "\n".join(lines)
 
@@ -140,4 +180,4 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
-__all__ = ["FAMILIES", "main", "render"]
+__all__ = ["FAMILIES", "full_inventory_registry", "main", "render"]

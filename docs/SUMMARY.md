@@ -9,6 +9,7 @@
 ## Use
 
 - [User guide](user-guide.md)
+- [Driving the bot](driving-the-bot.md)
 - [Agent loop](agent-loop.md)
 - [Connectors](connectors.md)
 - [Migration to v10](migration.md)
@@ -21,6 +22,7 @@
 - [Build aesthetics](build-aesthetics.md)
 - [Architecture](architecture.md)
 - [ADR 0001: Prime merge architecture](adr/0001-prime-merge-architecture.md)
+- [ADR 0002: Prime runtime integration](adr/0002-prime-runtime-integration.md)
 - [Tool catalog](tool-catalog.md)
 - [Greptile](greptile.md)
 - [GitBook sync](gitbook-sync.md)

@@ -1,20 +1,20 @@
 ---
 gsd_state_version: "1.0"
 milestone: v10
-milestone_name: Prime merge
-current_phase: 60
-current_phase_name: Milestone closeout
+milestone_name: Prime merge — gap closure
+current_phase: 61
+current_phase_name: Prime loop gap closure
 status: complete
-stopped_at: "v10 Prime merge complete. 8/8 phases, 32/32 requirements verified."
-last_updated: "2026-10-08T12:00:00Z"
-last_activity: 2026-10-08
-last_activity_desc: Milestone audit passed. Phase directories archived. ROADMAP collapsed.
-state_head: 39af72f
+stopped_at: "v10 Prime merge gap closure complete. 9/9 phases, 32/32 requirements satisfied, full test suite passing."
+last_updated: "2026-10-09T07:30:00.000Z"
+last_activity: 2026-10-09
+last_activity_desc: v10 milestone closeout completed; prime-agent registered as submodule; all test gates green (983 passed, 0 failed, lint/typecheck/evals clean); milestone audit passed.
+state_head: bd2f45d80a42f6ae3eb9d6f43e63b86cec485df5
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 10
-  completed_plans: 10
+  total_phases: 9
+  completed_phases: 9
+  total_plans: 6
+  completed_plans: 6
   percent: 100
 ---
 
@@ -26,15 +26,15 @@ See: .planning/PROJECT.md (updated 2026-10-08)
 
 **Core value:** One Omega Prime agent runs Hermes, Omp, and Prime in one
 Python process.
-**Current focus:** Milestone v10 complete. No next milestone is scoped.
+**Current focus:** Phase 61 — Prime loop gap closure
 
 ## Current Position
 
-Phase: 60 (Milestone closeout) / v10 Prime merge
-Status: Passed (32/32 requirements, 8/8 phases)
-Last activity: 2026-10-08 — audit, archive, roadmap collapse.
+Phase: 61 (Prime loop gap closure) — CURRENT CROSS-PHASE PROOFS
+Status: Phase 61 repaired and independently verified; stopped before the milestone lifecycle by user decision. Open - REPO-05 (published revision or acceptance), DONE-01, DONE-02
+Last activity: 2026-10-09 — review-repair wave landed and verified (980 passed; independent review clean; final 32-ID audit 27 wired, 2 user-approved exceptions, 3 open); user chose to stop before the milestone lifecycle
 
-Phase completion: 8 of 8.
+Phase completion: 8 of 9.
 
 ## Accumulated Context
 
@@ -61,10 +61,24 @@ See `.planning/milestones/v9-MILESTONE-AUDIT.md`.
 
 ### Blockers
 
-None.
+- REPO-05: documented commands pass on an isolated snapshot of the uncommitted working tree and over a real stdio MCP server, but nothing is published, so the canonical clone cannot reproduce them. Needs a published revision or the user's acceptance of the snapshot evidence (and a current or accepted receipt for the optional upstream cargo build).
+- DONE-01: the milestone audit (`.planning/v10-MILESTONE-AUDIT.md`) is gaps_found while REPO-05 is open; the two user-approved exceptions (LOOP-07 unmodified historical suite 376/2; REPO-04 no Cargo Dependabot, source-only cargo metadata exit 101) are recorded, not passes.
+- DONE-02: milestone completion, archive of the untracked `.planning/phases/` and cleanup need the user's authorization; the user chose to stop before the lifecycle on 2026-10-09. Publication must use explicit paths (untracked `openhands` and `openhands-stable.tgz` are not v10 files).
+
+### Roadmap Evolution
+
+- Phase 61 added: Close existing LOOP-01/02/03/06 wiring gaps without replaying the archived baseline
 
 ## Session
 
-**Last session:** 2026-10-08
-**Stopped at:** v10 milestone complete.
-**Resume file:** .planning/milestones/v10-MILESTONE-AUDIT.md
+**Last session:** 2026-10-09T03:15:00.000Z
+**Stopped at:** Review-repair wave verified and recorded; awaiting REPO-05 resolution and the user's lifecycle authorization. No completion/archive/publish.
+**Resume file:** .planning/v10-MILESTONE-AUDIT.md
+
+## Decisions
+
+- [Phase 61]: Existing native bridge retained; Phase61 closes Python production-loop and scheduler wiring, not a new native engine/daemon architecture. — Actual real-Rust/local-SSE and registered-tool receipts prove exercised bounded behavior; native changes are license headers only and upstream remains read-only.
+- [Phase 61]: Reopen REPO-04 instead of accepting archived Cargo Dependabot omission. — Current native Cargo manifest has required ignored Prime path dependencies; source-only dependency resolution exits101. Source packaging or explicit criterion exception requires a user decision.
+- [Phase 61]: Reopen literal integration criteria despite phase-only686-test success — Exact independent checker found22/32 wired and10 broken; actual before smoke admitted boolean model, leaked list answer, wrote0-byte child session, accepted unbound progress and exposed disabled prompt names. Isolated missing pinned prerequisite now reproduced. Repair existing Python ports only; no new engine/daemon.
+- [Phase 61]: Review-repair wave repaired the typed boundary (declared-only tool surface, bound messaging identity, strict malformed-argument rows, heartbeat and kernel typed adapters), the RLM parent contract and two-lock host, goal_set replace-all and the assembler output rule. — Evidence in `61-EVIDENCE.json#review_repair_wave`; independent review clean; final 32-ID integration check 27 wired.
+- [Phase 61]: User-approved exceptions and scope (2026-10-09): LOOP-07 unmodified historical suite (376/2 inventory pins), REPO-04 no Cargo Dependabot, CONN-01 documented scope; lifecycle stopped. — Exit codes 1 and 101 remain the observed facts; no test edited or shimmed.

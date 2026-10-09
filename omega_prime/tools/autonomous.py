@@ -12,10 +12,15 @@ one run.
 from __future__ import annotations
 
 from collections.abc import Callable
-from pathlib import Path
 from typing import Any
 
-from omega_prime.agent.autonomous import AutonomousBudget, AutonomousDriver
+from omega_prime.prime.autonomous import (
+    AutonomousConnector,
+    StartRequest,
+    StatusRequest,
+    StopRequest,
+)
+from omega_prime.prime.types import reject_extra
 from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the heartbeat tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
@@ -41,10 +46,27 @@ def register_autonomous_tools(
     max_minutes / gate); values may be overridden per ``autonomous_start`` call.
     """
     if not enabled:
+        registry.runtime_bindings.pop("prime_autonomous", None)
         return []
 
     config = config or {}
-    state: dict[str, AutonomousDriver | None] = {"driver": None}
+    # The same holder the tools mutate. ``stop_requested`` marks an explicit
+    # stop of a live run so the loop can tell it apart from ``driver is None``
+    # because no run ever started; a bare ``driver=None`` cannot distinguish
+    # the two. The loop dereferences this holder live at every boundary and
+    # never copies the driver.
+    state: dict[str, Any] = {"driver": None, "stop_requested": False}
+    registry.runtime_bindings["prime_autonomous"] = state
+    connector = AutonomousConnector(root)
+
+    # ``autonomous_start`` decodes through the typed/versioned request
+    # boundary before building the driver (CONN-01): config defaults merge
+    # first, then strict decoding rejects bool/int confusion, shell-string
+    # gates, and non-positive or non-finite budgets with no side effect.
+    # ``**extra`` is rejected whole and never merged into the payload; the
+    # registry turns a ``PrimeError`` into the structured error envelope.
+    # Status/stop read the same live holder the loop dereferences; the
+    # connector validates the status shape. Result envelopes are unchanged.
 
     def autonomous_start(
         max_turns: int | None = None,
@@ -52,40 +74,55 @@ def register_autonomous_tools(
         max_minutes: float | None = None,
         gate: list | None = None,
         gate_retries: int | None = None,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        budget = AutonomousBudget(
-            max_turns=max_turns if max_turns is not None else config.get("max_turns"),
-            max_tokens=max_tokens
-            if max_tokens is not None
-            else config.get("max_tokens"),
-            max_minutes=(
-                max_minutes if max_minutes is not None else config.get("max_minutes")
-            ),
+        reject_extra(extra, what="autonomous_start")
+        request = StartRequest.from_dict(
+            {
+                "max_turns": (
+                    max_turns if max_turns is not None else config.get("max_turns")
+                ),
+                "max_tokens": (
+                    max_tokens if max_tokens is not None else config.get("max_tokens")
+                ),
+                "max_minutes": (
+                    max_minutes
+                    if max_minutes is not None
+                    else config.get("max_minutes")
+                ),
+                "gate": gate if gate is not None else config.get("gate"),
+                "gate_retries": (
+                    gate_retries
+                    if gate_retries is not None
+                    else config.get("gate_retries", 1)
+                ),
+                "schema_version": schema_version,
+            }
         )
-        driver = AutonomousDriver(
-            root=Path(root),
-            budget=budget,
-            gate=gate if gate is not None else config.get("gate"),
-            gate_retries=(
-                gate_retries
-                if gate_retries is not None
-                else config.get("gate_retries", 1)
-            ),
-        )
-        driver.start()
+        driver = connector.start(request)
         state["driver"] = driver
+        state["stop_requested"] = False
         return {"started": True, "budget": driver.status()["budget"]}
 
-    def autonomous_status() -> dict:
-        driver = state["driver"]
-        if driver is None:
-            return {"running": False, "stopped": None}
-        return driver.status()
+    def autonomous_status(schema_version: int | None = None, **extra: Any) -> dict:
+        reject_extra(extra, what="autonomous_status")
+        request = StatusRequest.from_dict({"schema_version": schema_version})
+        return connector.status(request, state["driver"])
 
-    def autonomous_stop() -> dict:
+    def autonomous_stop(schema_version: int | None = None, **extra: Any) -> dict:
+        reject_extra(extra, what="autonomous_stop")
         driver = state["driver"]
+        request = StopRequest.from_dict({"schema_version": schema_version})
+        out = connector.stop(request, driver)
         state["driver"] = None
-        return {"stopped": True, "was_running": bool(driver and driver.running)}
+        if driver is not None:
+            # A stopped run stays stopped: the marker keeps the stop
+            # authoritative even when start/stop land in the same tool round.
+            # A stop with no live driver marks nothing, so an explicit stop of
+            # a real run is distinct from never having started.
+            state["stop_requested"] = True
+        return out
 
     handlers: dict[str, Callable[..., Any]] = {
         "autonomous_start": autonomous_start,

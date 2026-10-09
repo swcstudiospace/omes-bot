@@ -31,6 +31,10 @@ _SET_FIELDS = frozenset(
     {"schema_version", "objective", "token_budget", "stale_after_turns", "steps"}
 )
 _ACCRUE_FIELDS = frozenset({"schema_version", "usage"})
+_PAUSE_FIELDS = frozenset({"schema_version"})
+_RESUME_FIELDS = frozenset({"schema_version"})
+_CLEAR_FIELDS = frozenset({"schema_version"})
+_STATUS_FIELDS = frozenset({"schema_version"})
 
 
 @dataclass(frozen=True)
@@ -50,8 +54,15 @@ class SetGoalRequest:
             raise PrimeError(
                 "bad_type", "SetGoalRequest.steps must be a list of strings"
             )
+        if any(not step.strip() for step in steps):
+            raise PrimeError(
+                "bad_value", "SetGoalRequest.steps must not contain blank steps"
+            )
+        objective = require_str(payload, "objective", what="SetGoalRequest")
+        if not objective.strip():
+            raise PrimeError("bad_value", "SetGoalRequest.objective must not be blank")
         return cls(
-            objective=require_str(payload, "objective", what="SetGoalRequest"),
+            objective=objective,
             token_budget=optional_int(payload, "token_budget", what="SetGoalRequest"),
             stale_after_turns=optional_int(
                 payload, "stale_after_turns", what="SetGoalRequest"
@@ -126,6 +137,66 @@ class GoalStatusView:
         return asdict(self)
 
 
+def _empty_request(raw: Any, *, fields: frozenset, what: str) -> dict:
+    """Validate a fieldless lifecycle payload: version gate + no unknowns."""
+    payload = require_payload(raw, what=what)
+    check_schema_version(payload, SCHEMA_VERSION, what=what)
+    reject_unknown(payload, fields, what=what)
+    return payload
+
+
+@dataclass(frozen=True)
+class PauseRequest:
+    """Typed gate for goal_pause (version + unknown-field strictness only)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> PauseRequest:
+        _empty_request(raw, fields=_PAUSE_FIELDS, what="PauseRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
+@dataclass(frozen=True)
+class ResumeRequest:
+    """Typed gate for goal_resume (version + unknown-field strictness only)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> ResumeRequest:
+        _empty_request(raw, fields=_RESUME_FIELDS, what="ResumeRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
+@dataclass(frozen=True)
+class ClearRequest:
+    """Typed gate for goal_clear (version + unknown-field strictness only)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> ClearRequest:
+        _empty_request(raw, fields=_CLEAR_FIELDS, what="ClearRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
+@dataclass(frozen=True)
+class StatusRequest:
+    """Typed gate for goal_status (version + unknown-field strictness only)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> StatusRequest:
+        _empty_request(raw, fields=_STATUS_FIELDS, what="StatusRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
 class GoalsConnector:
     """The typed boundary over ``PrimeGoalStore`` (one store per directory)."""
 
@@ -136,20 +207,35 @@ class GoalsConnector:
         return PrimeGoalStore(self._directory)
 
     def set_goal(self, request: SetGoalRequest) -> dict:
-        store = self._store()
         kwargs: dict[str, Any] = {"token_budget": request.token_budget}
         if request.stale_after_turns is not None:
             kwargs["stale_after_turns"] = request.stale_after_turns
-        result = store.set_objective(request.objective, **kwargs)
-        for step in request.steps:
-            store.add_step(step)
-        return result
+        return self._store().replace_goal(
+            request.objective, list(request.steps), **kwargs
+        )
 
     def accrue(self, request: AccrueRequest) -> dict:
         return self._store().accrue_turn(request.usage)
 
-    def status(self) -> dict:
-        return GoalStatusView.from_status(self._store().prime_status()).to_dict()
+    def status(self, request: StatusRequest) -> dict:
+        raw = self._store().prime_status()
+        GoalStatusView.from_status(raw)
+        return raw
+
+    def pause(self, request: PauseRequest) -> dict:
+        raw = self._store().pause()
+        GoalStatusView.from_status(raw)
+        return raw
+
+    def resume(self, request: ResumeRequest) -> dict:
+        raw = self._store().resume()
+        GoalStatusView.from_status(raw)
+        return raw
+
+    def clear(self, request: ClearRequest) -> dict:
+        raw = self._store().clear()
+        GoalStatusView.from_status(raw)
+        return raw
 
     def continuation_prompt(self) -> dict:
         return {"prompt": self._store().continuation_prompt()}
@@ -158,7 +244,11 @@ class GoalsConnector:
 __all__ = [
     "SCHEMA_VERSION",
     "AccrueRequest",
+    "ClearRequest",
     "GoalStatusView",
     "GoalsConnector",
+    "PauseRequest",
+    "ResumeRequest",
     "SetGoalRequest",
+    "StatusRequest",
 ]

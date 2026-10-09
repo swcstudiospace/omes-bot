@@ -43,7 +43,7 @@ routines. With it, the bot also calls the real Omega Prime tools.
 On a machine you control (Linux, Mac, or WSL2):
 
 ```bash
-git clone https://github.com/swcstudiospace/omega-prime.git
+git clone https://github.com/swcstudiospace/omes-bot.git omega-prime
 cd omega-prime
 python -m venv .venv && .venv/bin/pip install -e .
 .venv/bin/python -m omega_prime.mcp_server --root .
@@ -75,3 +75,6 @@ also run the local verification:
 ```bash
 .venv/bin/python -m omega_prime.setup_check --root .
 ```
+
+The Prime capability families are off by default. To turn them on and drive
+the bot with them, see `docs/driving-the-bot.md`.

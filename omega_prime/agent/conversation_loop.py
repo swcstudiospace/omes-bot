@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from omega_prime.agent.budget import IterationBudget
+from omega_prime.agent.degraded import guarded_hook
 from omega_prime.agent.harness import (
     account_output,
     apply_tool_marks,
@@ -31,6 +32,13 @@ from omega_prime.agent.interrupt import InterruptFlag
 from omega_prime.agent.magic_keywords import notices_for_turn
 from omega_prime.agent.model import Model
 from omega_prime.agent.modes import apply_plan_mode
+from omega_prime.agent.prime_hooks import (
+    accounting_usage,
+    evaluate_autonomous,
+    evaluate_goal,
+    merge_usage,
+    sum_usages,
+)
 from omega_prime.agent.prompt_builder import build_system_prompt, steer_user_row
 from omega_prime.agent.session_lease import SessionLease
 from omega_prime.agent.turn_final_response import (
@@ -75,6 +83,11 @@ class Agent:
     first open), prepends its brief block to the system prompt, and emits
     the prompt plus a turn-end note. Tool calls are reported from the tool
     round. ``None`` keeps the turn fully local.
+
+    Prime hooks: ``prime_hooks`` is a :class:`PrimeHooks` built from the
+    registry's ``runtime_bindings`` (or ``None``). ``None`` keeps the exact
+    pre-v10 turn: no implicit continuation, no usage accounting, no extra
+    result keys.
     """
 
     model: Model
@@ -95,6 +108,7 @@ class Agent:
     tracer: Any | None = None
     magic_keywords: Any | None = None
     substrate: Any | None = None
+    prime_hooks: Any | None = None
     delegate_depth: int = 0
     max_depth: int = 2
     max_children: int = 1
@@ -125,17 +139,21 @@ def run_conversation(
     system_message: str | None = None,
     conversation_history: list | None = None,
     task_id: str | None = None,
+    *,
+    wait: bool = False,
 ) -> dict:
     """Run one turn. Return ``final_response`` and ``messages``.
 
     The session lease is taken before the turn and released on the way out,
-    including when the turn raises.
+    including when the turn raises. ``wait`` forwards verbatim into
+    ``lease.acquire``: the default fast-fails on a held lease exactly as
+    before; heartbeat re-entry opts into atomic waiting.
     """
     lease = agent.lease
     if lease is None:
         lease = SessionLease()
         agent.lease = lease
-    lease.acquire()
+    lease.acquire(wait=wait)
     try:
         system_message = _open_substrate(agent, user_message, system_message)
         result = _run_conversation_turn(
@@ -186,6 +204,31 @@ def _run_conversation_turn(
         assert budget is not None
         budget.refill(agent.max_iterations)
 
+    # Prime boundary state. ``None`` hooks keep the exact pre-v10 turn; the
+    # block below only reads them. Usage from every successful model call is
+    # captured here and charged exactly once per logical turn boundary,
+    # separate from the permission to append a continuation. Accounting
+    # always runs; continuation is granted only past every precedence stop.
+    hooks = getattr(agent, "prime_hooks", None)
+    if getattr(hooks, "present", True) is False:
+        hooks = None
+    pending_usages: list = []
+    turn_usage: dict[str, int] | None = None
+    goal_report: dict | None = None
+    autonomous_stop: dict | None = None
+    # Whether goal work was observed in this public run: a fresh read of an
+    # active goal at turn start, an active boundary, or a successful
+    # goal-lifecycle tool row. Distinguishes a real clear during ongoing
+    # work (cancels the other family's continuation) from never-set absence
+    # (no veto on independent autonomy). ``prime_status`` alone reports
+    # "cleared" for both, so the turn-local observation is authoritative.
+    # A startup read failure degrades loudly and vetoes implicit calls for
+    # this public run, while later boundaries still accrue paid usage.
+    goal_ever_active, goal_startup_degraded = _goal_startup_state(hooks, agent, run_id)
+    # Start of this run's own rows in the shared transcript. Refusal and
+    # lifecycle scans stay scoped here, never to prior turns' history.
+    turn_begin = len(messages)
+
     original_tools = wrap_tools(agent)
     if agent.plan_mode:
         assert agent.tools is not None
@@ -215,12 +258,17 @@ def _run_conversation_turn(
             started = time.monotonic()
             assistant_message = agent.model.complete(messages, original_tools)
             _trace_model_call(agent, started)
+            if hooks is not None:
+                pending_usages.append(_capture_usage(agent))
             if not isinstance(assistant_message, dict):
                 raise TypeError("model.complete must return an assistant message dict")
             if not account_output(agent, assistant_message.get("content")):
                 turn_exit_reason = "output_budget_exceeded"
                 break
             if _tool_calls(assistant_message):
+                # A later tool round supersedes a previous continuation answer;
+                # an unfinished tool tail must still receive its visible close.
+                final_response = None
                 _fold_queued_steer(agent)
                 since = len(messages)
                 if agent.speculative_tools and not agent.plan_mode:
@@ -259,9 +307,54 @@ def _run_conversation_turn(
             )
             _emit_new_rows(agent, messages, since)
             _journal_new_rows(agent, run_id, messages, since)
+            if hooks is None:
+                final_response = verdict.final_response
+                turn_exit_reason = verdict.turn_exit_reason
+                break
+            # One logical-turn boundary: charge this boundary's usage once to
+            # the real goal and driver, then yield to every precedence stop
+            # before any continuation. Continuation appends user rows to the
+            # same transcript and stays inside this lease, journal run, and
+            # cumulative cap/budget. The final response is preserved even when
+            # a stop wins; the stop itself is exposed in turn_exit_reason so
+            # a limit, pause, clear, stale, or gate outcome can never read as
+            # a completed text-response success.
+            outcome = _prime_text_boundary(
+                agent,
+                hooks,
+                verdict,
+                finish_reason=str(finish_reason),
+                interrupted=interrupted,
+                failed=failed,
+                pending_usages=pending_usages,
+                run_id=run_id,
+                api_call_count=api_call_count,
+                max_iterations=agent.max_iterations,
+                budget_remaining=budget.remaining,
+                messages=messages,
+                turn_begin=turn_begin,
+                goal_ever_active=goal_ever_active,
+                goal_startup_degraded=goal_startup_degraded,
+            )
+            turn_usage = merge_usage(turn_usage, outcome["aggregate"])
+            pending_usages.clear()
+            goal_ever_active = outcome["goal_ever_active"]
+            if outcome["report"] is not None:
+                goal_report = outcome["report"]
+            if outcome["autonomous_stop"] is not None:
+                autonomous_stop = outcome["autonomous_stop"]
+            if outcome["rows"] is None:
+                final_response = verdict.final_response
+                turn_exit_reason = outcome["turn_exit_reason"]
+                break
+            # Keep the accepted answer if a later continuation is vetoed before
+            # another answer arrives (interrupt, before-model, output budget).
             final_response = verdict.final_response
-            turn_exit_reason = verdict.turn_exit_reason
-            break
+            since = len(messages)
+            messages.extend(outcome["rows"])
+            _emit_new_rows(agent, messages, since)
+            _journal_new_rows(agent, run_id, messages, since)
+            continue
 
         if turn_exit_reason is None:
             if api_call_count >= agent.max_iterations:
@@ -274,6 +367,24 @@ def _run_conversation_turn(
                 turn_exit_reason = "stopped"
 
         _report_leftover_steer(agent)
+        if hooks is not None and pending_usages:
+            # A tail with no text boundary (tool-row budget/cap exit): charge
+            # its successful calls once to the goal and the driver under
+            # terminal semantics. The loop's own exit reason stands; no gate
+            # runs and no continuation is requested for a turn that cannot
+            # continue, but paid work is never left uncounted.
+            tail = sum_usages(pending_usages)
+            turn_usage = merge_usage(turn_usage, tail)
+            charged = accounting_usage(pending_usages)
+            pending_usages.clear()
+            goal = evaluate_goal(hooks, agent, charged, turn_id=run_id)
+            if goal["report"] is not None:
+                goal_report = goal["report"]
+            tail_stop = _terminal_driver_stop(
+                hooks, agent, charged, turn_exit_reason, run_id
+            )
+            if tail_stop is not None:
+                autonomous_stop = tail_stop
         since = len(messages)
         result = finalize_turn(
             agent,
@@ -285,13 +396,348 @@ def _run_conversation_turn(
             turn_exit_reason=turn_exit_reason,
             task_id=task_id,
         )
+        if hooks is not None:
+            # Unknown usage stays unknown (None), never fabricated.
+            result["usage"] = turn_usage
+            if goal_report is not None:
+                result["goal_completion"] = goal_report
+            if autonomous_stop is not None:
+                result["autonomous_stop"] = autonomous_stop
         _emit_new_rows(agent, messages, since)
         _journal_new_rows(agent, run_id, messages, since)
         emit(agent, "turn_end", turn_exit_reason=result["turn_exit_reason"])
         _finish_journal(agent, run_id, result)
         return result
+    except BaseException as exc:
+        if hooks is not None and isinstance(exc, Exception) and pending_usages:
+            # Successful calls preceding a later provider failure are accrued
+            # to the goal and the driver while the original exception
+            # propagates with its type intact. No gate runs for a failed turn;
+            # the driver sees terminal semantics. Accounting failures degrade
+            # loudly and never replace it.
+            with contextlib.suppress(Exception):
+                charged = accounting_usage(pending_usages)
+                evaluate_goal(hooks, agent, charged, turn_id=run_id)
+                _terminal_driver_stop(hooks, agent, charged, type(exc).__name__, run_id)
+        raise
     finally:
         restore_tools(agent, original_tools)
+
+
+def _capture_usage(agent: Agent) -> Any:
+    """Snapshot the provider's latest-call usage. Real shapes are dict or None."""
+    usage = getattr(agent.model, "last_usage", None)
+    if isinstance(usage, dict):
+        return dict(usage)
+    return usage
+
+
+def _goal_startup_state(
+    hooks: Any, agent: Agent, run_id: str | None = None
+) -> tuple[bool, bool]:
+    """Fresh read of goal work plus startup-hook health as the run opens.
+
+    Returns ``(active, startup_degraded)``. The read goes through the
+    existing redacted guarded-hook mechanism, so a factory failure emits
+    one ``prime_degraded`` event instead of vanishing silently; the veto
+    is remembered by the caller for this public run. Read-only; never
+    accrues. Later boundaries still charge paid usage when a fresh store
+    is reachable again.
+    """
+    factory = getattr(hooks, "goal_factory", None) if hooks is not None else None
+    if not callable(factory):
+        return (False, False)
+    status = guarded_hook(
+        agent, "goals", lambda: factory().prime_status(), turn_id=run_id
+    )
+    if status is None:
+        return (False, True)
+    return (
+        isinstance(status, dict) and status.get("prime_status") == "active",
+        False,
+    )
+
+
+def _refusal_reason(messages: list, turn_begin: int) -> str | None:
+    """Honest stop reason when the run's most recent tool round was refused.
+
+    Only the tool rows after the last assistant row that carries tool calls
+    inside ``messages[turn_begin:]`` are read, so a refusal the model recovered
+    from in a later round is not terminal, while a refusal in the final round
+    that precedes the final answer still is.
+    """
+    run = messages[turn_begin:]
+    last_round = 0
+    for index, row in enumerate(run):
+        if (
+            isinstance(row, dict)
+            and row.get("role") == "assistant"
+            and row.get("tool_calls")
+        ):
+            last_round = index + 1
+    for row in run[last_round:]:
+        if isinstance(row, dict) and row.get("role") == "tool":
+            content = row.get("content")
+            # Anchored to the failure wire: refusals arrive as failed rows
+            # (``error: ...`` from the dispatcher-raised registry denial),
+            # never as successful returned document data that merely mentions
+            # the same words.
+            if isinstance(content, str) and content.startswith("error:"):
+                if "policy forbids" in content:
+                    return "policy_refused"
+                if "approval required" in content:
+                    return "approval_refused"
+    return None
+
+
+def _cap_reason(
+    api_call_count: int, max_iterations: int, budget_remaining: int
+) -> str | None:
+    """Honest stop reason when the run hit a bound, else ``None``.
+
+    The outer iteration cap keeps its own actual reason; only a
+    caller-supplied budget exhaustion reads as ``budget_exhausted``.
+    Mirrors the loop's post-loop fallback strings exactly.
+    """
+    if api_call_count >= max_iterations:
+        return f"max_iterations_reached({api_call_count}/{max_iterations})"
+    if budget_remaining <= 0:
+        return "budget_exhausted"
+    return None
+
+
+def _goal_lifecycle_seen(messages: list, turn_begin: int) -> bool:
+    """Whether this run successfully executed a goal-lifecycle tool."""
+    for row in messages[turn_begin:]:
+        if (
+            isinstance(row, dict)
+            and row.get("role") == "tool"
+            and row.get("name")
+            in ("goal_set", "goal_pause", "goal_resume", "goal_clear")
+        ):
+            content = row.get("content")
+            if isinstance(content, str) and not content.startswith("error:"):
+                return True
+    return False
+
+
+def _goal_stop_reason(status: Any) -> str | None:
+    """The honest exit reason for a goal state that vetoes continuation."""
+    if not isinstance(status, dict):
+        return None
+    if status.get("prime_status") == "paused":
+        return "goal_paused"
+    if status.get("prime_status") == "completed":
+        return "goal_completed"
+    if status.get("budget_exhausted"):
+        return "goal_budget_exhausted"
+    if status.get("stale"):
+        return "goal_stale"
+    return None
+
+
+def _terminal_driver_stop(
+    hooks: Any,
+    agent: Agent,
+    usage: dict[str, int] | None,
+    turn_exit_reason: str | None,
+    run_id: str | None,
+) -> dict | None:
+    """Charge terminal usage to the driver without running its gate.
+
+    The driver sees ``completed: False`` under its existing incomplete-result
+    semantics: counters move for paid work, no completion gate runs, and no
+    continuation is proposed. Returns the stop verdict to record, or ``None``
+    when no run exists to stop. A stopped driver's counters never move; an
+    explicit tool stop reports its stable marker.
+    """
+    auto = evaluate_autonomous(
+        hooks,
+        agent,
+        {"completed": False, "turn_exit_reason": turn_exit_reason, "usage": usage},
+        turn_id=run_id,
+    )
+    auto_verdict = auto["verdict"] if isinstance(auto["verdict"], dict) else None
+    if auto["explicit_stop"]:
+        return {"action": "stop", "reason": "autonomous_stop"}
+    if auto_verdict is not None and auto_verdict.get("action") == "stop":
+        return auto_verdict
+    return None
+
+
+def _prime_text_boundary(
+    agent: Agent,
+    hooks: Any,
+    verdict: FinalResponseVerdict,
+    *,
+    finish_reason: str,
+    interrupted: bool,
+    failed: bool,
+    pending_usages: list,
+    run_id: str | None,
+    api_call_count: int,
+    max_iterations: int,
+    budget_remaining: int,
+    messages: list,
+    turn_begin: int,
+    goal_ever_active: bool,
+    goal_startup_degraded: bool = False,
+) -> dict:
+    """Evaluate one logical-turn boundary for goal/autonomous continuation.
+
+    Accounting and continuation permission are separate. Every successful
+    model call's usage is charged exactly once to the real goal and driver
+    first, including terminal boundaries; only then is continuation
+    considered. Returns ``{"aggregate", "report", "autonomous_stop", "rows",
+    "turn_exit_reason", "goal_ever_active"}``. ``rows`` is ``None`` when the
+    turn ends (yielding to a precedence stop) and a list of user-role
+    continuation rows when the same turn continues. Either applicable stop
+    wins over any other family's continuation request; any degraded control
+    hook (including a failed startup read) stops implicit calls for this
+    public run while the normal response stays available. A goal/driver
+    limit, pause, clear, stale, gate, refusal, or unfinished finish keeps
+    the final response but carries the real stop in turn_exit_reason, so it
+    can never read as a completed text-response success. No bound is
+    refilled here; the caller stays inside the existing cumulative cap and
+    caller budget.
+    """
+    aggregate = sum_usages(pending_usages)
+    charged = accounting_usage(pending_usages)
+    goal = evaluate_goal(hooks, agent, charged, turn_id=run_id)
+    report = goal["report"]
+    if (
+        not goal.get("degraded")
+        and isinstance(goal.get("status"), dict)
+        and goal["status"].get("prime_status") == "active"
+    ):
+        goal_ever_active = True
+    if not goal_ever_active and _goal_lifecycle_seen(messages, turn_begin):
+        goal_ever_active = True
+    autonomous_stop: dict | None = None
+    breakdown = {
+        "aggregate": aggregate,
+        "report": report,
+        "autonomous_stop": None,
+        "rows": None,
+        "turn_exit_reason": verdict.turn_exit_reason,
+        "goal_ever_active": goal_ever_active,
+    }
+    # Authoritative goal stops are read before the driver is consulted, so a
+    # paused/completed/exhausted/stale/cleared ongoing goal never lets a
+    # completion gate run. The driver is still charged under its existing
+    # incomplete-result semantics (counters move, no gate runs).
+    goal_reason = _goal_stop_reason(goal["status"])
+    if goal_reason is None and (
+        isinstance(goal.get("status"), dict)
+        and goal["status"].get("prime_status") == "cleared"
+        and goal_ever_active
+    ):
+        # A real clear during ongoing goal work cancels the other family's
+        # continuation for this run. Never-set absence (no work observed)
+        # applies no such veto, so independent autonomy still runs.
+        goal_reason = "goal_cleared"
+    # Terminal accounting: the outer cap, caller budget, interrupt, failure,
+    # unfinished finish, or an approval/policy refusal in this run's own
+    # failed tool rows. The final response is preserved, but the exit reason
+    # names the real stop so genuinely unfinished or refused controlled work
+    # never reads as a completed text-response success.
+    holder = hooks.autonomous_holder
+    controlled = (
+        goal_ever_active
+        or goal_reason is not None
+        or bool(goal["prompt"])
+        or (
+            holder is not None
+            and (holder.get("driver") is not None or holder.get("stop_requested"))
+        )
+    )
+    # Registered-but-idle families do not relabel an ordinary completed answer
+    # merely because it consumed the caller's final allowed model call.
+    cap_reason = (
+        _cap_reason(api_call_count, max_iterations, budget_remaining)
+        if controlled
+        else None
+    )
+    finished_text = finish_reason in ("stop", "end_turn", "stop_sequence")
+    refusal_reason = _refusal_reason(messages, turn_begin)
+    terminal = (
+        cap_reason is not None
+        or interrupted
+        or failed
+        or not finished_text
+        or refusal_reason is not None
+    )
+    boundary_reason: str | None
+    if cap_reason is not None:
+        boundary_reason = cap_reason
+    elif goal_reason is not None:
+        boundary_reason = goal_reason
+    elif refusal_reason is not None:
+        boundary_reason = refusal_reason
+    elif not finished_text:
+        boundary_reason = f"incomplete_response(finish_reason={finish_reason})"
+    else:
+        boundary_reason = verdict.turn_exit_reason
+    turn_result = {
+        "completed": not terminal and goal_reason is None,
+        "turn_exit_reason": boundary_reason,
+        "usage": charged,
+    }
+    auto = evaluate_autonomous(hooks, agent, turn_result, turn_id=run_id)
+    auto_verdict = auto["verdict"] if isinstance(auto["verdict"], dict) else None
+    if auto["explicit_stop"] or (
+        auto_verdict is not None and auto_verdict.get("action") == "stop"
+    ):
+        if auto_verdict is not None:
+            autonomous_stop = auto_verdict
+        else:
+            autonomous_stop = {"action": "stop", "reason": "autonomous_stop"}
+        breakdown["autonomous_stop"] = autonomous_stop
+    if cap_reason is not None:
+        # The loop's own bound stands; the driver's terminal stop above is
+        # still recorded honestly on the result.
+        breakdown["turn_exit_reason"] = cap_reason
+        return breakdown
+    if goal_reason is not None:
+        # An authoritative goal stop wins over any driver continuation or
+        # stop; the driver's terminal accounting above is still recorded.
+        breakdown["turn_exit_reason"] = goal_reason
+        return breakdown
+    if terminal:
+        # Refusal, unfinished finish, interrupt, or failure: the honest
+        # boundary reason stands; the driver's terminal stop above is still
+        # recorded honestly on the result.
+        breakdown["turn_exit_reason"] = boundary_reason
+        return breakdown
+    if autonomous_stop is not None:
+        # An explicit tool stop or a driver limit/gate stop wins even with an
+        # active goal. Stopped outcomes stay sticky and honest on the result:
+        # the final response is preserved but the exit reason names the stop.
+        breakdown["turn_exit_reason"] = (
+            f"autonomous_stop({autonomous_stop.get('reason')})"
+        )
+        return breakdown
+    # A degraded control hook stops implicit calls for this public run. The
+    # normal response stays available and the redacted degradation was
+    # already emitted; neither family's continuation may spend past an
+    # unreadable budget on this run.
+    if goal.get("degraded") or auto.get("degraded") or goal_startup_degraded:
+        return breakdown
+    rows: list = []
+    if goal["prompt"]:
+        rows.append({"role": "user", "content": goal["prompt"]})
+    if (
+        auto["present"]
+        and not auto["degraded"]
+        and auto_verdict is not None
+        and auto_verdict.get("action") == "continue"
+        and auto_verdict.get("prompt")
+    ):
+        rows.append({"role": "user", "content": auto_verdict["prompt"]})
+    if not rows:
+        return breakdown
+    breakdown["rows"] = rows
+    return breakdown
 
 
 def _open_substrate(

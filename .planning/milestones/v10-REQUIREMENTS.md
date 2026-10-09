@@ -19,9 +19,16 @@ standards under AGPL-3.0.
 - [x\] **DISC-02**: `.planning/research/v10-omega-overlap-map.md` names the exact
   Omega Prime integration points (registry, roster, prompt assembly, loop
   phases, config, durability) with file citations
-- [x\] **DISC-03**: `cargo test --workspace --locked` in `prime-agent/` exits 0
-  on the recorded toolchain; the result is logged as the parity baseline and
-  `VENDOR.md` records the pin
+- [x\] **DISC-03**: the parity baseline is `cargo test --workspace --locked` on the pinned
+  toolchain, with the pin recorded in `VENDOR.md`. Unskipped, that command
+  exits 101: three `pa-cli` `acp_mode_e2e` settle tests fail and are the
+  skip set in `omega_prime/contracts/prime-agent.pin.json`. CI runs the
+  skip set. The Phase 53 “622 passed” figure is the fail-fast sum of
+  `test result: ok` lines before `acp_mode_e2e`, not a full-workspace exit 0.
+  A later path-clean no-fail-fast accounting of the default targets, with
+  those three skips filtered, is 5089 passed, 2 failed, 19 ignored, 3
+  filtered (`VENDOR.md`). The two failures are local ext4 hazards
+  (`futimens` ctime, import sidecar `readdir` order), not pin exclusions
 
 ### Build / CI
 

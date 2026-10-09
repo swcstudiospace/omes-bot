@@ -10,6 +10,7 @@ from pathlib import Path
 from omega_prime.agent.conversation_loop import Agent, run_conversation
 from omega_prime.agent.curator import review_turn
 from omega_prime.agent.model import ScriptedModel
+from omega_prime.agent.runtime import OmegaPrimeAgent
 from omega_prime.memory.manager import MemoryManager
 from omega_prime.memory.provider import (
     BuiltinMemoryProvider,
@@ -67,6 +68,10 @@ from omega_prime.tools.packs import (
     register_packs_tools,
 )
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
+from omega_prime.tools.prime_runtime import (
+    KERNEL_TOOL_NAMES,
+    register_prime_kernel_tools,
+)
 from omega_prime.tools.quality import (
     QUALITY_TOOL_NAMES,
     QualityClient,
@@ -608,7 +613,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_substrate_tools(registry, SubstrateClient())
     register_rlm_tools(
         registry,
-        Agent(model=ScriptedModel([]), tools={}),
+        OmegaPrimeAgent(
+            ScriptedModel([]), registry=ToolRegistry(), session_dir=tmp_path / "rlm"
+        ),
         run_child=lambda prompt, model=None, thinking=None: "ok",
     )
     register_harness_tools(registry, tmp_path)
@@ -616,6 +623,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_heartbeat_tools(registry, tmp_path)
     register_autonomous_tools(registry, tmp_path)
     register_messaging_tools(registry, "test-session")
+    register_prime_kernel_tools(
+        registry, tmp_path, run_child=lambda prompt, model=None, thinking=None: "ok"
+    )
     registry.register(
         "not_on_roster",
         "Registered but not offered.",
@@ -647,6 +657,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + HEARTBEAT_TOOL_NAMES
         + AUTONOMOUS_TOOL_NAMES
         + MESSAGING_TOOL_NAMES
+        + KERNEL_TOOL_NAMES
     )
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

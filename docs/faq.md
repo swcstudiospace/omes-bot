@@ -45,6 +45,11 @@ servers — those stay in the repo or on your host. See `grokbot/SETUP.md`.
 The roster is the truth: the bot claims only tools in
 `contracts/tool-rosters/omega-prime.yaml`. Anything else is a gap — file it.
 
+**How do I turn the Prime families on for my bot?**
+Set the flags on the tool host, build an effective prompt with the same
+families, and pre-approve the gated tools you want. See
+[Driving the bot](driving-the-bot.md).
+
 ## Substrate and memory
 
 **Do I need the substrate running?**

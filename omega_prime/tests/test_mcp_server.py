@@ -23,6 +23,7 @@ from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
 from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.infra import InfraClient, InfraContext, register_infra_tools
+from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
 from omega_prime.tools.registry import ToolRegistry
 from omega_prime.tools.rlm import RLM_TOOL_NAMES
 from omega_prime.tools.ultrathink import (
@@ -88,6 +89,35 @@ def test_call_tool_dispatches_and_marks_errors(tmp_path: Path):
     assert "approval required" in gated.content[0].text
 
 
+def test_call_tool_null_error_field_is_a_result_not_an_error():
+    registry = ToolRegistry()
+    registry.register(
+        "status_loaded",
+        "status payload whose error field is null",
+        {"type": "object", "properties": {}},
+        lambda: {"loaded": True, "error": None},
+    )
+    registry.register(
+        "status_failed",
+        "status payload whose error field is a message",
+        {"type": "object", "properties": {}},
+        lambda: {"loaded": False, "error": "extension not built"},
+    )
+    call = call_tool_handler(registry)
+
+    class Params:
+        def __init__(self, name):
+            self.name = name
+            self.arguments = {}
+
+    loaded = asyncio.run(call(None, Params("status_loaded")))
+    assert loaded.is_error in (False, None)
+    assert json.loads(loaded.content[0].text)["loaded"] is True
+
+    failed = asyncio.run(call(None, Params("status_failed")))
+    assert failed.is_error is True
+
+
 def test_default_registry_serves_the_roster(tmp_path: Path):
     roster = roster_names(
         (OMEGA_PRIME / "contracts" / "tool-rosters" / "omega-prime.yaml").read_text(
@@ -105,6 +135,7 @@ def test_default_registry_serves_the_roster(tmp_path: Path):
         | set(HEARTBEAT_TOOL_NAMES)
         | set(AUTONOMOUS_TOOL_NAMES)
         | set(MESSAGING_TOOL_NAMES)
+        | set(KERNEL_TOOL_NAMES)
     )
     assert served == [name for name in roster if name not in gated]
     assert "delegate_task" not in served

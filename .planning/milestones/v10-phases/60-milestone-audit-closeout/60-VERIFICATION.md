@@ -34,8 +34,12 @@ Same closeout set as the audit:
 - `cargo-deny 0.20.2 check licenses` → exit 0, `licenses ok`.
 - `rustc --version` → `rustc 1.98.1` (matches the pin).
 
-DISC-03's cargo test exit code is the Phase 53 baseline (622 passed with
-the three documented skips), not a second number invented at closeout.
+DISC-03 was not re-run as a skip-set exit 0 at closeout. The Phase 53
+baseline is an unskipped fail-fast exit 101. “622 passed” is the sum of
+`test result: ok` lines before `acp_mode_e2e`, not a full-workspace total
+and not a second measurement. The later path-clean no-fail-fast
+accounting is in `VENDOR.md`: 5089 passed, 2 failed, 19 ignored, 3
+filtered. The two failures are local ext4 hazards, not pin skips.
 
 ## Requirements
 

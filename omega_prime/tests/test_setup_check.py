@@ -62,11 +62,13 @@ def test_each_failure_trips_its_check(tmp_path: Path, monkeypatch):
     roster_path.write_text(json.dumps(roster), encoding="utf-8")
     template = fixture / "omega_prime" / "grokbot" / "templates" / "OMEGA_PRIME.md"
     text = template.read_text(encoding="utf-8")
-    assert text.count("## Enabled skills\n\n## Routines") == 1
+    assert "## Enabled skills\n" in text
+    assert "## Routines\n" in text
     template.write_text(
         text.replace(
-            "## Enabled skills\n\n## Routines",
-            "## Enabled skills\n\n- ghost-skill\n\n## Routines",
+            "## Enabled skills\n",
+            "## Enabled skills\n\n- ghost-skill\n",
+            1,
         ),
         encoding="utf-8",
     )

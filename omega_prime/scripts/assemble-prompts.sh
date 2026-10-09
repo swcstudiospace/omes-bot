@@ -14,4 +14,12 @@ set -euo pipefail
 OMEGA_PRIME="$(cd "$(dirname "$0")/.." && pwd)"
 REPO="$(cd "$OMEGA_PRIME/.." && pwd)"
 export PYTHONPATH="${REPO}${PYTHONPATH:+:${PYTHONPATH}}"
-exec python3 -m omega_prime.assemble --root "$OMEGA_PRIME" "$@"
+
+PYTHON="python3"
+if [ -x "$REPO/.venv/bin/python" ]; then
+    PYTHON="$REPO/.venv/bin/python"
+elif [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+    PYTHON="$VIRTUAL_ENV/bin/python"
+fi
+
+exec "$PYTHON" -m omega_prime.assemble --root "$OMEGA_PRIME" "$@"

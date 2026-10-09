@@ -112,12 +112,12 @@ upgraded the agent loop … Hermes, Omp and Prime all in a Bot."
 
 **Parity baseline:** `cargo test --workspace --locked` in `prime-agent/`
 on the ambient toolchain (cargo 1.98.1, rustc 1.98.1). Log at
-`/tmp/v10-cargo-baseline.log`; the passing result + toolchain versions are
-recorded in the phase SUMMARY.
+`/tmp/v10-cargo-baseline.log`. The SUMMARY records exit 101, not a
+passing workspace total. Later accounting is in `VENDOR.md`.
 
 **Acceptance bar (from v10-ROADMAP):** both maps landed with file-cited
-behaviors; cargo baseline exits 0; VENDOR.md pin recorded (done this
-phase: remote, commit, license, scope).
+behaviors; the cargo baseline is recorded and did not exit 0; VENDOR.md
+pin recorded (done this phase: remote, commit, license, scope).
 
 </specifics>
 

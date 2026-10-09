@@ -68,7 +68,7 @@ closure:
 | `.venv/bin/python -m pip_audit -r requirements-lock.txt --ignore-vuln PYSEC-2026-4114` | 0 | no known vulnerabilities, 1 ignored |
 | `cargo-deny 0.20.2 check licenses` in `prime-agent/` | 0 | `licenses ok` |
 | `rustc --version` | 0 | `rustc 1.98.1`, matches `prime-agent.pin.json` |
-| `cargo test --workspace --locked` with the three documented skips (Phase 53 baseline, same pin `967eb13f`; v10 did not modify `prime-agent/` sources) | 0 | 622 passed. The three `pa-cli` ACP e2e tests fail unskipped and are excluded by `prime-agent.pin.json`, which is what CI passes. |
+| `cargo test --workspace --locked` with the three documented skips (pin `967eb13f`; v10 did not modify `prime-agent/` sources) | not 0 | Phase 53 logged an unskipped fail-fast run: exit 101, “622 passed”, 3 failed in `pa-cli` `acp_mode_e2e`. 622 is only the earlier `test result: ok` lines (15+14+326+266+0+1). That binary itself had 42 passes, and cargo had not started `pa-core`, `pa-daemon`, `pa-models`, `pa-telemetry`, `pa-tui`, or `pa-types`. A later skip-set run with published 0.9.8 `prime-agent` on `PATH` exited 101 on `ts_daemon_differential_cli_output`. Path-clean, credential-unset, no-fail-fast accounting of the default targets is in `VENDOR.md`: 5089 passed, 2 failed, 19 ignored, 3 filtered. The two failures are the ctime test and `imported_session_compacts` on this ext4 host; they are not pin skips. CI’s gate is the skip set with no `prime-agent` binary on `PATH` and provider credentials unset. |
 
 ## Requirements
 
@@ -76,7 +76,7 @@ closure:
 |---|---|---|---|
 | DISC-01 | 53 | `.planning/research/v10-prime-capability-map.md`; `53-VERIFICATION.md` status passed | satisfied |
 | DISC-02 | 53 | `.planning/research/v10-omega-overlap-map.md`; `53-VERIFICATION.md` | satisfied |
-| DISC-03 | 53 | Skip-set `cargo test --workspace --locked` on `967eb13f`: 622 passed (`53-VERIFICATION.md`). Unskipped, the three `pa-cli` ACP e2e tests fail and are the documented exclusions. Pin in `VENDOR.md` and `prime-agent.pin.json` | satisfied |
+| DISC-03 | 53 | Unskipped fail-fast `cargo test --workspace --locked` on `967eb13f` exited 101 (`53-01-SUMMARY.md`: 622 passed, 3 failed). 622 is that run’s partial sum, not a full workspace. The three failures are the pin skip set. Later path-clean no-fail-fast accounting in `VENDOR.md` is 5089 passed, 2 failed, 19 ignored, 3 filtered; the two failures are ext4 hazards, not extra pin skips. CI runs the skip set. | satisfied as the documented skip-set gate. The local accounting is not exit 0 |
 | BUILD-01 | 54 | `.github/workflows/rust-parity.yml` runs `cargo build --locked` and `cargo test --workspace --locked` with the pin's skip set | satisfied |
 | BUILD-02 | 54 | `cargo-deny 0.20.2 check licenses` → exit 0, `licenses ok`. Allowlist is MIT/Apache/BSD/ISC/Zlib and the other permissive IDs in `prime-agent/deny.toml` | satisfied |
 | BUILD-03 | 54 | `prime-agent.pin.json` toolchain `1.98.1`; `rustc 1.98.1` locally; the workflow passes that toolchain to `dtolnay/rust-toolchain` | satisfied |

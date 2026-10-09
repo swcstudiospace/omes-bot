@@ -15,6 +15,8 @@ from collections.abc import Callable
 from typing import Any
 
 from omega_prime.agent.messaging import SessionRegistry
+from omega_prime.prime.messaging import MessagingConnector, ObserveRequest, SendRequest
+from omega_prime.prime.types import reject_extra
 from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the autonomous tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
@@ -54,12 +56,37 @@ def register_messaging_tools(
 
     sessions = session_registry if session_registry is not None else _shared_registry()
     sessions.register(session)
+    connector = MessagingConnector(sessions)
 
-    def agent_message_send(recipient: str, body: str) -> dict:
-        return sessions.send(session, recipient, body)
+    # Both handlers decode through the typed/versioned request boundary
+    # before touching the session registry (CONN-01). The sender / session is
+    # this session's bound name and never a model-supplied field: any
+    # undeclared argument is rejected, never merged into the payload.
+    # Result envelopes are unchanged.
 
-    def agent_observe() -> list:
-        return sessions.observe(session)
+    def agent_message_send(
+        recipient: Any = None,
+        body: Any = None,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="agent_message_send")
+        request = SendRequest.from_dict(
+            {
+                "sender": session,
+                "recipient": recipient,
+                "body": body,
+                "schema_version": schema_version,
+            }
+        )
+        return connector.send(request)
+
+    def agent_observe(schema_version: int | None = None, **extra: Any) -> list:
+        reject_extra(extra, what="agent_observe")
+        request = ObserveRequest.from_dict(
+            {"session": session, "schema_version": schema_version}
+        )
+        return connector.observe(request)["messages"]
 
     handlers: dict[str, Callable[..., Any]] = {
         "agent_message_send": agent_message_send,

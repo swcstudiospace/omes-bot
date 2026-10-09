@@ -119,6 +119,26 @@ def test_base_schema_unchanged(tmp_path):
     assert (tmp_path / "goals" / "prime_goal.json").is_file()
 
 
+def test_replace_goal_validates_everything_before_writing(tmp_path):
+    store = _store(tmp_path)
+    store.replace_goal("Keep me", ["one"], token_budget=100)
+    base = tmp_path / "goals" / "goals.json"
+    sidecar = tmp_path / "goals" / "prime_goal.json"
+    before = (base.read_bytes(), sidecar.read_bytes())
+
+    with pytest.raises(ValueError):
+        store.replace_goal("   ", ["new"])
+    with pytest.raises(ValueError, match="token_budget"):
+        store.replace_goal("New", ["new"], token_budget=0)
+    with pytest.raises(ValueError):
+        store.replace_goal("New", ["fine", "   "])
+
+    assert (base.read_bytes(), sidecar.read_bytes()) == before
+    reopened = _store(tmp_path)
+    assert reopened.status()["objective"] == "Keep me"
+    assert [step["text"] for step in reopened.status()["steps"]] == ["one"]
+
+
 # --- tool family ---------------------------------------------------------------
 
 

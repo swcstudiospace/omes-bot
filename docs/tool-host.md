@@ -12,8 +12,9 @@ Run the real Omega Prime tools behind your bot over MCP.
 `--no-roster` the server exposes exactly the shipped roster's
 default set — 108 tools. `delegate_task` is excluded: it needs a live parent
 agent, so orchestration stays in the bot, not behind MCP. The Prime
-families (RLM, harness, goals, heartbeat, autonomous, messaging) join only
-when their `omega-prime.json` flags are on.
+families that need no live parent (harness, goals, heartbeat, autonomous,
+kernel) join when their `omega-prime.json` flags are on; RLM and messaging
+need a live parent or session, so the MCP server never registers them.
 
 Policy and approval denials come back as MCP error results with
 the registry's own text. Approval-gated tools (deploys,

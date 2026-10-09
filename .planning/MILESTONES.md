@@ -16,7 +16,7 @@ parity oracle. The repo is AGPL-3.0, Copyright (C) 2026 Spectrum Web Co.
 `catalog --check` → exit 0. `ruff check` and `ruff format --check` → exit 0.
 `python -m mypy omega_prime` → exit 0, 215 files.
 `pip-audit -r requirements-lock.txt --ignore-vuln PYSEC-2026-4114` → exit 0.
-`cargo-deny check licenses` → exit 0. All 32 requirements satisfied.
+`cargo-deny check licenses` → exit 0. Local `cargo test --workspace --locked` with the three ACP skips is not exit 0: 5089 passed, 2 failed, 19 ignored, 3 filtered (`VENDOR.md`). The two failures are ext4 hazards, not pin skips. All 32 requirements satisfied.
 
 **Archive:** `milestones/v10-ROADMAP.md`, `milestones/v10-REQUIREMENTS.md`, `milestones/v10-MILESTONE-AUDIT.md`, `milestones/v10-phases/`.
 

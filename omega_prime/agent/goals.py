@@ -71,13 +71,47 @@ class PrimeGoalStore(GoalStore):
         stale_after_turns: int = DEFAULT_STALE_AFTER_TURNS,
     ) -> dict:
         """Set the objective and (re)activate the goal. Blank text is a ValueError."""
-        if token_budget is not None and (
-            isinstance(token_budget, bool)
-            or not isinstance(token_budget, int)
-            or token_budget <= 0
-        ):
-            raise ValueError("token_budget must be a positive int or None")
+        _check_budget(token_budget)
         super().set_objective(text)
+        self._prime = {
+            "status": "active",
+            "token_budget": token_budget,
+            "tokens_used": 0,
+            "turns_since_accrual": 0,
+            "stale_after_turns": stale_after_turns,
+            "set_at": _now(),
+            "completed_at": None,
+        }
+        self._save_sidecar()
+        return self.prime_status()
+
+    def replace_goal(
+        self,
+        objective: str,
+        steps: list[str],
+        *,
+        token_budget: int | None = None,
+        stale_after_turns: int = DEFAULT_STALE_AFTER_TURNS,
+    ) -> dict:
+        """Replace the whole goal and return the Prime status with the new steps.
+
+        The objective, budget, and every step are validated before anything is
+        written (``ValueError`` on a blank objective or step, or a bad budget),
+        so a rejected request leaves ``goals.json`` and ``prime_goal.json``
+        untouched. The supplied ``steps`` replace any previous steps; the Prime
+        state restarts as ``active`` with zero tokens used. Each document is
+        written once. A crash between the two file writes is not covered:
+        ``goals.json`` may then hold the new goal while the sidecar still holds
+        the old Prime state.
+        """
+        if not isinstance(objective, str) or objective.strip() == "":
+            raise ValueError("objective must be a non-empty string")
+        _check_budget(token_budget)
+        if any(not isinstance(step, str) or step.strip() == "" for step in steps):
+            raise ValueError("step must be a non-empty string")
+        self._document["objective"] = objective
+        self._document["steps"] = [{"text": step, "done": False} for step in steps]
+        self._save()
         self._prime = {
             "status": "active",
             "token_budget": token_budget,
@@ -229,6 +263,15 @@ class PrimeGoalStore(GoalStore):
             json.dumps(self._prime, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
+
+
+def _check_budget(token_budget: int | None) -> None:
+    if token_budget is not None and (
+        isinstance(token_budget, bool)
+        or not isinstance(token_budget, int)
+        or token_budget <= 0
+    ):
+        raise ValueError("token_budget must be a positive int or None")
 
 
 def _now() -> str:

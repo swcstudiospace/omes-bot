@@ -37,11 +37,11 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/swcstudiospace/omega-prime"
-Repository = "https://github.com/swcstudiospace/omega-prime"
-Documentation = "https://github.com/swcstudiospace/omega-prime/tree/main/docs"
-Issues = "https://github.com/swcstudiospace/omega-prime/issues"
-Changelog = "https://github.com/swcstudiospace/omega-prime/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/swcstudiospace/omes-bot"
+Repository = "https://github.com/swcstudiospace/omes-bot"
+Documentation = "https://github.com/swcstudiospace/omes-bot/tree/main/docs"
+Issues = "https://github.com/swcstudiospace/omes-bot/issues"
+Changelog = "https://github.com/swcstudiospace/omes-bot/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -256,3 +256,76 @@ def test_dispatch_upsert_get_roundtrip(tmp_path):
     assert got["body"] == "body"
     listed = json.loads(registry.dispatch("harness_list", {"kind": "prompt"}))
     assert [e["id"] for e in listed] == ["p1"]
+
+
+def test_refine_rollback_restores_durable_entries_and_fixed_prompt(tmp_path):
+    from omega_prime.agent.model import ScriptedModel
+    from omega_prime.agent.runtime import OmegaPrimeAgent
+
+    class Approvals:
+        def is_approved(self, name):
+            return True
+
+    registry = ToolRegistry(approval_log=Approvals())
+    register_harness_tools(registry, tmp_path)
+    before = json.loads(
+        registry.dispatch(
+            "harness_upsert",
+            {
+                "kind": "memory",
+                "id": "m1",
+                "title": "before",
+                "body": "prior fact",
+                "tags": ["prior"],
+            },
+        )
+    )
+    model = ScriptedModel(
+        [
+            {"role": "assistant", "content": "before refine"},
+            {"role": "assistant", "content": "after refine"},
+        ]
+    )
+    with OmegaPrimeAgent(
+        model, registry=registry, system_message="Fixed base bytes.\nDo not rewrite."
+    ) as agent:
+        agent.run("first turn")
+        base = model.seen[0][0]["content"].encode()
+        registry.dispatch(
+            "harness_refine",
+            {
+                "trigger": "review",
+                "trajectory": "observed fact",
+                "proposals": [
+                    {
+                        "kind": "memory",
+                        "id": "m1",
+                        "title": "after",
+                        "body": "new fact",
+                        "tags": ["next"],
+                        "evidence": ["observed fact"],
+                    },
+                    {
+                        "kind": "skill",
+                        "id": "new-skill",
+                        "title": "new",
+                        "body": "learned rule",
+                        "evidence": ["observed fact"],
+                    },
+                ],
+            },
+        )
+        current = json.loads(
+            registry.dispatch("harness_get", {"kind": "memory", "id": "m1"})
+        )
+        assert current["body"] == "new fact"
+        assert json.loads(registry.dispatch("harness_rollback", {}))["restored"] is True
+        restored = json.loads(
+            registry.dispatch("harness_get", {"kind": "memory", "id": "m1"})
+        )
+        assert restored == before
+        assert "error" in json.loads(
+            registry.dispatch("harness_get", {"kind": "skill", "id": "new-skill"})
+        )
+        agent.run("second turn")
+        assert model.seen[1][0]["content"].encode() == base

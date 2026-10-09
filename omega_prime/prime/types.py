@@ -11,6 +11,7 @@ loudly (the pa-models forward-compat guard made loud, not silent).
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any, cast
 
 from omega_prime.prime.errors import PrimeError
@@ -23,6 +24,8 @@ def check_schema_version(payload: dict, own_version: int, *, what: str) -> None:
         return
     if isinstance(version, bool) or not isinstance(version, int):
         raise PrimeError("bad_type", f"{what}.schema_version must be int")
+    if version < 1:
+        raise PrimeError("bad_value", f"{what}.schema_version must be >= 1")
     if version > own_version:
         raise PrimeError(
             "unsupported_schema_version",
@@ -35,6 +38,21 @@ def reject_unknown(payload: dict, allowed: frozenset, *, what: str) -> None:
     if unknown:
         raise PrimeError(
             "unknown_field", f"{what} got unknown fields: {', '.join(unknown)}"
+        )
+
+
+def reject_extra(extra: Mapping[str, Any], *, what: str) -> None:
+    """Reject every undeclared key a tool handler collected in ``**extra``.
+
+    Handlers accept ``**extra`` only so an undeclared argument reaches a typed
+    ``unknown_field`` error after policy and approval instead of a generic
+    registry ``TypeError``. ``extra`` is never merged into the decoded payload:
+    a key that matched a session-bound or alias field (``sender``, ``session``,
+    ``scope``) would otherwise silently override the tool's own binding.
+    """
+    if extra:
+        raise PrimeError(
+            "unknown_field", f"{what} does not accept: {', '.join(sorted(extra))}"
         )
 
 
@@ -81,6 +99,13 @@ def require_bool(payload: dict, key: str, *, what: str) -> bool:
     return value
 
 
+def optional_bool(payload: dict, key: str, *, what: str, default: bool = False) -> bool:
+    value = payload.get(key, default)
+    if not isinstance(value, bool):
+        raise PrimeError("bad_type", f"{what}.{key} must be bool")
+    return value
+
+
 def require_member(payload: dict, key: str, members: tuple, *, what: str) -> str:
     value = payload.get(key)
     if value not in members:
@@ -99,8 +124,10 @@ def require_payload(raw: Any, *, what: str) -> dict:
 
 __all__ = [
     "check_schema_version",
+    "optional_bool",
     "optional_int",
     "optional_str",
+    "reject_extra",
     "reject_unknown",
     "require_bool",
     "require_int",

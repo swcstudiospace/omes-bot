@@ -9,17 +9,18 @@ disabled the family is absent from the registry and roster (LOOP-05).
 
 from __future__ import annotations
 
-import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from omega_prime.cron.heartbeat import (
-    clear_heartbeat,
-    list_heartbeats,
-    schedule_heartbeat,
+from omega_prime.cron.heartbeat_runtime import HeartbeatRuntime
+from omega_prime.prime.heartbeat import (
+    ClearRequest,
+    HeartbeatConnector,
+    ListRequest,
+    SetRequest,
 )
-from omega_prime.cron.scheduler import JobStore
+from omega_prime.prime.types import reject_extra
 from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the goals tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
@@ -40,31 +41,64 @@ def register_heartbeat_tools(
 ) -> list[str]:
     """Register the heartbeat family. ``enabled=False`` registers nothing."""
     if not enabled:
+        stale = registry.runtime_bindings.get("prime_heartbeat")
+        if isinstance(stale, HeartbeatRuntime):
+            stale.close()
+            registry.runtime_bindings.pop("prime_heartbeat")
         return []
 
-    def store() -> JobStore:
-        return JobStore(Path(root) / "cron" / "jobs.json")
+    path = Path(root, "cron", "jobs.json").expanduser().resolve()
+    bindings = registry.runtime_bindings
+    existing = bindings.get("prime_heartbeat")
+    if isinstance(existing, HeartbeatRuntime) and existing.path == path:
+        runtime = existing
+    else:
+        if isinstance(existing, HeartbeatRuntime):
+            existing.close()
+        runtime = HeartbeatRuntime(path)
+        bindings["prime_heartbeat"] = runtime
+
+    connector = HeartbeatConnector(runtime)
+
+    # Every handler decodes through the typed/versioned request boundary
+    # before touching the runtime (CONN-01). ``**extra`` only exists so an
+    # undeclared argument reaches a typed ``unknown_field`` error after policy
+    # and approval ran; it is never merged into the decoded payload. Result
+    # envelopes are the runtime's own.
 
     def heartbeat_set(
-        session: str,
-        prompt: str,
-        interval_seconds: float,
-        due_at: float | None = None,
+        session: Any = None,
+        prompt: Any = None,
+        interval_seconds: Any = None,
+        due_at: Any = None,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        job_id = schedule_heartbeat(
-            store(),
-            session,
-            prompt,
-            interval_seconds=interval_seconds,
-            due_at=time.time() if due_at is None else due_at,
+        reject_extra(extra, what="heartbeat_set")
+        request = SetRequest.from_dict(
+            {
+                "session": session,
+                "prompt": prompt,
+                "interval_seconds": interval_seconds,
+                "due_at": due_at,
+                "schema_version": schema_version,
+            }
         )
-        return {"scheduled": job_id, "session": session}
+        return connector.schedule(request)
 
-    def heartbeat_list() -> list:
-        return list_heartbeats(store())
+    def heartbeat_list(schema_version: int | None = None, **extra: Any) -> list:
+        reject_extra(extra, what="heartbeat_list")
+        request = ListRequest.from_dict({"schema_version": schema_version})
+        return connector.list_jobs(request)
 
-    def heartbeat_clear(job_id: str) -> dict:
-        return clear_heartbeat(store(), job_id)
+    def heartbeat_clear(
+        job_id: Any = None, schema_version: int | None = None, **extra: Any
+    ) -> dict:
+        reject_extra(extra, what="heartbeat_clear")
+        request = ClearRequest.from_dict(
+            {"job_id": job_id, "schema_version": schema_version}
+        )
+        return connector.clear(request)
 
     handlers: dict[str, Callable[..., Any]] = {
         "heartbeat_set": heartbeat_set,

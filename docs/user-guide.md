@@ -33,11 +33,11 @@ it never claims a skill that isn't a file on disk.
 
 ## Tools and approvals
 
-The roster lists 135 tools across coding, growth, platform, IDE,
+The roster lists 146 tools across coding, growth, platform, IDE,
 messaging, seven domain packs (lead, systems, web, mobile,
 infra, quality, app packs), substrate plus ultrathink bridge
-tools, and the six Prime families (RLM, harness, goals, heartbeat,
-autonomous, agent messaging) — those are config-gated and default
+tools, and the seven Prime families (RLM, harness, goals, heartbeat,
+autonomous, agent messaging, kernel) — those are config-gated and default
 off, so a default install serves 108. Most reads run free; writes,
 deploys, publishes, and merges
 need your approval first — the bot asks, you approve, then it runs.

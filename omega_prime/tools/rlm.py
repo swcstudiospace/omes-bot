@@ -10,11 +10,20 @@ when disabled the family is absent from the registry and roster (LOOP-05).
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict
-from pathlib import Path
 from typing import Any
 
-from omega_prime.agent.rlm import host_for
+from omega_prime.agent.rlm import host_for, require_parent
+from omega_prime.prime.rlm import (
+    CollectRequest,
+    CreateSessionRequest,
+    DeleteRequest,
+    ListSubagentsRequest,
+    ProgressNoteRequest,
+    RenameRequest,
+    RlmConnector,
+    SpawnRequest,
+)
+from omega_prime.prime.types import reject_extra
 from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the substrate tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
@@ -33,17 +42,6 @@ _WRITE_TOOLS = frozenset(
 )
 
 
-def _jsonable(value: Any) -> Any:
-    """Dataclass → JSON-safe dict, preserving the Prime field names."""
-    if hasattr(value, "__dataclass_fields__"):
-        return {k: _jsonable(v) for k, v in asdict(value).items()}
-    if isinstance(value, Path):
-        return str(value)
-    if isinstance(value, list):
-        return [_jsonable(v) for v in value]
-    return value
-
-
 def register_rlm_tools(
     registry: ToolRegistry,
     parent: Any,
@@ -52,55 +50,128 @@ def register_rlm_tools(
     run_child: Any = None,
     session_store: Any = None,
 ) -> list[str]:
-    """Register the RLM family. ``enabled=False`` registers nothing (LOOP-05)."""
+    """Register the RLM family. ``enabled=False`` registers nothing (LOOP-05).
+
+    A non-``None`` ``parent`` must satisfy the RLM parent contract; a
+    misconfigured parent fails here, not at the first model call. A ``None``
+    parent registers the tools without ever constructing a host (catalog path).
+    """
     if not enabled:
         return []
+    if parent is not None:
+        require_parent(parent)
 
-    def host() -> Any:
-        return host_for(parent, True, run_child=run_child)
+    def connector() -> RlmConnector:
+        return RlmConnector(host_for(parent, True, run_child=run_child))
+
+    # Every handler rejects undeclared arguments, then decodes only its
+    # declared parameters through the typed/versioned request boundary before
+    # touching the host (CONN-01). Required parameters default to ``None`` so
+    # an omitted field reaches the typed decoder (``bad_type``) instead of a
+    # Python ``TypeError``. Handlers never catch ``PrimeError``:
+    # ``ToolRegistry.dispatch`` converts it into the typed error envelope and
+    # audits it as an error. Policy and approval already ran before this
+    # handler. Tool result envelopes are unchanged.
 
     def rlm_spawn(
-        prompt: str,
-        name: str,
+        prompt: Any = None,
+        name: Any = None,
         model: str | None = None,
         thinking: str | None = None,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        return _jsonable(
-            host().spawn(prompt, name=name, model=model, thinking=thinking)
+        reject_extra(extra, what="rlm_spawn")
+        request = SpawnRequest.from_dict(
+            {
+                "prompt": prompt,
+                "name": name,
+                "model": model,
+                "thinking": thinking,
+                "schema_version": schema_version,
+            }
         )
+        return connector().spawn(request)
 
-    def rlm_collect(targets: Any = None, timeout_ms: int = 0) -> list:
-        return _jsonable(host().collect(targets, timeout_ms=timeout_ms))
+    def rlm_collect(
+        targets: Any = None,
+        timeout_ms: int = 0,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> list:
+        reject_extra(extra, what="rlm_collect")
+        request = CollectRequest.from_dict(
+            {
+                "targets": targets,
+                "timeout_ms": timeout_ms,
+                "schema_version": schema_version,
+            }
+        )
+        return connector().collect(request)["results"]
 
-    def rlm_list_subagents() -> list:
-        return _jsonable(host().list_subagents())
+    def rlm_list_subagents(schema_version: int | None = None, **extra: Any) -> list:
+        reject_extra(extra, what="rlm_list_subagents")
+        ListSubagentsRequest.from_dict({"schema_version": schema_version})
+        return connector().list_subagents()["subagents"]
 
-    def rlm_delete_subagent(target: Any) -> dict:
-        return _jsonable(host().delete_subagent(target))
+    def rlm_delete_subagent(
+        target: Any = None, schema_version: int | None = None, **extra: Any
+    ) -> dict:
+        reject_extra(extra, what="rlm_delete_subagent")
+        request = DeleteRequest.from_dict(
+            {"target": target, "schema_version": schema_version}
+        )
+        return connector().delete_subagent(request)
 
     def rlm_create_session(
-        prompt: str,
+        prompt: Any = None,
         name: str | None = None,
         model: str | None = None,
         thinking: str | None = None,
-        cwd: str | None = None,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        return _jsonable(
-            host().create_session(
-                prompt,
-                name=name,
-                model=model,
-                thinking=thinking,
-                cwd=cwd,
-                session_store=session_store,
-            )
+        # ``cwd`` is not declared: a per-session directory is unsupported, so a
+        # model-supplied ``cwd`` reaches ``reject_extra`` as an unknown field.
+        reject_extra(extra, what="rlm_create_session")
+        request = CreateSessionRequest.from_dict(
+            {
+                "prompt": prompt,
+                "name": name,
+                "model": model,
+                "thinking": thinking,
+                "schema_version": schema_version,
+            }
         )
+        return connector().create_session(request, session_store=session_store)
 
-    def rlm_progress_note(child_id: str, message: str) -> dict:
-        return _jsonable(host().progress_note(child_id, message))
+    def rlm_progress_note(
+        child_id: Any = None,
+        message: Any = None,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="rlm_progress_note")
+        request = ProgressNoteRequest.from_dict(
+            {
+                "child_id": child_id,
+                "message": message,
+                "schema_version": schema_version,
+            }
+        )
+        return connector().progress_note(request)
 
-    def rlm_rename(target: Any, name: str) -> dict:
-        return _jsonable(host().rename(target, name))
+    def rlm_rename(
+        target: Any = None,
+        name: Any = None,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="rlm_rename")
+        request = RenameRequest.from_dict(
+            {"target": target, "name": name, "schema_version": schema_version}
+        )
+        return connector().rename(request)
 
     handlers: dict[str, Callable[..., Any]] = {
         "rlm_spawn": rlm_spawn,
@@ -183,7 +254,6 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
                 "name": _string("Optional session name."),
                 "model": _string("Optional provider/model selector."),
                 "thinking": _string("Optional reasoning level."),
-                "cwd": _string("Optional working directory."),
             },
             ["prompt"],
         ),

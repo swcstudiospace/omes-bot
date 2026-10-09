@@ -41,7 +41,7 @@ def _fixture(name: str) -> dict:
 
 class _Parent:
     def __init__(self, tmp_path):
-        self.depth = 0
+        self.delegate_depth = 0
         self.max_depth = 2
         self.max_children = 4
         self.session_dir = str(tmp_path)

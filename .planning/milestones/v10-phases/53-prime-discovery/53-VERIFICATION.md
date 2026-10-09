@@ -18,17 +18,32 @@ gaps: []
 2. Overlap map names the exact Omega Prime extension points per family —
    PASS (`.planning/research/v10-omega-overlap-map.md`).
 3. `cargo test --workspace --locked` in `prime-agent/` baseline recorded —
-   PASS: 622 passed; 3 known-failing `pa-cli --test acp_mode_e2e` (ACP-stdio
-   settle timing, out-of-scope surface; reproduced under parallel and
-   `--test-threads=1`; upstream latest main). Documented in the Phase 53
-   summary and mirrored in the CI skip set.
+   PASS with the corrected reading under Commands: unskipped fail-fast
+   exit 101, 3 known-failing `pa-cli --test acp_mode_e2e` (ACP-stdio settle
+   timing, out-of-scope surface). The “622 passed” figure is not a
+   full-workspace total. The CI skip set mirrors those three failures.
 
 ## Commands
 
 - `cargo test --workspace --locked` (in `prime-agent/` @ `967eb13f`) →
-  622 passed, 3 known-failing as documented.
+  exit 101. The recorded “622 passed, 3 known-failing” counts only
+  `test result: ok` lines before fail-fast stopped in
+  `pa-cli --test acp_mode_e2e` (that binary: 42 passed, 3 failed). Crates
+  not yet started: `pa-core`, `pa-daemon`, `pa-models`, `pa-telemetry`,
+  `pa-tui`, `pa-types`.
 - `.venv/bin/python -m pytest omega_prime/tests/test_prime_pin.py` →
   drift guard green (VENDOR pin matches `contracts/prime-agent.pin.json`).
+
+## Correction (2026-10-08)
+
+“622 passed” is not a skip-set exit 0 and not a full-workspace total.
+See the command note above. The accepted gate is the three-test skip set
+in `omega_prime/contracts/prime-agent.pin.json`. A later path-clean,
+credential-unset, no-fail-fast accounting of the default targets (those
+three skips filtered) is in `VENDOR.md`: 5089 passed, 2 failed, 19
+ignored, 3 filtered. The two failures are local ext4 hazards, not pin
+skips. Empty doc-tests add 0. The 965-filtered and 966-filtered lib
+invocations are not in that total.
 
 ## Requirements
 

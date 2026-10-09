@@ -11,12 +11,19 @@ disabled the family is absent from the registry and roster (LOOP-05).
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import asdict
-from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
-from omega_prime.agent.refine import refine
-from omega_prime.learning.harness import HarnessKind, HarnessState
+from omega_prime.prime.errors import PrimeError
+from omega_prime.prime.harness import (
+    DeleteRequest,
+    GetRequest,
+    HarnessConnector,
+    ListRequest,
+    RefineRequest,
+    RollbackRequest,
+    UpsertRequest,
+)
+from omega_prime.prime.types import reject_extra
 from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the RLM tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
@@ -33,10 +40,23 @@ _WRITE_TOOLS = frozenset(
     {"harness_upsert", "harness_delete", "harness_refine", "harness_rollback"}
 )
 
+# Default for ``harness_refine``'s ``trajectory``: distinguishes an omitted
+# argument from an explicit JSON null.
+_OMITTED: Any = object()
 
-def _state(root: Any, global_: bool) -> HarnessState:
-    base = Path(root) / ("harness-global" if global_ else "harness-local")
-    return HarnessState(base, scope="global" if global_ else "local").load()
+
+def _scope(global_: Any) -> str:
+    """Map the tool ``global_`` flag to the connector scope vocabulary.
+
+    A non-bool flag is a typed error, never a truthy coercion into the
+    cross-session store.
+    """
+    if not isinstance(global_, bool):
+        raise PrimeError(
+            "bad_type",
+            f"harness global_ must be bool, got {type(global_).__name__}",
+        )
+    return "global" if global_ else "local"
 
 
 def register_harness_tools(
@@ -49,56 +69,129 @@ def register_harness_tools(
     if not enabled:
         return []
 
+    def connector() -> HarnessConnector:
+        return HarnessConnector(root)
+
+    # Every handler decodes through the typed/versioned request boundary
+    # before touching state (CONN-01). Decoding precedes capability
+    # effects; registry policy/approval already ran, and the registry turns a
+    # ``PrimeError`` into the structured error envelope. ``global_`` is the
+    # only scope input at the tool surface: ``**extra`` is rejected whole and
+    # never merged into the decoded payload, so no undeclared key can reach
+    # the cross-session store. Result envelopes are unchanged: bare entry /
+    # bare list / {"deleted","id"} / refine result.
+
     def harness_upsert(
-        kind: str,
-        id: str,
-        title: str,
-        body: str,
-        tags: list | None = None,
-        global_: bool = False,
+        kind: Any = None,
+        id: Any = None,
+        title: Any = None,
+        body: Any = None,
+        tags: Any = None,
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        state = _state(root, global_)
-        entry = state.upsert(
-            cast(HarnessKind, kind), id, title=title, body=body, tags=tags
+        reject_extra(extra, what="harness_upsert")
+        request = UpsertRequest.from_dict(
+            {
+                "kind": kind,
+                "id": id,
+                "title": title,
+                "body": body,
+                "scope": _scope(global_),
+                "tags": [] if tags is None else tags,
+                "schema_version": schema_version,
+            }
         )
-        state.save()
-        return asdict(entry)
+        return connector().upsert(request)["entry"]
 
-    def harness_get(kind: str, id: str, global_: bool = False) -> dict:
-        entry = _state(root, global_).get(cast(HarnessKind, kind), id)
-        return asdict(entry) if entry else {"error": f"no {kind} entry {id!r}"}
+    def harness_get(
+        kind: Any = None,
+        id: Any = None,
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="harness_get")
+        request = GetRequest.from_dict(
+            {
+                "kind": kind,
+                "id": id,
+                "scope": _scope(global_),
+                "schema_version": schema_version,
+            }
+        )
+        entry = connector().get(request)["entry"]
+        if entry is not None:
+            return entry
+        return {"error": f"no {request.kind} entry {request.id!r}"}
 
-    def harness_list(kind: str | None = None, global_: bool = False) -> list:
-        narrowed = cast(HarnessKind, kind) if kind is not None else None
-        return [asdict(e) for e in _state(root, global_).list_entries(narrowed)]
+    def harness_list(
+        kind: Any = None,
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> list:
+        reject_extra(extra, what="harness_list")
+        request = ListRequest.from_dict(
+            {
+                "kind": kind,
+                "scope": _scope(global_),
+                "schema_version": schema_version,
+            }
+        )
+        return connector().list_entries(request)["entries"]
 
-    def harness_delete(kind: str, id: str, global_: bool = False) -> dict:
-        state = _state(root, global_)
-        deleted = state.delete(cast(HarnessKind, kind), id)
-        if deleted:
-            state.save()
-        return {"deleted": deleted, "id": id}
+    def harness_delete(
+        kind: Any = None,
+        id: Any = None,
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="harness_delete")
+        request = DeleteRequest.from_dict(
+            {
+                "kind": kind,
+                "id": id,
+                "scope": _scope(global_),
+                "schema_version": schema_version,
+            }
+        )
+        return {"deleted": connector().delete(request)["deleted"], "id": request.id}
 
     def harness_refine(
-        trigger: str,
-        proposals: list,
-        trajectory: Any,
-        global_: bool = False,
+        trigger: Any = None,
+        proposals: Any = None,
+        trajectory: Any = _OMITTED,
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
     ) -> dict:
-        state = _state(root, global_)
-        result = refine(
-            state, trigger=trigger, proposals=proposals, trajectory=trajectory
-        )
-        if result["applied"]:
-            state.save()
-        return result
+        reject_extra(extra, what="harness_refine")
+        payload: dict[str, Any] = {
+            "trigger": trigger,
+            "proposals": proposals,
+            "scope": _scope(global_),
+            "schema_version": schema_version,
+        }
+        # ``trajectory`` is any JSON value, null included, so ``None`` cannot
+        # mean "omitted"; the decoder owns the missing-field error.
+        if trajectory is not _OMITTED:
+            payload["trajectory"] = trajectory
+        request = RefineRequest.from_dict(payload)
+        return connector().refine(request)
 
-    def harness_rollback(global_: bool = False) -> dict:
-        state = _state(root, global_)
-        restored = state.rollback()
-        if restored:
-            state.save()
-        return {"restored": restored}
+    def harness_rollback(
+        global_: Any = False,
+        schema_version: int | None = None,
+        **extra: Any,
+    ) -> dict:
+        reject_extra(extra, what="harness_rollback")
+        request = RollbackRequest.from_dict(
+            {"scope": _scope(global_), "schema_version": schema_version}
+        )
+        return connector().rollback(request)
 
     handlers: dict[str, Callable[..., Any]] = {
         "harness_upsert": harness_upsert,

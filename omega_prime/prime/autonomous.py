@@ -10,6 +10,7 @@ and pass through verbatim.
 
 from __future__ import annotations
 
+import math
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -29,6 +30,8 @@ from omega_prime.prime.types import (
     check_schema_version,
     optional_int,
     reject_unknown,
+    require_bool,
+    require_int,
     require_member,
     require_payload,
 )
@@ -47,6 +50,8 @@ STOP_REASONS: tuple[str, ...] = (
 _START_FIELDS = frozenset(
     {"schema_version", "max_turns", "max_tokens", "max_minutes", "gate", "gate_retries"}
 )
+_STATUS_FIELDS = frozenset({"schema_version"})
+_STOP_FIELDS = frozenset({"schema_version"})
 
 
 @dataclass(frozen=True)
@@ -76,11 +81,12 @@ class StartRequest:
         if max_minutes is not None and (
             isinstance(max_minutes, bool)
             or not isinstance(max_minutes, (int, float))
+            or (isinstance(max_minutes, float) and not math.isfinite(max_minutes))
             or max_minutes <= 0
         ):
             raise PrimeError(
                 "bad_value",
-                "StartRequest.max_minutes must be a positive number or null",
+                "StartRequest.max_minutes must be a finite positive number or null",
             )
         return cls(
             max_turns=optional_int(payload, "max_turns", what="StartRequest"),
@@ -153,6 +159,73 @@ class VerdictView:
         return asdict(self)
 
 
+@dataclass(frozen=True)
+class DriverStatusView:
+    """The JSON-safe view of one ``AutonomousDriver.status()`` dict.
+
+    The ``stopped`` slot is ``None`` while running, else a closed Prime
+    stop reason; a corrupt driver state is a typed error, not a silent
+    pass-through.
+    """
+
+    running: bool
+    turns: int
+    tokens: int
+    stopped: str | None
+
+    @classmethod
+    def from_status(cls, status: Any) -> DriverStatusView:
+        payload = require_payload(status, what="DriverStatusView")
+        stopped = payload.get("stopped")
+        if stopped is not None and stopped not in STOP_REASONS:
+            raise PrimeError(
+                "bad_value", f"DriverStatusView.stopped {stopped!r} not in STOP_REASONS"
+            )
+        return cls(
+            running=require_bool(payload, "running", what="DriverStatusView"),
+            turns=require_int(payload, "turns", what="DriverStatusView"),
+            tokens=require_int(payload, "tokens", what="DriverStatusView"),
+            stopped=stopped,
+        )
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> DriverStatusView:
+        return cls.from_status(require_payload(raw, what="DriverStatusView"))
+
+    def to_dict(self) -> dict:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class StatusRequest:
+    """Typed gate for autonomous_status (version + unknown-field strictness)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> StatusRequest:
+        payload = require_payload(raw, what="StatusRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="StatusRequest")
+        reject_unknown(payload, _STATUS_FIELDS, what="StatusRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
+@dataclass(frozen=True)
+class StopRequest:
+    """Typed gate for autonomous_stop (version + unknown-field strictness)."""
+
+    @classmethod
+    def from_dict(cls, raw: Any) -> StopRequest:
+        payload = require_payload(raw, what="StopRequest")
+        check_schema_version(payload, SCHEMA_VERSION, what="StopRequest")
+        reject_unknown(payload, _STOP_FIELDS, what="StopRequest")
+        return cls()
+
+    def to_dict(self) -> dict:
+        return {"schema_version": SCHEMA_VERSION}
+
+
 class AutonomousConnector:
     """Builds and drives an ``AutonomousDriver`` from typed requests."""
 
@@ -176,11 +249,34 @@ class AutonomousConnector:
     def after_turn(self, driver: AutonomousDriver, result: dict) -> dict:
         return VerdictView.from_verdict(driver.after_turn(result)).to_dict()
 
+    def status(self, request: StatusRequest, driver: AutonomousDriver | None) -> dict:
+        """The validated status of the holder's live driver.
+
+        A missing driver (never started, or stopped and cleared) is the
+        same idle shape the registered tools have always returned; a live
+        driver is validated through ``DriverStatusView`` and returned with
+        its full budget/gate envelope.
+        """
+        if driver is None:
+            return {"running": False, "stopped": None}
+        raw = driver.status()
+        DriverStatusView.from_status(raw)
+        return raw
+
+    def stop(self, request: StopRequest, driver: AutonomousDriver | None) -> dict:
+        return {
+            "stopped": True,
+            "was_running": bool(driver is not None and driver.running),
+        }
+
 
 __all__ = [
     "SCHEMA_VERSION",
     "STOP_REASONS",
     "AutonomousConnector",
+    "DriverStatusView",
     "StartRequest",
+    "StatusRequest",
+    "StopRequest",
     "VerdictView",
 ]

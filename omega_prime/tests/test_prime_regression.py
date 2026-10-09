@@ -1,67 +1,79 @@
-"""Flags-off regression (LOOP-07): with every Prime family flag at its default
-(off), the loop and the default registry are bit-for-bit the pre-v10 behavior.
-"""
+# SPDX-License-Identifier: AGPL-3.0-only
+# Copyright (C) 2026 Spectrum Web Co
+"""Compare the default-off public loop against executed pre-v10 transcripts."""
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
+
+import pytest
 
 from omega_prime.agent.conversation_loop import Agent, run_conversation
 from omega_prime.agent.harness import events_of
 from omega_prime.agent.model import ScriptedModel
-from omega_prime.mcp_server import default_registry
-from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
-from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
-from omega_prime.tools.goals import GOAL_TOOL_NAMES
-from omega_prime.tools.harness import HARNESS_TOOL_NAMES
-from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
-from omega_prime.tools.rlm import RLM_TOOL_NAMES
+from omega_prime.tools.approvals import ApprovalLog
+from omega_prime.tools.registry import ToolRegistry
 
-ROOT = Path(__file__).resolve().parents[2]
-
-PRIME_TOOL_NAMES = (
-    tuple(RLM_TOOL_NAMES)
-    + tuple(HARNESS_TOOL_NAMES)
-    + tuple(GOAL_TOOL_NAMES)
-    + tuple(HEARTBEAT_TOOL_NAMES)
-    + tuple(AUTONOMOUS_TOOL_NAMES)
-    + tuple(MESSAGING_TOOL_NAMES)
+FIXTURE = json.loads(
+    (Path(__file__).parent / "parity" / "pre_v10_loop_transcript.json").read_text()
 )
 
 
-def _tool_call(name: str, arguments: str = "{}", call_id: str = "call-1") -> dict:
-    return {
-        "role": "assistant",
-        "content": "",
-        "tool_calls": [
-            {
-                "id": call_id,
-                "type": "function",
-                "function": {"name": name, "arguments": arguments},
-            }
-        ],
-    }
+@pytest.mark.parametrize("case", FIXTURE["cases"], ids=lambda case: case["id"])
+def test_default_off_consumer_matches_executed_pre_v10_transcript(case):
+    counter = [0]
 
+    def advance_counter(amount):
+        counter[0] += amount
+        return {"total": counter[0]}
 
-def test_flags_off_loop_emits_no_prime_events():
-    model = ScriptedModel(
-        [
-            _tool_call("echo"),
-            {"role": "assistant", "content": "done"},
-        ]
+    def fail_operation():
+        raise ValueError("historical operation failed")
+
+    approvals = ApprovalLog()
+    if case["approved"]:
+        approvals.approve("advance_counter", "historical-human")
+    registry = ToolRegistry(approval_log=approvals)
+    registry.register(
+        "advance_counter",
+        "Advance a stateful counter",
+        {
+            "type": "object",
+            "properties": {"amount": {"type": "integer"}},
+            "required": ["amount"],
+        },
+        advance_counter,
+        requires_approval=True,
     )
-    agent = Agent(model=model, tools={"echo": lambda: "pong"}, max_iterations=4)
-    result = run_conversation(agent, "ping", system_message="sys")
+    registry.register(
+        "fail_operation",
+        "Report a deterministic operation failure",
+        {"type": "object", "properties": {}},
+        fail_operation,
+    )
 
-    assert result["messages"][-1]["content"] == "done"
-    prime_events = [
-        event for event in events_of(agent) if event["type"].startswith("prime_")
-    ]
-    assert prime_events == []
+    def dispatcher(name):
+        def dispatch(**arguments):
+            return registry.dispatch(name, arguments)
 
+        return dispatch
 
-def test_flags_off_default_registry_has_no_prime_tools(tmp_path):
-    registry = default_registry(ROOT, tmp_path)
-    names = {schema["function"]["name"] for schema in registry.schemas()}
-    for prime_name in PRIME_TOOL_NAMES:
-        assert prime_name not in names
+    tools = {
+        row["function"]["name"]: dispatcher(row["function"]["name"])
+        for row in registry.schemas()
+    }
+    model = ScriptedModel(case["script"])
+    agent = Agent(model=model, tools=tools, max_iterations=case["max_iterations"])
+    result = run_conversation(agent, case["user_message"], task_id=case["id"])
+    observed = {
+        "result": result,
+        "model_requests": model.seen,
+        "offered_tools": [sorted(offered) for offered in model.tools_seen],
+        "events": events_of(agent),
+        "counter": counter[0],
+        "approved": approvals.is_approved("advance_counter"),
+        "model_call_count": model.call_count,
+        "model_remaining": model.remaining,
+    }
+    assert observed == case["expected"]

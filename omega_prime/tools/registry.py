@@ -41,6 +41,12 @@ class ToolRegistry:
         self._policy = policy
         self._audit = audit
         self._tracer = tracer
+        # Resource attachment for enabled capability families. Keys are
+        # published only by the registering family module itself
+        # (``prime_goals`` factory, ``prime_autonomous`` holder,
+        # ``prime_heartbeat`` runtime). Empty by default; never grants tools
+        # and never bypasses ``dispatch``.
+        self.runtime_bindings: dict[str, Any] = {}
 
     def register(
         self,
@@ -82,6 +88,8 @@ class ToolRegistry:
 
     def dispatch(self, name: str, arguments: Any = None) -> str:
         """Run ``name`` and return a JSON string. Unknown names do not raise."""
+        from omega_prime.prime.errors import PrimeError
+
         tool = self._tools.get(name) if isinstance(name, str) else None
         if tool is None:
             label = name if isinstance(name, str) else type(name).__name__
@@ -95,6 +103,13 @@ class ToolRegistry:
                 self._record(name, "denied", reason="approval required")
                 return _dump({"error": "approval required", "tool": name})
             payload = _call(tool.handler, _arguments(arguments))
+        except PrimeError as exc:
+            # Typed-boundary failures keep their structured code/reason on the
+            # wire (CONN-01): the model sees "code: reason" plus the machine
+            # fields, not a flattened traceback. Policy/approval already ran
+            # above; decoding never precedes authorization.
+            self._record(name, "error", reason=f"{exc.code}: {exc.reason}")
+            return _dump(exc.to_dict())
         except Exception as exc:
             self._record(name, "error", reason=f"{type(exc).__name__}: {exc}")
             return _dump({"error": f"{type(exc).__name__}: {exc}"})

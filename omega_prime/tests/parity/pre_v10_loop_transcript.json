@@ -1,0 +1,1055 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "repository": "https://github.com/swcstudiospace/omes-bot.git",
+    "commit": "79ff51af41e2469b906a501814d1899a13be9679",
+    "tree": "b69619a4b6f9f14c5c844c42a8dd94eedf441756",
+    "commit_date": "2026-10-08T07:13:44+00:00",
+    "first_v10_commit": "70babccf47776ace9e3e7c6a08cbffe13ee53850",
+    "scope": "Public pre-v10 Agent/run_conversation with actual ToolRegistry and ApprovalLog; no enabled Prime hooks, no journal/tracer or network. Immutable committed source before Phase53, not an invented v9-final commit.",
+    "normalization": "None. Fixed scripted tool-call IDs and task IDs; callable values are represented only by actually offered tool names. Semantic messages/results/events/approval/effects/stop/model-call accounting preserved.",
+    "capture_script": "import json\nimport sys\nfrom omega_prime.agent.conversation_loop import Agent, run_conversation\nfrom omega_prime.agent.harness import events_of\nfrom omega_prime.agent.model import ScriptedModel\nfrom omega_prime.tools.approvals import ApprovalLog\nfrom omega_prime.tools.registry import ToolRegistry\n\ndef capture_case(case):\n    counter = [0]\n    def advance_counter(amount):\n        counter[0] += amount\n        return {\"total\": counter[0]}\n    def fail_operation():\n        raise ValueError(\"historical operation failed\")\n    approvals = ApprovalLog()\n    if case[\"approved\"]:\n        approvals.approve(\"advance_counter\", \"historical-human\")\n    registry = ToolRegistry(approval_log=approvals)\n    registry.register(\"advance_counter\", \"Advance a stateful counter\", {\"type\":\"object\",\"properties\":{\"amount\":{\"type\":\"integer\"}},\"required\":[\"amount\"]}, advance_counter, requires_approval=True)\n    registry.register(\"fail_operation\", \"Report a deterministic operation failure\", {\"type\":\"object\",\"properties\":{}}, fail_operation)\n    def dispatcher(name):\n        def dispatch(**arguments):\n            return registry.dispatch(name, arguments)\n        return dispatch\n    tools = {row[\"function\"][\"name\"]: dispatcher(row[\"function\"][\"name\"]) for row in registry.schemas()}\n    model = ScriptedModel(case[\"script\"])\n    agent = Agent(model=model, tools=tools, max_iterations=case[\"max_iterations\"])\n    result = run_conversation(agent, case[\"user_message\"], task_id=case[\"id\"])\n    return {\"result\":result,\"model_requests\":model.seen,\"offered_tools\":[sorted(offered) for offered in model.tools_seen],\"events\":events_of(agent),\"counter\":counter[0],\"approved\":approvals.is_approved(\"advance_counter\"),\"model_call_count\":model.call_count,\"model_remaining\":model.remaining}\n\nif __name__ == \"__main__\":\n    print(json.dumps([{**case,\"expected\":capture_case(case)} for case in json.loads(sys.stdin.read())],sort_keys=True))\n",
+    "source_sha256": {
+      "omega_prime/agent/conversation_loop.py": "d6a97130ebd9c23bb2436d4beb3cca8accd64b76ff7bab7d4b46ecba7aee2cfb",
+      "omega_prime/agent/model.py": "4981b6b269ef1bd74f3a818af751ad919e94e2fead11fdcac626a1bf8cdca586",
+      "omega_prime/agent/harness.py": "17114adcafe3e86da1c95884af4c3e4369156ab3d32b101772f5f739769d4d8d",
+      "omega_prime/tools/registry.py": "9bc65117e49e886ce79d6bb7938d89d1e7fe654c962d3d4db032da5e99f24eb6",
+      "omega_prime/tools/approvals.py": "62af466b81b38616da12a35f27bbe62d66b74bc66e6570ef63ab2185bd364a5b"
+    }
+  },
+  "cases": [
+    {
+      "approved": false,
+      "expected": {
+        "approved": false,
+        "counter": 0,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "text_response(finish_reason=stop)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 1,
+        "model_remaining": 0,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Finish the baseline task.",
+              "role": "user"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 1,
+          "completed": true,
+          "failed": false,
+          "final_response": "Baseline task complete.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Finish the baseline task.",
+              "role": "user"
+            },
+            {
+              "content": "Baseline task complete.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "text_completion",
+          "turn_exit_reason": "text_response(finish_reason=stop)"
+        }
+      },
+      "id": "text_completion",
+      "max_iterations": 4,
+      "script": [
+        {
+          "content": "Baseline task complete.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Finish the baseline task."
+    },
+    {
+      "approved": true,
+      "expected": {
+        "approved": true,
+        "counter": 2,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "text_response(finish_reason=stop)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 2,
+        "model_remaining": 0,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Advance the counter by two.",
+              "role": "user"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Advance the counter by two.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 2}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-call-1",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 2}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-call-1"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 2,
+          "completed": true,
+          "failed": false,
+          "final_response": "Counter advanced.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Advance the counter by two.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 2}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-call-1",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 2}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-call-1"
+            },
+            {
+              "content": "Counter advanced.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "approved_state_change",
+          "turn_exit_reason": "text_response(finish_reason=stop)"
+        }
+      },
+      "id": "approved_state_change",
+      "max_iterations": 4,
+      "script": [
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"amount\": 2}",
+                "name": "advance_counter"
+              },
+              "id": "historical-call-1",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "Counter advanced.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Advance the counter by two."
+    },
+    {
+      "approved": false,
+      "expected": {
+        "approved": false,
+        "counter": 0,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "text_response(finish_reason=stop)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 2,
+        "model_remaining": 0,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Attempt the unapproved counter update.",
+              "role": "user"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Attempt the unapproved counter update.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 2}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-call-1",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"error\": \"approval required\", \"tool\": \"advance_counter\"}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-call-1"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 2,
+          "completed": true,
+          "failed": false,
+          "final_response": "Approval is required.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Attempt the unapproved counter update.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 2}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-call-1",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"error\": \"approval required\", \"tool\": \"advance_counter\"}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-call-1"
+            },
+            {
+              "content": "Approval is required.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "approval_refusal",
+          "turn_exit_reason": "text_response(finish_reason=stop)"
+        }
+      },
+      "id": "approval_refusal",
+      "max_iterations": 4,
+      "script": [
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"amount\": 2}",
+                "name": "advance_counter"
+              },
+              "id": "historical-call-1",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "Approval is required.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Attempt the unapproved counter update."
+    },
+    {
+      "approved": true,
+      "expected": {
+        "approved": true,
+        "counter": 3,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "text_response(finish_reason=stop)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 3,
+        "model_remaining": 0,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from a failed operation.",
+              "role": "user"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from a failed operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "fail_operation"
+                  },
+                  "id": "historical-failed-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"error\": \"ValueError: historical operation failed\"}",
+              "is_error": false,
+              "name": "fail_operation",
+              "role": "tool",
+              "tool_call_id": "historical-failed-call"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from a failed operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "fail_operation"
+                  },
+                  "id": "historical-failed-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"error\": \"ValueError: historical operation failed\"}",
+              "is_error": false,
+              "name": "fail_operation",
+              "role": "tool",
+              "tool_call_id": "historical-failed-call"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 3}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-recovery-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 3}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-recovery-call"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 3,
+          "completed": true,
+          "failed": false,
+          "final_response": "Recovered after the operation failed.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from a failed operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "fail_operation"
+                  },
+                  "id": "historical-failed-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"error\": \"ValueError: historical operation failed\"}",
+              "is_error": false,
+              "name": "fail_operation",
+              "role": "tool",
+              "tool_call_id": "historical-failed-call"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 3}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-recovery-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 3}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-recovery-call"
+            },
+            {
+              "content": "Recovered after the operation failed.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "handler_error_then_recovery",
+          "turn_exit_reason": "text_response(finish_reason=stop)"
+        }
+      },
+      "id": "handler_error_then_recovery",
+      "max_iterations": 4,
+      "script": [
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{}",
+                "name": "fail_operation"
+              },
+              "id": "historical-failed-call",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"amount\": 3}",
+                "name": "advance_counter"
+              },
+              "id": "historical-recovery-call",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "Recovered after the operation failed.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Recover from a failed operation."
+    },
+    {
+      "approved": true,
+      "expected": {
+        "approved": true,
+        "counter": 1,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "text_response(finish_reason=stop)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 3,
+        "model_remaining": 0,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from an unavailable operation.",
+              "role": "user"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from an unavailable operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "unknown_operation"
+                  },
+                  "id": "historical-unknown-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "error: unknown tool unknown_operation",
+              "is_error": true,
+              "name": "unknown_operation",
+              "role": "tool",
+              "tool_call_id": "historical-unknown-call"
+            }
+          ],
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from an unavailable operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "unknown_operation"
+                  },
+                  "id": "historical-unknown-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "error: unknown tool unknown_operation",
+              "is_error": true,
+              "name": "unknown_operation",
+              "role": "tool",
+              "tool_call_id": "historical-unknown-call"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 1}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-valid-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 1}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-valid-call"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ],
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 3,
+          "completed": true,
+          "failed": false,
+          "final_response": "Recovered using an available operation.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Recover from an unavailable operation.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{}",
+                    "name": "unknown_operation"
+                  },
+                  "id": "historical-unknown-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "error: unknown tool unknown_operation",
+              "is_error": true,
+              "name": "unknown_operation",
+              "role": "tool",
+              "tool_call_id": "historical-unknown-call"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 1}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-valid-call",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 1}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-valid-call"
+            },
+            {
+              "content": "Recovered using an available operation.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "unknown_tool_then_recovery",
+          "turn_exit_reason": "text_response(finish_reason=stop)"
+        }
+      },
+      "id": "unknown_tool_then_recovery",
+      "max_iterations": 4,
+      "script": [
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{}",
+                "name": "unknown_operation"
+              },
+              "id": "historical-unknown-call",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"amount\": 1}",
+                "name": "advance_counter"
+              },
+              "id": "historical-valid-call",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "Recovered using an available operation.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Recover from an unavailable operation."
+    },
+    {
+      "approved": true,
+      "expected": {
+        "approved": true,
+        "counter": 2,
+        "events": [
+          {
+            "type": "turn_start"
+          },
+          {
+            "role": "system",
+            "type": "message"
+          },
+          {
+            "role": "user",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "role": "tool",
+            "type": "message"
+          },
+          {
+            "role": "assistant",
+            "type": "message"
+          },
+          {
+            "turn_exit_reason": "max_iterations_reached(1/1)",
+            "type": "turn_end"
+          }
+        ],
+        "model_call_count": 1,
+        "model_remaining": 1,
+        "model_requests": [
+          [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Advance without extending the iteration cap.",
+              "role": "user"
+            }
+          ]
+        ],
+        "offered_tools": [
+          [
+            "advance_counter",
+            "fail_operation"
+          ]
+        ],
+        "result": {
+          "api_calls": 1,
+          "completed": false,
+          "failed": false,
+          "final_response": "No reply: the turn stopped while a tool result was still pending. The iteration budget or interrupt ended the loop before another model call.",
+          "interrupted": false,
+          "messages": [
+            {
+              "content": "You are Omega Prime. This system prompt is fixed for the conversation. New context arrives as a user message or a tool result.",
+              "role": "system"
+            },
+            {
+              "content": "Advance without extending the iteration cap.",
+              "role": "user"
+            },
+            {
+              "content": "",
+              "role": "assistant",
+              "tool_calls": [
+                {
+                  "function": {
+                    "arguments": "{\"amount\": 2}",
+                    "name": "advance_counter"
+                  },
+                  "id": "historical-call-1",
+                  "type": "function"
+                }
+              ]
+            },
+            {
+              "content": "{\"total\": 2}",
+              "is_error": false,
+              "name": "advance_counter",
+              "role": "tool",
+              "tool_call_id": "historical-call-1"
+            },
+            {
+              "content": "No reply: the turn stopped while a tool result was still pending. The iteration budget or interrupt ended the loop before another model call.",
+              "role": "assistant"
+            }
+          ],
+          "task_id": "iteration_cap_with_pending_result",
+          "turn_exit_reason": "max_iterations_reached(1/1)"
+        }
+      },
+      "id": "iteration_cap_with_pending_result",
+      "max_iterations": 1,
+      "script": [
+        {
+          "content": "",
+          "role": "assistant",
+          "tool_calls": [
+            {
+              "function": {
+                "arguments": "{\"amount\": 2}",
+                "name": "advance_counter"
+              },
+              "id": "historical-call-1",
+              "type": "function"
+            }
+          ]
+        },
+        {
+          "content": "This extra reply must not be consumed.",
+          "role": "assistant"
+        }
+      ],
+      "user_message": "Advance without extending the iteration cap."
+    }
+  ]
+}

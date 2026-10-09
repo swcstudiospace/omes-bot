@@ -38,28 +38,38 @@ def refine(
     """
     trajectory_text = _trajectory_text(trajectory)
     applied: list[dict[str, Any]] = []
+    accepted: list[dict[str, Any]] = []
     rejected: list[dict[str, Any]] = []
     for proposal in proposals:
         reason = _check(proposal, trajectory_text)
         if reason is not None:
             rejected.append({"proposal": proposal.get("id"), "reason": reason})
-            continue
-        entry = state.upsert(
-            proposal["kind"],
-            proposal["id"],
-            title=proposal["title"],
-            body=proposal["body"],
-            tags=proposal.get("tags"),
-        )
-        applied.append(asdict(entry))
-    if not applied:
+        else:
+            accepted.append(proposal)
+    if not accepted:
         return {"applied": [], "rejected": rejected, "event": None}
+    # record_refinement snapshots the current entries. Capture them before
+    # the first upsert, not the post-apply state that rollback cannot undo.
     event = state.record_refinement(
         trigger=trigger,
-        changes={"applied": [entry["id"] for entry in applied]},
-        evidence=[e for p in proposals for e in p.get("evidence", [])],
-        outcome=f"applied {len(applied)}, rejected {len(rejected)}",
+        changes={"applied": []},
+        evidence=[e for proposal in accepted for e in proposal["evidence"]],
+        outcome=f"reviewed {len(accepted)} backed proposals, rejected {len(rejected)}",
     )
+    try:
+        for proposal in accepted:
+            entry = state.upsert(
+                proposal["kind"],
+                proposal["id"],
+                title=proposal["title"],
+                body=proposal["body"],
+                tags=proposal.get("tags"),
+            )
+            applied.append(asdict(entry))
+    finally:
+        # Retain actual applied ids even if a later upsert raises. The
+        # original exception propagates; no event claims unapplied changes.
+        event.changes["applied"] = [entry["id"] for entry in applied]
     return {"applied": applied, "rejected": rejected, "event": asdict(event)}
 
 

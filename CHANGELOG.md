@@ -10,10 +10,21 @@ All notable changes to this project are documented here. Format follows
 
 #### Added
 
+- Native `ai.complete` runs actual `pa_ai::complete_simple` in-process; native
+  `ai.resolve_models` resolves Prime's real model catalog. One bounded Tokio
+  runtime releases the GIL while waiting, checks Python interrupts, and bounds
+  cancellation cleanup. Unknown options are errors, not silently ignored.
+- `PrimeProviderModel` translates real tool schemas, images, tool results, and
+  thinking. `OmegaPrimeAgent.from_prime` composes it with the existing loop and
+  registry approvals. Durable `prime_message` transcript metadata preserves
+  provider response IDs and opaque signatures across tool rounds and reloads.
+- Restored Desk intake authority, contract-first change discipline, gate
+  integrity, and live-gateway rules in the shared directives and assembled prompt.
+
 - Prime Agent capabilities ported into the one Python agent (behavior port;
   see `docs/adr/0001-prime-merge-architecture.md`): RLM recursion
   (`rlm_spawn`/`rlm_collect`/`rlm_list_subagents`/`rlm_delete_subagent`/
-  `rlm_create_session`/`rlm_progress_note`), the continual harness
+  `rlm_create_session`/`rlm_progress_note`/`rlm_rename`), the continual harness
   (`harness_*` with evidence-backed refinement, snapshots, and exact
   rollback), persistent goals with token budgets and continuation prompts
   (`goal_*`), session heartbeats on the cron scheduler (`heartbeat_*`),
@@ -23,20 +34,183 @@ All notable changes to this project are documented here. Format follows
   (`SCHEMA_VERSION`, strict decoders, structured `PrimeError`s) between the
   tool surface and every ported capability, with contract, failure-injection,
   and source-cited parity-fixture test suites.
+- Registered capability handlers now consume the typed request/response boundary,
+  including explicit versions and unknown fields, after policy and approval.
+  Actual loop runs cover raises, timeout snapshots, malformed requests and stored
+  responses, and valid recovery without fixed-sleep or guarded-hook-only proofs.
+- `omega_prime/prime/heartbeat.py` (`SetRequest`, `ClearRequest`, `ListRequest`,
+  `HeartbeatConnector` over `HeartbeatRuntime`) and `omega_prime/prime/kernel.py`
+  (`CellRequest`, `FactoryRunRequest`, `RunRequest`, `FactoryGraphRequest`,
+  `BashRequest`, `SkillListRequest`, `CratesRequest`, `GoalCommandRequest`,
+  `AutonomousCommandRequest`, `KernelConnector`): every registered Prime tool
+  now decodes through a versioned typed request. A rejected request never
+  imports the pinned runtime, builds a kernel, or touches the filesystem.
+- Assembler CLI `--output PATH`. With any `--enable-family` it is required; the
+  canonical `prompts-assembled/OMEGA_PRIME.xml` is then never written or
+  compared, and `--check` compares `PATH`.
+- `OmegaPrimeAgent(..., session_dir=...)` supplies the durable directory the
+  agent offers as an RLM parent. The RLM parent contract (`session_dir`,
+  `session_name`, `delegate_depth`, `max_depth`, `max_children`) is checked by
+  `require_parent` at `RlmHost` construction and at `register_rlm_tools` when a
+  parent is given.
+- RLM children persist atomic prompt/answer/identity/status documents, recover
+  their owner's records without replay, and persist rename/delete lifecycle state.
+  Collect waits for durable terminal settlement; list/delete are metadata-only.
+  Bound kernel progress uses parent acceptance and throttling. Missing runners
+  and kernel model selectors are explicit errors, not invented defaults.
+- Default-off prompt assembly filters disabled Prime families; explicit config
+  or repeated assembler family flags opt them in. Catalog metadata now reads
+  real registrations rather than fabricated approval or parameter defaults.
+- Source-executed pre-v10 transcripts at `79ff51af` preserve six actual consumer
+  cases' messages, approvals, effects, errors, stops, and model-call accounting.
+  The unmodified historical suite records two obsolete source/inventory-pin
+  failures separately; no full unmodified-suite pass is asserted.
 - `omega-prime.json` config surface: every Prime family is a default-off
   flag (`prime.<family>.enabled`, or `OMEGA_PRIME_PRIME_<FAMILY>_ENABLED`);
-  with all flags off the pre-v10 behavior is bit-for-bit preserved.
-- Degraded mode: a failing Prime hook emits a structured `prime_degraded`
-  event and the loop continues without that family for the turn.
+  default-off loop behavior is checked against actual historical transcripts.
+- Wired registered goals and autonomous runs into the existing conversation
+  loop: fresh goal state, once-only usage accounting across tool rounds and
+  provider failures, cumulative continuation bounds, and honest stop reasons.
+  Goal pause/clear/completion/limits veto continuation and completion gates;
+  approval refusals remain refusals rather than capability degradation.
+- Heartbeats now drive named live sessions through in-process APScheduler and
+  wait behind foreground leases. Clear/reschedule remains safe during a beat;
+  closing one owner preserves others, and last-owner shutdown settles callbacks.
+  Due-now jobs fire immediately; later explicit stops cancel stale restarts.
+- Capability hook failures emit redacted `prime_degraded` events and preserve
+  the normal response without extending implicit work. Provider/control-flow
+  exceptions remain errors; quality-gate success never implies goal completion.
 - Rust parity-oracle CI (`rust-parity.yml`): the pinned prime-agent
   workspace builds and tests on a pinned toolchain with cargo-deny license
-  enforcement; `contracts/prime-agent.pin.json` is drift-guarded.
+  enforcement; CI consumes the authoritative `contracts/prime-agent.pin.json`.
 - Supply-chain CI: pip-audit workflow and dependabot for pip and
   github-actions; `.github/CODEOWNERS`.
 - Docs: ADR 0001 (merge architecture), `connectors.md`, `agent-loop.md`,
   `migration.md`.
+- `prime.kernel` (default off) loads the pinned `rlm` package in-process:
+  persistent cells via `rlm.repl`, factory, `rlm.bash`, and skill packages
+  from the checkout. `native/omega-prime-prime` is the PyO3 binding for
+  the pinned crates. `prime_goal` and `prime_autonomous` call that
+  binding. `crates.probe` calls each of the nine crates without starting
+  the TUI or a daemon worker. See ADR 0002. The checkout sources are not
+  modified.
+- The seat prompt names each `skills/<name>/SKILL.md`, each roster tool,
+  and `routines/desk-lead.md`, `routines/nightly.md`, `routines/sweep.md`,
+  and `routines/ultrathink.md`. The Grok template lists those skills and
+  routines. Bodies stay in the skill files.
+- `docs/driving-the-bot.md`: operator guide for a Prime-enabled Grok Bot. It
+  covers which families the tool host can serve and what each does behind a
+  Grok Bot, turning families on, `--approve`, building the effective prompt,
+  checks, and troubleshooting. Linked from the README, setup, and FAQ.
 
 #### Changed
+
+- The MCP tool host flags a result as an error only when its `error` field is
+  non-null. A payload carrying `"error": null` (`prime_crates` once the
+  extension loaded, a successful `prime_cell`) was reported as failed.
+- `prime_cell` returns what the cell printed while it ran as `stdout` and
+  `stderr`. That output used to go to the tool host's own streams, so the bot
+  never saw it. A cell that raises `SystemExit` or `KeyboardInterrupt` (`exit()`,
+  `sys.exit()`) is now a cell error instead of ending the host.
+- `.gitignore` covers the Prime family state the tool host writes under
+  `--root`: `goals/`, `harness-local/`, `harness-global/`, `cron/`,
+  `prime-kernel/`, and `prime-agent-dir/`.
+- Corrected runtime documentation: linked-crate probes are not a full Prime
+  application merge. Disabled families are absent from effective tools and
+  canonical prompt entries; the policy contract remains an allowed superset.
+  Native provider selection is independent of the kernel-tool flag.
+  Optional typed hook imports now occur at their capability boundary, avoiding
+  the cold assembler/registry import cycle without breaking legacy agent exports.
+- Corrected loop boundaries for normal Anthropic `end_turn`/`stop_sequence`,
+  idle-family last-call completion, and accepted-answer preservation when a later
+  continuation is interrupted. Mixed component/total usage now charges every
+  paid call once while preserving raw public/native metadata.
+- Heartbeat validation now rejects non-finite, unrepresentable or non-advancing
+  calendars before persistence, contains malformed rows without hot re-arming,
+  preserves foreign scheduler entries, and catches up overdue work once.
+  Reusing a shut-down injected backend is an explicit error.
+- Harness refinement snapshots pre-change entries, so actual `harness_refine`
+  followed by `harness_rollback` restores prior entries without rewriting the
+  fixed base prompt or audit trail.
+- Removed obsolete source/default/wording pins rather than repinning incidental
+  assertions; actual loop, source-policy, pinned-checkout and native checks
+  retain consumer and provenance evidence.
+- Native source headers and a tracked license allowlist cover the product bridge;
+  its independent CI job builds and checks licenses even if upstream parity
+  tests fail. Cargo Dependabot remains an explicit REPO-04 audit gate because
+  its required pinned path manifests are ignored, not repository-fetchable.
+- Corrected broken repository links and the clone URL to
+  `swcstudiospace/omes-bot`. Upstream Rust diagnostics retain their known nonzero
+  baseline rather than appearing as a passing quickstart step.
+- Every Prime tool family (rlm, harness, goals, heartbeat, autonomous,
+  messaging, kernel) accepts only its declared parameters plus `schema_version`.
+  Any undeclared key, including session-bound or alias fields (`sender`,
+  `session`, `scope`, `stale_after_turns`, `mark_read`, `cwd`), is rejected with
+  `unknown_field` and is never merged into the decoded payload. Omitted required
+  fields reach the typed decoder (`bad_type`; closed vocabularies such as the
+  harness `kind` give `bad_value`), and `schema_version` must be >= 1.
+- `ToolRegistry.dispatch` audits a typed failure with verdict `error` and reason
+  `<code>: <reason>` and a policy or approval refusal with verdict `denied`;
+  the order is policy, then approval, then decode.
+- `agent_message_send` and `agent_observe` take `sender` and `session` only from
+  the session bound at registration, so a forged sender and a cross-session
+  inbox read or consume are impossible. Connector errors are mapped by cause:
+  `bad_value` (empty body), `unknown_sender`, `unknown_recipient`, and
+  `unknown_session`.
+- `goal_set` replaces the whole goal (objective, steps, and the Prime sidecar)
+  after validating everything up front (`PrimeGoalStore.replace_goal`). Blank
+  steps are `bad_value`, a rejected request writes nothing, previous steps never
+  carry into the new goal, and the result is the status after the steps are
+  applied. `stale_after_turns` is not a tool argument.
+- Harness tools take `global_` as the only scope input; a `scope` key is
+  `unknown_field`.
+- `autonomous_start` rejects a non-finite `max_minutes` (NaN, +/-Infinity) as
+  `bad_value`.
+- RLM spawn's depth bound now reads the parent's `delegate_depth`, and there is
+  no silent working-directory default for the session directory.
+- `rlm_create_session` has no `cwd`: the tool rejects it as `unknown_field`, and
+  the typed request accepts `cwd=None` (the pinned SDK sends it) but rejects any
+  other value with `bad_value`.
+- RLM admission (name, child limit, depth bound, registration) is one atomic
+  section, and the roster record is created only after admission.
+- RLM recovery rewrites only interrupted records and survives a failing write:
+  the record stays registered in memory as an error naming the failed write.
+  One live host per (`session_dir`, owner `session_name`) is the supported
+  assumption.
+- RLM delete tombstones keep only identity, owner, and status; they hold no
+  prompt, answer, or error text.
+- `rlm_collect` reports `answer_preview` and `error` only for settled children.
+  `collect` and `list_subagents` read the in-memory registry under a lock that
+  no file write holds, so they never block behind a durable write.
+- Tool-call arguments in the conversation loop must be a JSON object. `None`
+  and the empty string mean no arguments; any other malformed or non-object
+  payload (truncated JSON, a list, a number, `null`, whitespace-only text)
+  yields an `error:` tool row and the call is not executed, while the other
+  calls in the round still run.
+- The refusal stop reasons `approval_refused` and `policy_refused` describe the
+  most recent tool round of the run only, so a refusal the model recovered from
+  does not make the turn terminal.
+- The pre-v10 transcript comparator (`tests/test_prime_regression.py`) is
+  documented as covering `Agent`/`run_conversation` with a test-local
+  dispatcher; the registered public agent's error rows are covered by
+  `tests/test_prime_failure_injection.py` and the boundary tests.
+
+- The retained Rust diagnostic in `VENDOR.md` must run with no published
+  `prime-agent` binary on `PATH`. That binary is not the TypeScript
+  oracle `pa-cli` differential tests compare against. With 0.9.8 on
+  `PATH`, `ts_daemon_differential_cli_output` runs and fails: `send`
+  exits 1 on both sides with `No API key found for the selected model`
+  instead of the `Sent to ...` receipt.
+- The same command must run without ambient provider credentials
+  (`GH_TOKEN`, `GITHUB_TOKEN`, `OPENROUTER_API_KEY`). The parity workflow
+  unsets them. `cache_rejects_replacement_and_same_length_in_place_rewrite`
+  can flake where `futimens` does not bump ctime (Linux 6.8.0-142 / ext4
+  here); it is not a pin exclusion, and CI remains the gate.
+- `imported_session_compacts` fails on this ext4 `/tmp` because the test
+  reads the first `grown-import*` directory entry, and `readdir` returns
+  the window sidecar `grown-import.window-cache.json` before the session
+  file. The import succeeds; the counted message rows are 0 instead of
+  3600. It is not a pin exclusion.
 
 - **Relicensed from MIT to AGPL-3.0-only**, Copyright (C) 2026 Spectrum Web
   Co. Upstream-ported modules retain their MIT attributions (VENDOR.md);
@@ -68,8 +242,11 @@ All notable changes to this project are documented here. Format follows
   citation provenance instead of copying the raw retrieval response.
 - Ultrathink mark evals exercise the real approval contract through an injected
   runner; removing the production approval requirement fails the red-team case.
-- Setup and tool documentation reflect the 109-tool roster and 108-tool MCP
-  surface; test/eval totals are reported by CI instead of pinned in prose.
+- Setup and tool documentation reflect the default tool surface: the roster YAML
+  lists 146 names including the 37 Prime tools, the default assembled prompt names
+  109, and the default MCP registry serves 108 because it skips `delegate_task`
+  (it needs a live agent). Test/eval totals are reported by CI instead of
+  pinned in prose.
 - Replaced incidental source/configuration-copy assertions with executable
   lint/type/catalog gates and consumer-visible regression coverage.
 - CI jobs share a stdlib receipt helper, preserving command failures and
@@ -108,5 +285,5 @@ First public release: one Grok programming bot, eight milestones deep.
 - Public launch (v8): branded README, community files, generated tool
   catalog with CI freshness, Greptile review standards + KB sync pipeline.
 
-[Unreleased]: https://github.com/swcstudiospace/omega-prime/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/swcstudiospace/omega-prime/releases/tag/v0.1.0
+[Unreleased]: https://github.com/swcstudiospace/omes-bot/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/swcstudiospace/omes-bot/releases/tag/v0.1.0

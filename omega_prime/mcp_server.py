@@ -241,6 +241,10 @@ def default_registry(
         register_autonomous_tools(
             registry, root, config=family_config(config, "autonomous")
         )
+    if prime_enabled(config, "kernel"):
+        from omega_prime.tools.prime_runtime import register_prime_kernel_tools
+
+        register_prime_kernel_tools(registry, root)
     return registry
 
 
@@ -382,7 +386,9 @@ def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
             decoded = json.loads(payload)
         except ValueError:
             decoded = {"output": payload}
-        is_error = isinstance(decoded, dict) and "error" in decoded
+        # A null ``error`` is a status field, not a failure (``prime_crates``
+        # reports ``"error": null`` once the extension loaded).
+        is_error = isinstance(decoded, dict) and decoded.get("error") is not None
         return CallToolResult(
             content=[TextContent(type="text", text=payload)], is_error=is_error
         )

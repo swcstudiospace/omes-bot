@@ -17,21 +17,28 @@ class SessionLease:
     def __init__(self) -> None:
         self._held = False
         self._lock = threading.Lock()
+        self._cond = threading.Condition(self._lock)
 
     @property
     def held(self) -> bool:
         with self._lock:
             return self._held
 
-    def acquire(self) -> None:
-        with self._lock:
-            if self._held:
-                raise RuntimeError("session lease already held")
+    def acquire(self, *, wait: bool = False) -> None:
+        with self._cond:
+            if not wait:
+                if self._held:
+                    raise RuntimeError("session lease already held")
+                self._held = True
+                return
+            while self._held:
+                self._cond.wait()
             self._held = True
 
     def release(self) -> None:
-        with self._lock:
+        with self._cond:
             self._held = False
+            self._cond.notify_all()
 
     def __enter__(self) -> SessionLease:
         self.acquire()
