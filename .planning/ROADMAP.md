@@ -286,7 +286,7 @@ one-command install. Source plan: ultrathink graph `ut-mv0nfl17-58362dc4` (Linea
 SPE-8895..SPE-8900), translated from its stack-agnostic wording to this Python MCP host.
 User direction (2026-10-09): push to `main` with `prime-agent` as a git submodule.
 
-- [ ] **Phase 62: Grok Bot native runtime completion** - Bootstrap/config, health, lifecycle and transport components finished and proven over a real socket.
+- [x] **Phase 62: Grok Bot native runtime completion** - Bootstrap/config, health, lifecycle and transport components finished and proven over a real socket.
 - [ ] **Phase 63: Seven enterprise improvements** - Streamable HTTP, scoped credentials, approval gateway, traffic protection, observability, live verifier, deployment kit.
 
 ### Phase 62: Grok Bot native runtime completion
@@ -313,12 +313,12 @@ reports honest health, drains on SIGTERM, and a one-command launcher attaches it
 
 Plans:
 
-- [ ] 62-01: Bearer security core + tool-call interceptors
-- [ ] 62-02: Tamper-evident audit log
-- [ ] 62-03: Truthful manifest, template lint, drift sync
-- [ ] 62-04: Supervisor and lifecycle fixes
-- [ ] 62-05: Remote host - fail-closed transport, health/readiness, graceful shutdown, real-transport E2E
-- [ ] 62-06: 1-click launcher, doctor, emulator
+- [x] 62-01: Bearer security core + tool-call interceptors
+- [x] 62-02: Tamper-evident audit log
+- [x] 62-03: Truthful manifest, template lint, drift sync
+- [x] 62-04: Supervisor and lifecycle fixes
+- [x] 62-05: Remote host - fail-closed transport, health/readiness, graceful shutdown, real-transport E2E
+- [x] 62-06: 1-click launcher, doctor, emulator
 
 ### Phase 63: Seven enterprise improvements
 

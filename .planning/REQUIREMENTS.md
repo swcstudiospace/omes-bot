@@ -14,40 +14,40 @@ The v10 requirements are archived in `milestones/v10-REQUIREMENTS.md`.
 
 ### Runtime completion (Phase 62)
 
-- [ ] **GRK-01**: Remote auth fails closed. Bearer tokens are verified in constant time from
+- [x] **GRK-01**: Remote auth fails closed. Bearer tokens are verified in constant time from
   the `Authorization` header only; `?token=` is rejected; a missing or invalid token gets
   401 with `WWW-Authenticate: Bearer`; the server refuses to start on a non-loopback bind
   without a token unless `--allow-insecure-no-auth` is given
-- [ ] **GRK-02**: Browser-origin safety. Host/Origin validation uses the MCP SDK transport
+- [x] **GRK-02**: Browser-origin safety. Host/Origin validation uses the MCP SDK transport
   security (loopback names, public URL, explicit allow-lists); CORS is emitted only for
   explicitly allowed origins (no wildcard, no duplicate stack); request-body and session
   limits come from configuration
-- [ ] **GRK-03**: Startup fails closed. An unreadable or invalid seat policy, roster, token
+- [x] **GRK-03**: Startup fails closed. An unreadable or invalid seat policy, roster, token
   file, or `--approve` entry exits 2 with a one-line reason on both transports;
   `--approve` is honored on the remote transport
-- [ ] **GRK-04**: Health is truthful. `/healthz` reports the version and the number of tools
+- [x] **GRK-04**: Health is truthful. `/healthz` reports the version and the number of tools
   actually served; `/readyz` is 503 until startup checks pass and again once shutdown begins
-- [ ] **GRK-05**: Audit is wired and tamper-evident. Every remote `tools/call` and auth
+- [x] **GRK-05**: Audit is wired and tamper-evident. Every remote `tools/call` and auth
   failure is appended to a hash-chained, size-rotated, 0600 log with the principal,
   argument key names and an argument digest (never raw secrets);
   `python -m omega_prime.grokbot.audit verify` detects edits, deletions and reordering
-- [ ] **GRK-06**: The manifest is truthful. `tools` equals what the host serves for the same
+- [x] **GRK-06**: The manifest is truthful. `tools` equals what the host serves for the same
   settings; `approval_required` lists gated tools; capabilities derive from configuration;
   it carries the public URL (never `0.0.0.0`), the version and a content digest; no token is
   ever written; every skill and routine the template names exists on disk (lint)
-- [ ] **GRK-07**: The 1-click launcher is strict. A failing preflight aborts with exit 3
+- [x] **GRK-07**: The 1-click launcher is strict. A failing preflight aborts with exit 3
   unless `--no-strict`; secrets come from env or a 0600 file (an argv token warns);
   `--generate-token` mints a token shown once; `--dry-run` runs preflight, manifest and
   bind-safety and exits 0 without serving
-- [ ] **GRK-08**: Lifecycle is graceful. SIGTERM/SIGINT drain in-flight tool calls within a
+- [x] **GRK-08**: Lifecycle is graceful. SIGTERM/SIGINT drain in-flight tool calls within a
   grace period, flush the audit log and exit 0; the supervisor's `--stop` stops the
   supervisor and its child, probes `/healthz`, resets its restart budget after stable
   uptime, writes state atomically and exits non-zero when it gives up
-- [ ] **GRK-09**: Tooling is correct. `sync --check` reports drift only for content Grok Bot
+- [x] **GRK-09**: Tooling is correct. `sync --check` reports drift only for content Grok Bot
   would see; `doctor` adds policy, roster, token, template and audit-chain checks and honors
   the configured host; the emulator drives the same runtime (policy, approvals,
   interceptors) the server uses
-- [ ] **GRK-10**: Proof over a real transport. At least one test serves the ASGI app on a
+- [x] **GRK-10**: Proof over a real transport. At least one test serves the ASGI app on a
   socket and drives it with the MCP client (initialize, list tools, call a tool, 401 and
   Origin rejections, audit record written)
 
@@ -98,16 +98,16 @@ The v10 requirements are archived in `milestones/v10-REQUIREMENTS.md`.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GRK-01 | 62 | Pending |
-| GRK-02 | 62 | Pending |
-| GRK-03 | 62 | Pending |
-| GRK-04 | 62 | Pending |
-| GRK-05 | 62 | Pending |
-| GRK-06 | 62 | Pending |
-| GRK-07 | 62 | Pending |
-| GRK-08 | 62 | Pending |
-| GRK-09 | 62 | Pending |
-| GRK-10 | 62 | Pending |
+| GRK-01 | 62 | Complete |
+| GRK-02 | 62 | Complete |
+| GRK-03 | 62 | Complete |
+| GRK-04 | 62 | Complete |
+| GRK-05 | 62 | Complete |
+| GRK-06 | 62 | Complete |
+| GRK-07 | 62 | Complete |
+| GRK-08 | 62 | Complete |
+| GRK-09 | 62 | Complete |
+| GRK-10 | 62 | Complete |
 | GRI-01 | 63 | Pending |
 | GRI-02 | 63 | Pending |
 | GRI-03 | 63 | Pending |
