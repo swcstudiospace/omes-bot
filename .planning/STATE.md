@@ -1,42 +1,60 @@
 ---
 gsd_state_version: "1.0"
-milestone: v10
-milestone_name: Prime merge — gap closure
-current_phase: 61
-current_phase_name: Prime loop gap closure
-status: complete
-stopped_at: "v10 Prime merge gap closure complete. 9/9 phases, 32/32 requirements satisfied, full test suite passing."
-last_updated: "2026-10-09T07:30:00.000Z"
+milestone: v11
+milestone_name: Grok Bot native
+current_phase: 62
+current_phase_name: Grok Bot native runtime completion
+status: executing
+stopped_at: "v10 closed (audit passed 2026-10-09). v11 scoped, Phase 62 planned and executing."
+last_updated: "2026-10-09T09:30:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: v10 milestone closeout completed; prime-agent registered as submodule; all test gates green (983 passed, 0 failed, lint/typecheck/evals clean); milestone audit passed.
-state_head: bd2f45d80a42f6ae3eb9d6f43e63b86cec485df5
+last_activity_desc: Reconciled stale v10 state (audit status passed, open []); scoped v11 from the ultrathink graph ut-mv0nfl17-58362dc4; Phase 62 plans written.
+state_head: d7a27536454242ded6ac78405f67081d2b6dd8c1
 progress:
-  total_phases: 9
-  completed_phases: 9
-  total_plans: 6
-  completed_plans: 6
-  percent: 100
+  total_phases: 2
+  completed_phases: 0
+  total_plans: 14
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-08)
+See: .planning/PROJECT.md (updated 2026-10-09)
 
 **Core value:** One Omega Prime agent runs Hermes, Omp, and Prime in one
-Python process.
-**Current focus:** Phase 61 — Prime loop gap closure
+Python process, and one command attaches it to Grok Bot as a hardened tool host.
+**Current focus:** Phase 62 - Grok Bot native runtime completion
 
 ## Current Position
 
-Phase: 61 (Prime loop gap closure) — CURRENT CROSS-PHASE PROOFS
-Status: Phase 61 repaired and independently verified; stopped before the milestone lifecycle by user decision. Open - REPO-05 (published revision or acceptance), DONE-01, DONE-02
-Last activity: 2026-10-09 — review-repair wave landed and verified (980 passed; independent review clean; final 32-ID audit 27 wired, 2 user-approved exceptions, 3 open); user chose to stop before the milestone lifecycle
+Phase: 62 (Grok Bot native runtime completion) - EXECUTING
+Status: Wave 1 of Phase 62 dispatching (security core, audit, manifest, supervisor)
+Last activity: 2026-10-09 - v10 reconciled as closed; v11 requirements GRK-01..10 and GRI-01..07 defined
 
-Phase completion: 8 of 9.
+Phase completion: 0 of 2.
 
 ## Accumulated Context
+
+### Decisions (v11, 2026-10-09)
+
+- Source plan: the ultrathink graph `ut-mv0nfl17-58362dc4` (Linear SPE-8895..SPE-8900).
+  It named a TypeScript layout because the planner could not see the repo; its structure
+  (bootstrap/config, health probe, lifecycle, streaming engine, then seven improvements
+  in four waves) is kept and translated onto the Python MCP host in `omega_prime/grokbot/`.
+- Auth contract: static scoped bearer tokens (`read`, `call`, `admin`). The graph's
+  HMAC-signed webhook ingress does not apply: Grok Bot reaches this host as an MCP client.
+- Single seat: the graph's per-tenant sandbox maps to per-principal scopes.
+- Reuse the MCP SDK's own transport security, body-size limit, session cap and session
+  ownership instead of reimplementing them.
+- No new third-party dependencies. Prometheus text and the token store are hand-written.
+- Push policy: the user directed pushes to `main` with `prime-agent` as a git submodule
+  (2026-10-09). Use explicit paths when staging; never stage the ignored upstream checkouts.
+- Verification gates (every wave): `pytest omega_prime/tests`, evals runner,
+  `assemble-prompts.sh --check`, `catalog --check`, `ruff check`, `ruff format --check`,
+  `mypy omega_prime/`, docs tests.
 
 ### Decisions (v10, 2026-10-08)
 
@@ -53,32 +71,26 @@ Phase completion: 8 of 9.
   PYSEC-2026-4114 (oauthlib authorization-server PKCE timing oracle;
   tweepy 4.17 pins `oauthlib<4`). Cargo dependabot is not used on the
   ignored pin; cargo-deny gates that workspace.
+- User-approved exceptions (2026-10-09): LOOP-07 unmodified historical suite
+  (376 passed / 2 inventory-pin failures), REPO-04 no Cargo Dependabot, CONN-01
+  documented scope. No test was edited or shimmed.
 
 ### Prior milestone
 
-v9 SOTA upgrade complete 2026-10-08: 7/7 phases, 19/19 requirements.
-See `.planning/milestones/v9-MILESTONE-AUDIT.md`.
+v10 Prime merge closed 2026-10-09: 9 phases (53-61), 32/32 requirements
+(30 wired, 2 user-approved exceptions), 0 open. See `.planning/milestones/v10-MILESTONE-AUDIT.md`.
 
 ### Blockers
 
-- REPO-05: documented commands pass on an isolated snapshot of the uncommitted working tree and over a real stdio MCP server, but nothing is published, so the canonical clone cannot reproduce them. Needs a published revision or the user's acceptance of the snapshot evidence (and a current or accepted receipt for the optional upstream cargo build).
-- DONE-01: the milestone audit (`.planning/v10-MILESTONE-AUDIT.md`) is gaps_found while REPO-05 is open; the two user-approved exceptions (LOOP-07 unmodified historical suite 376/2; REPO-04 no Cargo Dependabot, source-only cargo metadata exit 101) are recorded, not passes.
-- DONE-02: milestone completion, archive of the untracked `.planning/phases/` and cleanup need the user's authorization; the user chose to stop before the lifecycle on 2026-10-09. Publication must use explicit paths (untracked `openhands` and `openhands-stable.tgz` are not v10 files).
+None.
 
 ### Roadmap Evolution
 
-- Phase 61 added: Close existing LOOP-01/02/03/06 wiring gaps without replaying the archived baseline
+- v11 Grok Bot native added 2026-10-09: Phase 62 (runtime completion) and Phase 63 (seven enterprise improvements)
+- Open Dependabot PRs #2-#8 (aiohttp, huggingface-hub 2.x, rpds-py, websockets, oauthlib 4, setup-python 7, checkout 7) are not part of v11; oauthlib 4 conflicts with the tweepy pin
 
 ## Session
 
-**Last session:** 2026-10-09T03:15:00.000Z
-**Stopped at:** Review-repair wave verified and recorded; awaiting REPO-05 resolution and the user's lifecycle authorization. No completion/archive/publish.
-**Resume file:** .planning/v10-MILESTONE-AUDIT.md
-
-## Decisions
-
-- [Phase 61]: Existing native bridge retained; Phase61 closes Python production-loop and scheduler wiring, not a new native engine/daemon architecture. — Actual real-Rust/local-SSE and registered-tool receipts prove exercised bounded behavior; native changes are license headers only and upstream remains read-only.
-- [Phase 61]: Reopen REPO-04 instead of accepting archived Cargo Dependabot omission. — Current native Cargo manifest has required ignored Prime path dependencies; source-only dependency resolution exits101. Source packaging or explicit criterion exception requires a user decision.
-- [Phase 61]: Reopen literal integration criteria despite phase-only686-test success — Exact independent checker found22/32 wired and10 broken; actual before smoke admitted boolean model, leaked list answer, wrote0-byte child session, accepted unbound progress and exposed disabled prompt names. Isolated missing pinned prerequisite now reproduced. Repair existing Python ports only; no new engine/daemon.
-- [Phase 61]: Review-repair wave repaired the typed boundary (declared-only tool surface, bound messaging identity, strict malformed-argument rows, heartbeat and kernel typed adapters), the RLM parent contract and two-lock host, goal_set replace-all and the assembler output rule. — Evidence in `61-EVIDENCE.json#review_repair_wave`; independent review clean; final 32-ID integration check 27 wired.
-- [Phase 61]: User-approved exceptions and scope (2026-10-09): LOOP-07 unmodified historical suite (376/2 inventory pins), REPO-04 no Cargo Dependabot, CONN-01 documented scope; lifecycle stopped. — Exit codes 1 and 101 remain the observed facts; no test edited or shimmed.
+**Last session:** 2026-10-09T09:30:00.000Z
+**Stopped at:** Phase 62 plans written; Wave 1 dispatching.
+**Resume file:** .planning/phases/62-grokbot-native-runtime/62-CONTEXT.md

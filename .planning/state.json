@@ -1,12 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v10 — Prime merge — reopened gap closure",
+  "milestone": "v11 - Grok Bot native",
   "phases": [],
   "next": {
-    "command": "/gsd:progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 61 of 9 · 89% · executing"
+    "command": "/gsd:autonomous --from 62",
+    "label": "Execute Phase 62",
+    "reason": "v10 closed; v11 scoped; Phase 62 of 2 executing"
   },
-  "updated_at": "2026-10-08T17:34:08.236Z"
+  "updated_at": "2026-10-09T09:30:00.000Z"
 }

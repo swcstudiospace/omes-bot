@@ -11,7 +11,8 @@
 - ✅ **v7 Substrate surface** — Phases 39-43 (shipped 2026-10-03)
 - ✅ **v8 Public launch** — Phases 44-45 (shipped 2026-10-03)
 - ✅ **v9 SOTA upgrade** — Phases 46-52 (shipped 2026-10-08)
-- ✅ **v10 Prime merge** — Phases 53-60 (shipped 2026-10-08)
+- ✅ **v10 Prime merge** — Phases 53-61 (shipped 2026-10-09; audit passed)
+- 🚧 **v11 Grok Bot native** — Phases 62-63 (in progress)
 
 Archives: `milestones/v1-ROADMAP.md` through `milestones/v10-ROADMAP.md`
 with phase directories under `milestones/v1-phases/` through
@@ -268,7 +269,7 @@ heartbeats. Capability failures degrade without killing the loop.
    metadata, and the existing suite remain intact. Runtime smoke and final
    gates precede updated verification and milestone completion claims.
 
-**Plans:** All six plans are executed with summaries (full suite 980 passed; independent post-repair review clean; final 32-ID audit 27 wired, 2 user-approved exceptions, 3 open). Open: REPO-05 (published revision or acceptance of the isolated-snapshot evidence), DONE-01 (audit stays gaps_found while REPO-05 is open) and DONE-02 (milestone completion, archive and cleanup need the user's authorization; stopped by user decision on 2026-10-09).
+**Plans:** All six plans are executed with summaries (full suite 983 passed; independent post-repair review clean; final 32-ID audit satisfied: 30 wired + 2 user-approved exceptions for LOOP-07 and REPO-04, 0 open). Milestone closed 2026-10-09: `milestones/v10-MILESTONE-AUDIT.md` status passed; `prime-agent` registered as a git submodule.
 
 Plans:
 - [x] 61-01: Goal/autonomous turn boundaries and degradation integration
@@ -277,3 +278,79 @@ Plans:
 - [x] 61-04: Recoverable RLM child sessions, owned progress and collect-only answers
 - [x] 61-05: Config-derived effective prompt/roster and truthful enabled-tool catalog
 - [x] 61-06: Authentic pre-v10 transcript comparison, clean Python prerequisite and final parent integration
+
+## v11 Grok Bot native - in progress
+
+Omega Prime becomes a production-grade, enterprise-ready Grok Bot tool host with a
+one-command install. Source plan: ultrathink graph `ut-mv0nfl17-58362dc4` (Linear
+SPE-8895..SPE-8900), translated from its stack-agnostic wording to this Python MCP host.
+User direction (2026-10-09): push to `main` with `prime-agent` as a git submodule.
+
+- [ ] **Phase 62: Grok Bot native runtime completion** - Bootstrap/config, health, lifecycle and transport components finished and proven over a real socket.
+- [ ] **Phase 63: Seven enterprise improvements** - Streamable HTTP, scoped credentials, approval gateway, traffic protection, observability, live verifier, deployment kit.
+
+### Phase 62: Grok Bot native runtime completion
+
+**Goal**: The shipped `omega_prime/grokbot/` package (commit 5e4775f) is correct,
+secure by default and truthful: the remote host fails closed, audits every call,
+reports honest health, drains on SIGTERM, and a one-command launcher attaches it.
+**Depends on**: Phase 61 (v10 closed)
+**Requirements**: GRK-01, GRK-02, GRK-03, GRK-04, GRK-05, GRK-06, GRK-07, GRK-08, GRK-09, GRK-10
+**Success Criteria** (what must be TRUE):
+
+  1. Over a real socket, `/sse` without a valid bearer token is 401, a disallowed
+     Origin is rejected, and an authenticated MCP client lists exactly the tools
+     `/healthz` reports and can call one.
+  2. The server refuses to start on a non-loopback bind without a token, and on an
+     invalid policy or roster, on both transports, exiting 2 with a reason.
+  3. Every remote tool call and auth failure is in a hash-chained audit log that
+     `python -m omega_prime.grokbot.audit verify` accepts and rejects after an edit.
+  4. The manifest lists the tools actually served, never embeds a token, and
+     `sync --check` reports no drift against a fresh export for the same settings.
+  5. `oneclick --dry-run` exits 0; a failing preflight exits 3; SIGTERM drains and
+     exits 0; `supervisor --stop` stops the supervisor and its child.
+  6. Full suite, evals, assemble check, catalog check, `ruff`, `mypy` pass.
+
+Plans:
+
+- [ ] 62-01: Bearer security core + tool-call interceptors
+- [ ] 62-02: Tamper-evident audit log
+- [ ] 62-03: Truthful manifest, template lint, drift sync
+- [ ] 62-04: Supervisor and lifecycle fixes
+- [ ] 62-05: Remote host - fail-closed transport, health/readiness, graceful shutdown, real-transport E2E
+- [ ] 62-06: 1-click launcher, doctor, emulator
+
+### Phase 63: Seven enterprise improvements
+
+**Goal**: Seven additive capabilities take the host from correct to enterprise-ready:
+current-standard transport, credential management, human approval, traffic protection,
+observability, a live proof, and a deployment kit.
+**Depends on**: Phase 62
+**Requirements**: GRI-01, GRI-02, GRI-03, GRI-04, GRI-05, GRI-06, GRI-07
+**Success Criteria** (what must be TRUE):
+
+  1. An MCP client connects over Streamable HTTP at `/mcp` and over legacy SSE with the
+     same auth, origin and audit behavior.
+  2. A revoked or expired token stops working without a restart; a `call` token cannot
+     reach `/admin/*`; an admin token can approve a gated tool with a TTL and the call
+     then succeeds, with both actions audited.
+  3. A burst beyond the limit gets 429 with `Retry-After`; repeated infrastructure
+     failures open a per-tool breaker that recovers after the cooldown.
+  4. `/metrics` exposes request, tool-call, auth-failure and latency series; responses
+     and audit records carry the request id; `--log-format json` emits redacted NDJSON.
+  5. `python -m omega_prime.grokbot.verify` passes against a freshly started host over
+     both transports and fails against a misconfigured one.
+  6. `deploy render` output for all four targets parses and passes the hardening checks;
+     `docker build --check` accepts the Dockerfile.
+  7. Full suite, evals, assemble check, catalog check, docs tests, `ruff`, `mypy` pass.
+
+Plans:
+
+- [ ] 63-01: Streamable HTTP transport (GRI-01)
+- [ ] 63-02: Scoped, rotatable credentials + token CLI (GRI-02)
+- [ ] 63-03: Human approval gateway (GRI-03)
+- [ ] 63-04: Traffic protection - rate limits + circuit breaker (GRI-04)
+- [ ] 63-05: Observability - metrics, trace context, NDJSON logs (GRI-05)
+- [ ] 63-06: Live conformance verifier, served manifest + launcher self-test (GRI-06)
+- [ ] 63-07: Deployment kit + image CI (GRI-07)
+- [ ] 63-08: Integration wiring, docs, milestone audit

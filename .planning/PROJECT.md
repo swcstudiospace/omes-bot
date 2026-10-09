@@ -26,18 +26,26 @@ v9 milestone: SOTA upgrade — the same one-agent product brought to state-of-th
 
 v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/`, PrimeIntellect, MIT, pinned `967eb13f`) contributes its differentiating logic — RLM subagent recursion (`rlm.spawn`/`collect`), the continual harness (`/refine` with snapshots and rollback), goals/heartbeats/autonomous mode, and agent-to-agent messaging — behavior-ported into the one Python agent per the v1–v9 precedent. The Rust workspace stays as an ignored read-only checkout and CI-built parity oracle. The repo relicenses to AGPL-3.0 (Spectrum Web Co 2026) and hardens to enterprise open-source standards. User decisions (2026-10-08): behavior-port architecture (no PyO3 boundary exists upstream; one-Python-process rule stands), capability-merge loop design, AGPL-3.0 relicense, degrade-with-warning for Prime capability failures.
 
-## Current Milestone: v10 Prime merge — reopened gap closure
+## Current Milestone: v11 Grok Bot native
 
-**Goal:** Close the existing literal v10 gaps without replaying archived plans or adding a native engine/daemon. Original 61-01/02 runtime paths were exercised; the subsequent 32-ID integration audit's gaps were repaired in 61-03 through 61-06 and a review-repair wave (2026-10-09). The final independent audit finds 27 wired, 3 broken and 2 human-needed; the user approved exceptions for LOOP-07 and REPO-04 and chose to stop before the milestone lifecycle. Open: REPO-05, DONE-01, DONE-02. Historical v10 archive is evidence, not fresh completion; no v11 is scoped.
+**Goal:** Make the one-command Grok Bot attachment production-grade and enterprise-ready.
+Phase 62 finishes the shipped `omega_prime/grokbot/` runtime (fail-closed remote auth,
+audited and truthful, graceful lifecycle, strict 1-click launcher, proven over a real
+socket). Phase 63 adds seven improvements: Streamable HTTP, scoped credentials, a human
+approval gateway, traffic protection, observability, a live conformance verifier, and a
+deployment kit. Source plan: the ultrathink graph `ut-mv0nfl17-58362dc4` (Linear
+SPE-8895..SPE-8900), translated from its stack-agnostic wording to this Python MCP host.
 
 **Target features:**
-- Discovery: capability map + overlap map + Rust parity baseline (CI skip set; local no-fail-fast accounting is in `VENDOR.md` and is not exit 0)
-- Rust workspace in CI as the parity oracle (pinned toolchain, locked deps, license gate)
-- RLM recursion port: spawn/collect/list/delete/create_session/progress_note
-- Continual harness port: /refine, harness state, snapshots, rollback
-- Loop upgrade: goals, heartbeats, autonomous mode, agent messaging; default-off config flags; degraded mode; Hermes+Omp regression parity
-- Connector layer: typed adapters, contract tests, failure injection, parity fixtures
-- Repo hardening: AGPL-3.0, root files, docs, supply-chain CI
+- Remote host: constant-time bearer auth, Origin/Host validation, fail-closed policy/roster/token loading, truthful `/healthz` and `/readyz`, graceful drain
+- Hash-chained, rotating audit of every tool call and auth failure
+- Truthful manifest (served tools, gated tools, config-derived capabilities, digest) with template lint and correct drift sync
+- Strict launcher, doctor, emulator and supervisor
+- Streamable HTTP at `/mcp`, scoped rotatable tokens, runtime approvals API, rate limits and circuit breaker, Prometheus/trace-context/NDJSON observability
+- Live verifier and deployment kit (Docker, compose, systemd, Kubernetes) with image CI
+
+v10 Prime merge closed 2026-10-09: audit passed, 32/32 requirements (30 wired and 2
+user-approved exceptions for LOOP-07 and REPO-04), `prime-agent` registered as a git submodule.
 
 ## Requirements
 
@@ -52,21 +60,21 @@ v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/
 - ✓ Substrate surface: briefs, trail, shared Hindsight bank, docs answers — v7
 - ✓ Public-launch files, generated tool catalog, Greptile review standards — v8
 - ✓ SOTA engineering: egress hardening, lint and types, lockfile, provider protocols, hermetic evals — v9
+- ✓ Prime merge: loop wiring, typed boundary, durable RLM, `prime-agent` git submodule; audit passed 32/32 (2 user-approved exceptions) — v10
 - Prime behavior-port baseline and Rust parity-oracle CI are inherited archival evidence. Phase 61 loop wiring, typed boundary (all seven Prime families), durable RLM, config-derived prompt and the pre-v10 transcript comparison are exercised and independently reviewed (full suite 980 passed).
 - AGPL repository and current native bridge license/build coverage — verified locally. Cargo Dependabot is a user-approved exception (2026-10-09): the Cargo path dependencies live in the ignored read-only prime-agent checkout; cargo-deny and pip-audit run.
 
 ### Active
 
-- REPO-05: the documented commands pass on an isolated snapshot of the working tree and over a real stdio MCP server, but nothing is published; needs a published revision or the user's acceptance of the snapshot evidence.
-- LOOP-07 literal unmodified historical suite (376 passed / 2 inventory-pin failures) is a user-approved exception; the transcript-fixture half passes 6/6.
-- DONE-01/DONE-02: the audit stays gaps_found while REPO-05 is open; milestone completion, archive and cleanup need the user's authorization (stopped by user decision on 2026-10-09). No publication has occurred.
+- GRK-01..GRK-10 (Phase 62): remote auth/origin/startup fail-closed, truthful health, wired tamper-evident audit, truthful manifest, strict launcher, graceful lifecycle, correct tooling, real-transport proof
+- GRI-01..GRI-07 (Phase 63): Streamable HTTP, scoped credentials, approval gateway, traffic protection, observability, live verifier, deployment kit
 
 ### Out of Scope
 
 - Temporal as the way the two agents are merged — one Python process is the merge; Temporal can be a later durability adapter
 - A sidecar that calls the Hermes checkout and the Omp checkout — both runtimes are ported, not wrapped
 - Product chrome: Hermes TUI, desktop, website, locales, packaging, messaging gateways, Feishu, Yuanbao, Home Assistant, Spotify, kanban UI; Omp TUI, collab web, stats site, CLI gallery, Rust crates, bazel and nix packaging
-- Pushing this repository or opening a GitHub repo from a milestone — do not push, merge, or tag without an explicit request
+- Tagging or pushing without an explicit user request (the user directed pushes to `main` with `prime-agent` as a submodule on 2026-10-09; tags stay out)
 - New full native SessionEngine, TUI, CLI, daemon or telemetry integration. The existing optional pinned native wrapper is documented by ADR-0002; it is not a new engine in this gap-closure phase.
 - Unapproved dependency-source packaging changes or silent Cargo automation exemptions. The ignored checkout stays read-only; REPO-04 must be resolved explicitly.
 - Provisioning a Grok Bot account — the template markdown is what a person pastes into Share → Create template
@@ -80,7 +88,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 
 ## Constraints
 
-- **Repo boundary**: This git root is `/root/src/repos/omega-prime`. Do not commit into `/root/src/repos` (`swcstudiospace/repos`). Do not push.
+- **Repo boundary**: This git root is `/root/src/repos/omega-prime`. Do not commit into `/root/src/repos` (`swcstudiospace/repos`). Push to `main` only on the user's explicit direction (given 2026-10-09: push `main` with `prime-agent` as a git submodule); never tag.
 - **Runtime**: One Python process. No Node or Rust agent process beside Omega Prime. No new global toolchain.
 - **Sources**: Do not vendor, subtree, or runtime-import `hermes-agent/` or `oh-my-pi/`.
 - **Verification**: A completion claim needs a command and an exit code (programming-desk PD-1). No secrets (PD-4). No destructive operation without recorded approval (PD-5).
@@ -142,6 +150,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v10 relicenses to AGPL-3.0 (Spectrum Web Co 2026) | Explicit user request (2026-10-08); supersedes the v6 MIT decision; ported Prime code keeps MIT attribution | ✓ Good |
 | v10 degrades with warning on Prime capability failure | Prime families are default-off flags; Prime-disabled behavior matches pre-v10 exactly (2026-10-08) | ✓ Good |
 | v10 ignores PYSEC-2026-4114 instead of forcing oauthlib 4 | tweepy 4.17 pins `oauthlib<4`; the advisory is an authorization-server PKCE timing oracle this process does not host (2026-10-08) | ✓ Good |
+| v11 hardens the Python MCP host and adds seven improvements instead of a new bridge | The ultrathink graph assumed a TypeScript gateway; this repo's Grok Bot surface is the MCP tool host in `omega_prime/grokbot/`. Static scoped bearer tokens replace HMAC webhooks; per-principal scopes replace tenant sandboxes (2026-10-09) | — Pending |
 
 ## Evolution
 
