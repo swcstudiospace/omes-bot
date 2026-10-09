@@ -1,0 +1,136 @@
+name: grokbot-image
+
+# Builds the hardened Grok Bot tool host image from the committed Dockerfile,
+# boots it with the production hardening flags, proves it with the live verifier,
+# checks graceful SIGTERM, then produces an SBOM and a vulnerability scan. The
+# image is never pushed; the only credential is a throwaway token generated here.
+
+on:
+  push:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements-lock.txt
+      - omega_prime/**
+      - .github/workflows/grokbot-image.yml
+  pull_request:
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements-lock.txt
+      - omega_prime/**
+      - .github/workflows/grokbot-image.yml
+  workflow_dispatch:
+  schedule:
+    - cron: "23 5 * * 1"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: grokbot-image-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      IMAGE_TAG: omega-prime-mcp:ci
+      CONTAINER: omega-prime-mcp-ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Build image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          load: true
+          push: false
+          tags: omega-prime-mcp:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create a throwaway token file
+        run: |
+          umask 077
+          openssl rand -hex 24 > "$RUNNER_TEMP/omega_prime_token"
+          # The image runs as uid 10001; the host rejects group/world-readable token files.
+          sudo chown 10001:10001 "$RUNNER_TEMP/omega_prime_token"
+
+      - name: Start the hardened container
+        run: |
+          docker run -d --name "$CONTAINER" \
+            --read-only \
+            --tmpfs /tmp \
+            --tmpfs /var/lib/omega-prime:uid=10001,gid=10001,mode=0700 \
+            --cap-drop ALL \
+            --security-opt no-new-privileges:true \
+            -v "$RUNNER_TEMP/omega_prime_token:/run/secrets/omega_prime_token:ro" \
+            -p 127.0.0.1:8000:8000 \
+            "$IMAGE_TAG"
+
+      - name: Wait for the healthcheck
+        run: |
+          for _ in $(seq 1 60); do
+            running=$(docker inspect -f '{{.State.Running}}' "$CONTAINER")
+            status=$(docker inspect -f '{{.State.Health.Status}}' "$CONTAINER")
+            if [ "$status" = "healthy" ]; then
+              exit 0
+            fi
+            if [ "$running" != "true" ]; then
+              echo "container exited before becoming healthy" >&2
+              docker logs "$CONTAINER" >&2
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "container did not become healthy (last status: $status)" >&2
+          docker logs "$CONTAINER" >&2
+          exit 1
+
+      - name: Verify the live host
+        run: |
+          docker exec "$CONTAINER" python -m omega_prime.grokbot.verify \
+            --url http://127.0.0.1:8000 \
+            --token-file /run/secrets/omega_prime_token \
+            --json
+
+      - name: Stop gracefully
+        run: |
+          docker stop -t 30 "$CONTAINER"
+          code=$(docker inspect -f '{{.State.ExitCode}}' "$CONTAINER")
+          if [ "$code" != "0" ]; then
+            echo "expected exit code 0 after SIGTERM, got $code" >&2
+            docker logs "$CONTAINER" >&2
+            exit 1
+          fi
+
+      - name: Remove the container
+        if: always()
+        run: docker rm -f "$CONTAINER"
+
+      - name: Generate the SBOM
+        uses: anchore/sbom-action@v0.24.3
+        with:
+          image: omega-prime-mcp:ci
+          format: spdx-json
+          output-file: omega-prime-mcp.spdx.json
+          upload-artifact: false
+
+      - name: Upload the SBOM
+        uses: actions/upload-artifact@v7
+        with:
+          name: omega-prime-mcp-sbom
+          path: omega-prime-mcp.spdx.json
+          if-no-files-found: error
+
+      - name: Scan the image
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: omega-prime-mcp:ci
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"

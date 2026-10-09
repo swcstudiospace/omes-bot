@@ -174,11 +174,20 @@ def default_registry(
                 except Exception:
                     pass
     register_coding_tools(registry, root / "omega_prime", policy=policy)
+    # `OMEGA_PRIME_STATE_DIR` moves the two growth stores out of the (possibly
+    # read-only) source tree; skills stay under the root.
+    state_dir = env.get("OMEGA_PRIME_STATE_DIR")
+    if isinstance(state_dir, str) and state_dir:
+        memory_dir = Path(state_dir) / "memory"
+        session_db = Path(state_dir) / "sessions.db"
+    else:
+        memory_dir = root / "omega_prime" / "memory"
+        session_db = root / "omega_prime" / "sessions.db"
     register_growth_tools(
         registry,
         skills_root=root / "omega_prime" / "skills",
-        memory_dir=root / "omega_prime" / "memory",
-        session_db=root / "omega_prime" / "sessions.db",
+        memory_dir=memory_dir,
+        session_db=session_db,
     )
     register_platform_tools(registry, home=home)
     register_ide_tools(registry, root)

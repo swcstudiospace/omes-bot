@@ -14,6 +14,7 @@
 - [Connectors](connectors.md)
 - [Migration to v10](migration.md)
 - [Tool host](tool-host.md)
+- [Deploying the tool host](deploy.md)
 - [Substrate surface](substrate.md)
 - [FAQ](faq.md)
 
