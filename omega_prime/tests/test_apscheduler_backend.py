@@ -40,11 +40,20 @@ def test_one_shot_fires_once_and_persists(tmp_path: Path):
         assert service.start() == []
         assert _wait_until(lambda: seen == ["hello"])
         job = next(entry for entry in store.jobs if entry["id"] == job_id)
-        assert job["completed"] is True
+        # The runner is called before the tick marks the job complete and saves
+        # it, so wait for those postconditions rather than for the call itself.
+        assert _wait_until(lambda: job["completed"] is True)
         assert job["last_result"] == "done"
         assert len(job["history"]) == 1
-        persisted = json.loads((tmp_path / "jobs.json").read_text(encoding="utf-8"))
-        assert persisted["jobs"][0]["last_result"] == "done"
+        jobs_file = tmp_path / "jobs.json"
+
+        def persisted_result() -> object:
+            # The store replaces the file atomically: every read parses.
+            return json.loads(jobs_file.read_text(encoding="utf-8"))["jobs"][0][
+                "last_result"
+            ]
+
+        assert _wait_until(lambda: persisted_result() == "done")
     finally:
         service.stop()
 
@@ -57,11 +66,11 @@ def test_interval_job_fires_repeatedly(tmp_path: Path):
     service = SchedulerService(store, _recorder(seen, "beat-done"))
     try:
         service.start()
-        assert _wait_until(lambda: len(seen) >= 2)
         job = store.jobs[0]
+        # History is appended after the runner returns, so wait for it too.
+        assert _wait_until(lambda: len(seen) >= 2 and len(job["history"]) >= 2)
         assert job["completed"] is False
         assert job["due_at"] > first_due
-        assert len(job["history"]) >= 2
     finally:
         service.stop()
 
