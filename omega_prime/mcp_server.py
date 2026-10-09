@@ -671,6 +671,99 @@ def main(argv: list[str] | None = None) -> int:
         metavar="SECONDS",
         help="seconds to let in-flight SSE calls finish on shutdown (default: 20)",
     )
+    parser.add_argument(
+        "--token-store",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "hashed multi-token store; an authentication source that may be "
+            "combined with the single bearer token"
+        ),
+    )
+    parser.add_argument(
+        "--rate-limit",
+        type=int,
+        default=600,
+        metavar="N",
+        help="requests per minute per principal (0 disables, default: 600)",
+    )
+    parser.add_argument(
+        "--global-rate-limit",
+        type=int,
+        default=0,
+        metavar="N",
+        help="requests per minute for every principal (0 disables, default: 0)",
+    )
+    parser.add_argument(
+        "--tool-rate-limit",
+        type=int,
+        default=300,
+        metavar="N",
+        help="tool calls per minute per principal (0 disables, default: 300)",
+    )
+    parser.add_argument(
+        "--auth-failure-limit",
+        type=int,
+        default=10,
+        metavar="N",
+        help="auth failures per 60s per client (0 disables, default: 10)",
+    )
+    parser.add_argument(
+        "--breaker-threshold",
+        type=int,
+        default=5,
+        metavar="N",
+        help=(
+            "infrastructure failures before a tool circuit opens "
+            "(0 disables, default: 5)"
+        ),
+    )
+    parser.add_argument(
+        "--breaker-cooldown",
+        type=float,
+        default=30.0,
+        metavar="SECONDS",
+        help="seconds a tool circuit stays open (default: 30)",
+    )
+    parser.add_argument(
+        "--no-metrics",
+        action="store_true",
+        help="do not expose the Prometheus /metrics endpoint",
+    )
+    parser.add_argument(
+        "--metrics-scope",
+        choices=["read", "call", "admin"],
+        default="read",
+        help="scope required to read /metrics (default: read)",
+    )
+    parser.add_argument(
+        "--log-format",
+        choices=["text", "json"],
+        default="text",
+        help="server log format (default: text)",
+    )
+    parser.add_argument(
+        "--session-idle-timeout",
+        type=float,
+        default=1800.0,
+        metavar="SECONDS",
+        help="idle seconds before a streamable session is dropped (default: 1800)",
+    )
+    parser.add_argument(
+        "--max-sessions",
+        type=int,
+        default=64,
+        metavar="N",
+        help="maximum concurrent streamable sessions (default: 64)",
+    )
+    parser.add_argument(
+        "--approval-max-ttl",
+        type=float,
+        default=86400.0,
+        metavar="SECONDS",
+        help="longest approval TTL the admin API accepts, in seconds (default: 86400)",
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
@@ -685,6 +778,28 @@ def main(argv: list[str] | None = None) -> int:
         if not tool or not approver:
             return _fail(f"bad --approve {item!r}, want TOOL:APPROVER")
         approvals.append((tool, approver))
+
+    # SSE knobs are validated even when stdio will ignore them, so a bad value
+    # is a usage error before either transport starts.
+    non_negative: tuple[tuple[str, int | float], ...] = (
+        ("--rate-limit", args.rate_limit),
+        ("--global-rate-limit", args.global_rate_limit),
+        ("--tool-rate-limit", args.tool_rate_limit),
+        ("--auth-failure-limit", args.auth_failure_limit),
+        ("--breaker-threshold", args.breaker_threshold),
+        ("--breaker-cooldown", args.breaker_cooldown),
+    )
+    for flag, value in non_negative:
+        if value < 0:
+            return _fail(f"{flag} must not be negative")
+    positive: tuple[tuple[str, int | float], ...] = (
+        ("--session-idle-timeout", args.session_idle_timeout),
+        ("--max-sessions", args.max_sessions),
+        ("--approval-max-ttl", args.approval_max_ttl),
+    )
+    for flag, value in positive:
+        if value <= 0:
+            return _fail(f"{flag} must be positive")
 
     if args.transport == "sse":
         from omega_prime.grokbot.audit import GrokBotAuditTracer
@@ -710,6 +825,19 @@ def main(argv: list[str] | None = None) -> int:
             approvals=approvals,
             max_body_bytes=args.max_body_bytes,
             shutdown_grace=args.shutdown_grace,
+            token_store_path=args.token_store,
+            rate_limit=args.rate_limit,
+            global_rate_limit=args.global_rate_limit,
+            tool_rate_limit=args.tool_rate_limit,
+            auth_failure_limit=args.auth_failure_limit,
+            breaker_threshold=args.breaker_threshold,
+            breaker_cooldown=args.breaker_cooldown,
+            metrics_enabled=not args.no_metrics,
+            metrics_scope=args.metrics_scope,
+            log_format=args.log_format,
+            session_idle_timeout=args.session_idle_timeout,
+            max_sessions=args.max_sessions,
+            approval_max_ttl=args.approval_max_ttl,
         )
 
     try:

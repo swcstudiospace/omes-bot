@@ -431,3 +431,102 @@ def test_stdio_launch_passes_audit_log(tmp_path: Path, monkeypatch: pytest.Monke
 def test_public_url_must_be_http(capsys: pytest.CaptureFixture):
     assert main(_sse("--public-url", "ftp://nope", "--dry-run")) == 2
     assert "--public-url" in capsys.readouterr().err
+
+
+def _recording_serve(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, Any]]:
+    calls: list[dict[str, Any]] = []
+
+    def fake_serve(**kwargs: Any) -> int:
+        calls.append(kwargs)
+        return 0
+
+    monkeypatch.setattr("omega_prime.grokbot.remote.serve_sse", fake_serve)
+    return calls
+
+
+def test_token_store_reaches_serve(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = _recording_serve(monkeypatch)
+    store = tmp_path / "tokens.json"
+    assert (
+        main(
+            _sse(
+                "--host",
+                "0.0.0.0",
+                "--token-store",
+                str(store),
+                "--log-format",
+                "json",
+            )
+        )
+        == 0
+    )
+    assert calls[0]["token_store_path"] == store
+    assert calls[0]["token"] is None
+    assert calls[0]["log_format"] == "json"
+
+
+def test_token_store_satisfies_bind_safety(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    store = tmp_path / "tokens.json"
+    out = tmp_path / "m.json"
+    ret = main(
+        [
+            *_sse("--host", "0.0.0.0", "--token-store", str(store)),
+            "--export-manifest",
+            str(out),
+            "--dry-run",
+            "--json",
+        ]
+    )
+    assert ret == 0
+    assert not store.exists()
+    captured = capsys.readouterr()
+    assert "without authentication" not in captured.err
+    report = json.loads(captured.out)
+    assert report["auth"]["enabled"] is True
+    assert report["auth"]["type"] == "bearer"
+    assert report["auth"]["source"] == "store"
+    manifest = json.loads(out.read_text(encoding="utf-8"))
+    assert manifest["mcp_server"]["auth"]["type"] == "bearer"
+
+
+def test_token_store_coexists_with_bearer_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls = _recording_serve(monkeypatch)
+    monkeypatch.setenv("MCP_AUTH_TOKEN", TOKEN)
+    store = tmp_path / "tokens.json"
+    assert main(_sse("--host", "0.0.0.0", "--token-store", str(store))) == 0
+    assert calls[0]["token"] == TOKEN
+    assert calls[0]["token_store_path"] == store
+
+
+def test_log_format_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = _recording_serve(monkeypatch)
+    assert main(_sse("--log-format", "json")) == 0
+    assert calls[0]["log_format"] == "json"
+    assert main(_sse()) == 0
+    assert calls[1]["log_format"] == "text"
+    assert calls[1]["token_store_path"] is None
+
+
+def test_stdio_does_not_forward_sse_only_launcher_flags(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[list[str]] = []
+
+    def fake_call(cmd: list[str]) -> int:
+        seen.append(cmd)
+        return 0
+
+    monkeypatch.setattr(oneclick.subprocess, "call", fake_call)
+    store = tmp_path / "tokens.json"
+    assert (
+        main(["--skip-doctor", "--log-format", "json", "--token-store", str(store)])
+        == 0
+    )
+    assert "--log-format" not in seen[0]
+    assert "--token-store" not in seen[0]

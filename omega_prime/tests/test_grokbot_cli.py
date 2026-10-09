@@ -369,3 +369,296 @@ def test_empty_audit_env_means_no_audit(
     monkeypatch.setenv("OMEGA_PRIME_AUDIT_LOG", "")
     assert mcp_server.main(_sse(tmp_path)) == 0
     assert sse_calls[-1]["audit"] is None
+
+
+_ENTERPRISE_FLAGS = (
+    "--token-store",
+    "--rate-limit",
+    "--global-rate-limit",
+    "--tool-rate-limit",
+    "--auth-failure-limit",
+    "--breaker-threshold",
+    "--breaker-cooldown",
+    "--no-metrics",
+    "--metrics-scope",
+    "--log-format",
+    "--session-idle-timeout",
+    "--max-sessions",
+    "--approval-max-ttl",
+)
+
+
+def test_help_lists_every_enterprise_flag(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as exc:
+        mcp_server.main(["--help"])
+    assert exc.value.code == 0
+    text = capsys.readouterr().out
+    for flag in _ENTERPRISE_FLAGS:
+        assert flag in text
+
+
+def test_sse_enterprise_defaults(
+    tmp_path: Path, sse_calls: list[dict[str, Any]]
+) -> None:
+    assert mcp_server.main(_sse(tmp_path)) == 0
+    call = sse_calls[-1]
+    assert call["token_store_path"] is None
+    assert call["rate_limit"] == 600
+    assert call["global_rate_limit"] == 0
+    assert call["tool_rate_limit"] == 300
+    assert call["auth_failure_limit"] == 10
+    assert call["breaker_threshold"] == 5
+    assert call["breaker_cooldown"] == 30.0
+    assert call["metrics_enabled"] is True
+    assert call["metrics_scope"] == "read"
+    assert call["log_format"] == "text"
+    assert call["session_idle_timeout"] == 1800.0
+    assert call["max_sessions"] == 64
+    assert call["approval_max_ttl"] == 86400.0
+
+
+def test_token_store_maps_to_token_store_path(
+    tmp_path: Path, sse_calls: list[dict[str, Any]]
+) -> None:
+    store = tmp_path / "tokens.json"
+    assert mcp_server.main(_sse(tmp_path, "--token-store", str(store))) == 0
+    assert sse_calls[-1]["token_store_path"] == store
+
+
+def test_token_store_coexists_with_bearer_token(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    sse_calls: list[dict[str, Any]],
+) -> None:
+    token = _token_file(tmp_path, "from-file")
+    store = tmp_path / "store.json"
+    monkeypatch.setenv("MCP_AUTH_TOKEN", "from-env")
+    assert (
+        mcp_server.main(
+            _sse(
+                tmp_path,
+                "--token",
+                "from-argv",
+                "--token-file",
+                str(token),
+                "--token-store",
+                str(store),
+            )
+        )
+        == 0
+    )
+    call = sse_calls[-1]
+    assert call["token"] == "from-file"
+    assert call["token_store_path"] == store
+
+
+@pytest.mark.parametrize(
+    ("extra", "key", "expected"),
+    [
+        (["--rate-limit", "12"], "rate_limit", 12),
+        (["--global-rate-limit", "40"], "global_rate_limit", 40),
+        (["--tool-rate-limit", "7"], "tool_rate_limit", 7),
+        (["--auth-failure-limit", "3"], "auth_failure_limit", 3),
+        (["--breaker-threshold", "9"], "breaker_threshold", 9),
+        (["--breaker-cooldown", "2.5"], "breaker_cooldown", 2.5),
+        (["--no-metrics"], "metrics_enabled", False),
+        (["--metrics-scope", "read"], "metrics_scope", "read"),
+        (["--metrics-scope", "call"], "metrics_scope", "call"),
+        (["--metrics-scope", "admin"], "metrics_scope", "admin"),
+        (["--log-format", "text"], "log_format", "text"),
+        (["--log-format", "json"], "log_format", "json"),
+        (["--session-idle-timeout", "15"], "session_idle_timeout", 15.0),
+        (["--max-sessions", "3"], "max_sessions", 3),
+        (["--approval-max-ttl", "120"], "approval_max_ttl", 120.0),
+    ],
+)
+def test_sse_flag_maps_to_serve_sse(
+    tmp_path: Path,
+    sse_calls: list[dict[str, Any]],
+    extra: list[str],
+    key: str,
+    expected: object,
+) -> None:
+    assert mcp_server.main(_sse(tmp_path, *extra)) == 0
+    assert sse_calls[-1][key] == expected
+
+
+def test_zero_disables_limits(tmp_path: Path, sse_calls: list[dict[str, Any]]) -> None:
+    assert (
+        mcp_server.main(
+            _sse(
+                tmp_path,
+                "--rate-limit",
+                "0",
+                "--global-rate-limit",
+                "0",
+                "--tool-rate-limit",
+                "0",
+                "--auth-failure-limit",
+                "0",
+                "--breaker-threshold",
+                "0",
+                "--breaker-cooldown",
+                "0",
+            )
+        )
+        == 0
+    )
+    call = sse_calls[-1]
+    assert call["rate_limit"] == 0
+    assert call["global_rate_limit"] == 0
+    assert call["tool_rate_limit"] == 0
+    assert call["auth_failure_limit"] == 0
+    assert call["breaker_threshold"] == 0
+    assert call["breaker_cooldown"] == 0.0
+
+
+@pytest.mark.parametrize("transport", ["stdio", "sse"])
+@pytest.mark.parametrize(
+    ("flag", "value"),
+    [
+        ("--rate-limit", "-1"),
+        ("--global-rate-limit", "-5"),
+        ("--tool-rate-limit", "-1"),
+        ("--auth-failure-limit", "-1"),
+        ("--breaker-threshold", "-1"),
+        ("--breaker-cooldown", "-0.1"),
+        ("--breaker-cooldown", "-1"),
+        ("--session-idle-timeout", "0"),
+        ("--session-idle-timeout", "-2"),
+        ("--max-sessions", "0"),
+        ("--max-sessions", "-3"),
+        ("--approval-max-ttl", "0"),
+        ("--approval-max-ttl", "-4"),
+    ],
+)
+def test_limit_usage_errors_exit_2(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    sse_calls: list[dict[str, Any]],
+    transport: str,
+    flag: str,
+    value: str,
+) -> None:
+    code = mcp_server.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--home",
+            str(tmp_path),
+            "--transport",
+            transport,
+            flag,
+            value,
+        ]
+    )
+    assert code == 2
+    assert flag in _one_line_reason(capsys.readouterr().err)
+    assert sse_calls == []
+
+
+def test_stdio_ignores_sse_enterprise_flags(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    sse_calls: list[dict[str, Any]],
+) -> None:
+    served: list[object] = []
+
+    def _load_runtime(root: Path, home: Path, *, no_roster: bool, approvals: object):
+        del root, home, no_roster, approvals
+        return SimpleNamespace(registry=object(), roster=["read_file"])
+
+    async def _serve(server: object) -> None:
+        served.append(server)
+
+    def _build_server(registry: object, roster: list[str] | None) -> str:
+        del registry, roster
+        return "server"
+
+    monkeypatch.setattr(mcp_server, "load_runtime", _load_runtime)
+    monkeypatch.setattr(mcp_server, "build_server", _build_server)
+    monkeypatch.setattr(mcp_server, "_serve", _serve)
+    store = tmp_path / "tokens.json"
+    code = mcp_server.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--home",
+            str(tmp_path),
+            "--token-store",
+            str(store),
+            "--rate-limit",
+            "11",
+            "--global-rate-limit",
+            "22",
+            "--tool-rate-limit",
+            "33",
+            "--auth-failure-limit",
+            "4",
+            "--breaker-threshold",
+            "6",
+            "--breaker-cooldown",
+            "1.5",
+            "--no-metrics",
+            "--metrics-scope",
+            "admin",
+            "--log-format",
+            "json",
+            "--session-idle-timeout",
+            "90",
+            "--max-sessions",
+            "8",
+            "--approval-max-ttl",
+            "60",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "9",
+        ]
+    )
+    assert code == 0
+    assert served == ["server"]
+    assert sse_calls == []
+    assert capsys.readouterr().err == ""
+
+
+def test_dockerfile_cmd_is_accepted(
+    tmp_path: Path, sse_calls: list[dict[str, Any]]
+) -> None:
+    """The image CMD (`--log-format json` plus the Phase 62 SSE flags) parses."""
+    token = _token_file(tmp_path, "dockerfile-bearer-token")
+    audit = tmp_path / "audit.jsonl"
+    home = tmp_path / "home"
+    code = mcp_server.main(
+        [
+            "--root",
+            str(tmp_path),
+            "--transport",
+            "sse",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            "8000",
+            "--token-file",
+            str(token),
+            "--audit-log",
+            str(audit),
+            "--home",
+            str(home),
+            "--shutdown-grace",
+            "20",
+            "--log-format",
+            "json",
+        ]
+    )
+    assert code == 0
+    call = sse_calls[-1]
+    assert call["log_format"] == "json"
+    assert call["shutdown_grace"] == 20.0
+    assert call["host"] == "0.0.0.0"
+    assert call["port"] == 8000
+    assert call["home"] == home
+    assert call["token"] == "dockerfile-bearer-token"
+    assert isinstance(call["audit"], GrokBotAuditTracer)
+    assert Path(call["audit"].log_path) == audit

@@ -6,8 +6,9 @@ Orchestrates environment preflight, bind-safety evaluation, manifest export, and
 launches the tool host in stdio or SSE mode.
 
 Exit codes: 0 success, 2 configuration error (bad token, unsafe bind, ...), 3 strict
-preflight failure. Secrets come from a 0600 token file, the environment, or (deprecated)
-argv; a token is never written to the manifest, printed to stdout, or put in JSON output.
+preflight failure. Secrets come from a 0600 token file, a hashed token store, the
+environment, or (deprecated) argv; a token is never written to the manifest, printed
+to stdout, or put in JSON output.
 """
 
 from __future__ import annotations
@@ -188,6 +189,8 @@ def run_oneclick(
     allow_insecure_no_auth: bool = False,
     strict: bool | None = None,
     json_output: bool = False,
+    token_store_path: Path | None = None,
+    log_format: str = "text",
 ) -> int:
     """Execute the 1-click workflow."""
     sse = transport == "sse"
@@ -224,7 +227,9 @@ def run_oneclick(
                     f"{_PREFIX}: a token is already configured; "
                     "--generate-token ignored"
                 )
-    auth_enabled = token is not None
+    if sse and token is None and token_store_path is not None:
+        token_source = "store"
+    auth_enabled = token is not None or token_source == "store"
     if sse:
         try:
             check_bind_safety(
@@ -339,6 +344,8 @@ def run_oneclick(
             allowed_origins=tuple(allowed_origins),
             allow_insecure_no_auth=allow_insecure_no_auth,
             audit=audit,
+            token_store_path=token_store_path,
+            log_format=log_format,
         )
 
 
@@ -427,6 +434,19 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Print one machine-readable JSON object on stdout (text goes to stderr)",
     )
+    parser.add_argument(
+        "--token-store",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help="hashed token store; counts as authentication for bind safety",
+    )
+    parser.add_argument(
+        "--log-format",
+        choices=["text", "json"],
+        default="text",
+        help="log format forwarded to the SSE host (default: text)",
+    )
     args = parser.parse_args(argv)
 
     if args.token:
@@ -454,6 +474,8 @@ def main(argv: list[str] | None = None) -> int:
         allow_insecure_no_auth=args.allow_insecure_no_auth,
         strict=args.strict,
         json_output=args.json,
+        token_store_path=args.token_store,
+        log_format=args.log_format,
     )
 
 
