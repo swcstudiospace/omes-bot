@@ -30,6 +30,8 @@ from typing import Any, TextIO
 from urllib.parse import urlsplit
 
 from omega_prime.grokbot import doctor as _doctor
+from omega_prime.grokbot import receipts as _receipts
+from omega_prime.grokbot import rerun as _rerun
 from omega_prime.grokbot._io import atomic_write_text, read_secret_file
 from omega_prime.grokbot.manifest import generate_manifest
 from omega_prime.grokbot.security import (
@@ -200,11 +202,55 @@ def run_oneclick(
     json_output: bool = False,
     token_store_path: Path | None = None,
     log_format: str = "text",
+    force: bool = False,
+    resume: bool = False,
 ) -> int:
     """Execute the 1-click workflow."""
     sse = transport == "sse"
     strict = sse if strict is None else strict
     say = sys.stderr if json_output else sys.stdout
+    # --- Resume-safe re-run guard (SSE serve only): stdio spawns a fresh
+    # --- subprocess pipe and never binds TCP, so no port conflict is possible;
+    # --- dry-run must always validate and report, never no-op.
+    _verdict = None
+    if sse and not dry_run:
+        _verdict = _rerun.check_rerun(
+            _receipts.receipt_path_for_manifest(export_manifest)
+            if export_manifest
+            else None,
+            port,
+        )
+    if not force:
+        if _verdict == _rerun.VERDICT_ALREADY_COMPLETE:
+            print(
+                f"{_PREFIX}: already complete"
+                + (
+                    f" (manifest {_verdict.manifest_digest})"
+                    if _verdict.manifest_digest
+                    else ""
+                )
+                + "; nothing to do.",
+                file=say,
+            )
+            return EXIT_OK
+        if _verdict == _rerun.VERDICT_ALREADY_RUNNING and not resume:
+            print(
+                f"{_PREFIX}: already running (port {port} in use); nothing to do.",
+                file=say,
+            )
+            return EXIT_OK
+    if _verdict == _rerun.VERDICT_ALREADY_RUNNING and resume:
+        print(
+            f"{_PREFIX}: already running (port {port} in use); "
+            "--resume: continuing into serve.",
+            file=say,
+        )
+    elif _verdict == _rerun.VERDICT_INTERRUPTED:
+        print(
+            f"{_PREFIX}: previous run was interrupted; resuming launch "
+            "(existing state preserved).",
+            file=say,
+        )
 
     print("=== Omega Prime ► Grok Bot Native 1-Click Launcher ===", file=say)
     print(f"Root: {root}", file=say)
@@ -296,6 +342,7 @@ def run_oneclick(
             )
 
     # --- Manifest (never contains the token).
+    manifest: dict[str, Any] | None = None
     manifest_path: Path | None = None
     if export_manifest or dry_run:
         try:
@@ -322,6 +369,23 @@ def run_oneclick(
             _emit_json(report(manifest_path))
         return EXIT_OK
 
+    def _finish(status: str, exit_code: int) -> None:
+        if dry_run or export_manifest is None or manifest is None:
+            return
+        record = _receipts.build_receipt(
+            transport=transport,
+            host=host,
+            port=port,
+            manifest=manifest,
+            token_source=token_source,
+            doctor_passed=passed,
+            exit_code=exit_code,
+            status=status,
+        )
+        _receipts.write_receipt(
+            _receipts.receipt_path_for_manifest(export_manifest), record
+        )
+
     if json_output:
         _emit_json(report(manifest_path))
 
@@ -333,7 +397,13 @@ def run_oneclick(
         cmd = [sys.executable, "-m", "omega_prime.mcp_server", "--root", str(root)]
         if audit_log is not None:
             cmd += ["--audit-log", str(audit_log)]
-        return subprocess.call(cmd)
+        try:
+            code = subprocess.call(cmd)
+        except (KeyboardInterrupt, Exception):
+            _finish("interrupted", 130)
+            raise
+        _finish("complete", code)
+        return code
 
     from omega_prime.grokbot.remote import serve_sse
 
@@ -343,19 +413,25 @@ def run_oneclick(
 
         audit = GrokBotAuditTracer(audit_log)
     with _exported_token(token_env, token):
-        return serve_sse(
-            root=root,
-            host=host,
-            port=port,
-            token=token,
-            public_url=public_url,
-            allowed_hosts=tuple(allowed_hosts),
-            allowed_origins=tuple(allowed_origins),
-            allow_insecure_no_auth=allow_insecure_no_auth,
-            audit=audit,
-            token_store_path=token_store_path,
-            log_format=log_format,
-        )
+        try:
+            code = serve_sse(
+                root=root,
+                host=host,
+                port=port,
+                token=token,
+                public_url=public_url,
+                allowed_hosts=tuple(allowed_hosts),
+                allowed_origins=tuple(allowed_origins),
+                allow_insecure_no_auth=allow_insecure_no_auth,
+                audit=audit,
+                token_store_path=token_store_path,
+                log_format=log_format,
+            )
+        except (KeyboardInterrupt, Exception):
+            _finish("interrupted", 130)
+            raise
+        _finish("complete", code)
+        return code
 
 
 def _redact_secrets(text: str, secrets: Sequence[str]) -> str:
@@ -640,6 +716,16 @@ def main(argv: list[str] | None = None) -> int:
         default="text",
         help="log format forwarded to the SSE host (default: text)",
     )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Bypass the resume-safe re-run guard and launch anyway",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue into serve even when a previous host is already running",
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
@@ -674,6 +760,8 @@ def main(argv: list[str] | None = None) -> int:
         json_output=args.json,
         token_store_path=args.token_store,
         log_format=args.log_format,
+        force=args.force,
+        resume=args.resume,
     )
 
 

@@ -150,9 +150,24 @@ Every write location of the default tool set:
 | `missing-resource-limits` | warning | no memory limit is set |
 | `missing-network-policy` | warning | a Kubernetes workload is present without any NetworkPolicy in the scanned files |
 | `unrecognized-file` | warning | a file named explicitly is not a Dockerfile, compose, Kubernetes or unit file |
-
+| `promote-without-staging-evidence` | warning | a `promotion*` marker is present without a staging receipt (`*staging*`) or image digest (`*.digest`) file |
+| `missing-promotion-approval-record` | warning | a `promotion*` marker is present without an approval (`*approv*`) or audit (`*audit*`) record file |
 `check` reads YAML with a built-in block-YAML reader (no PyYAML needed). Anchors, aliases, tags, merge keys and
 multi-line flow collections are not supported and are reported as `unparseable`.
+
+## Staging first, then gated promotion
+
+Promote the same digest through staging before production. There are no `--staging` or `--prod` flags: `check`
+infers a production promotion from a `promotion*` marker file placed alongside the artifact set, and both
+promotion findings below are warnings, so they never change the exit code (exit 0 is preserved).
+
+1. `render` the artifact set once, then run `render`+`check`+`verify` against a staging host first. Keep the
+   staging receipt (any `*staging*` file) or the image digest file (any `*.digest` file) alongside the artifact
+   set; without either, `check` warns `promote-without-staging-evidence`.
+2. Record the approval in the audit log and keep the approval or audit record (any `*approv*` or `*audit*`
+   file) alongside the artifact set; without it, `check` warns `missing-promotion-approval-record`.
+3. Promote the same digest: apply the identical artifact set to production with the `promotion*` marker
+   present. Never re-render with different options between staging and production.
 
 ## Stop and drain
 
