@@ -12,7 +12,7 @@
 - ✅ **v8 Public launch** — Phases 44-45 (shipped 2026-10-03)
 - ✅ **v9 SOTA upgrade** — Phases 46-52 (shipped 2026-10-08)
 - ✅ **v10 Prime merge** — Phases 53-61 (shipped 2026-10-09; audit passed)
-- 🚧 **v11 Grok Bot native** — Phases 62-63 (in progress)
+- ✅ **v11 Grok Bot native** — Phases 62-63 (shipped 2026-10-09; audit passed)
 
 Archives: `milestones/v1-ROADMAP.md` through `milestones/v10-ROADMAP.md`
 with phase directories under `milestones/v1-phases/` through
@@ -279,7 +279,7 @@ Plans:
 - [x] 61-05: Config-derived effective prompt/roster and truthful enabled-tool catalog
 - [x] 61-06: Authentic pre-v10 transcript comparison, clean Python prerequisite and final parent integration
 
-## v11 Grok Bot native - in progress
+## v11 Grok Bot native - shipped 2026-10-09
 
 Omega Prime becomes a production-grade, enterprise-ready Grok Bot tool host with a
 one-command install. Source plan: ultrathink graph `ut-mv0nfl17-58362dc4` (Linear
@@ -287,7 +287,7 @@ SPE-8895..SPE-8900), translated from its stack-agnostic wording to this Python M
 User direction (2026-10-09): push to `main` with `prime-agent` as a git submodule.
 
 - [x] **Phase 62: Grok Bot native runtime completion** - Bootstrap/config, health, lifecycle and transport components finished and proven over a real socket.
-- [ ] **Phase 63: Seven enterprise improvements** - Streamable HTTP, scoped credentials, approval gateway, traffic protection, observability, live verifier, deployment kit.
+- [x] **Phase 63: Seven enterprise improvements** - Streamable HTTP, scoped credentials, approval gateway, traffic protection, observability, live verifier, deployment kit.
 
 ### Phase 62: Grok Bot native runtime completion
 
@@ -346,11 +346,11 @@ observability, a live proof, and a deployment kit.
 
 Plans:
 
-- [ ] 63-01: Streamable HTTP transport (GRI-01)
-- [ ] 63-02: Scoped, rotatable credentials + token CLI (GRI-02)
-- [ ] 63-03: Human approval gateway (GRI-03)
-- [ ] 63-04: Traffic protection - rate limits + circuit breaker (GRI-04)
-- [ ] 63-05: Observability - metrics, trace context, NDJSON logs (GRI-05)
-- [ ] 63-06: Live conformance verifier, served manifest + launcher self-test (GRI-06)
-- [ ] 63-07: Deployment kit + image CI (GRI-07)
-- [ ] 63-08: Integration wiring, docs, milestone audit
+- [x] 63-01: Streamable HTTP transport (GRI-01)
+- [x] 63-02: Scoped, rotatable credentials + token CLI (GRI-02)
+- [x] 63-03: Human approval gateway (GRI-03)
+- [x] 63-04: Traffic protection - rate limits + circuit breaker (GRI-04)
+- [x] 63-05: Observability - metrics, trace context, NDJSON logs (GRI-05)
+- [x] 63-06: Live conformance verifier, served manifest + launcher self-test (GRI-06)
+- [x] 63-07: Deployment kit + image CI (GRI-07)
+- [x] 63-08: Integration wiring, docs, milestone audit

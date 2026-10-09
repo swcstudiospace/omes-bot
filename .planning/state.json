@@ -1,12 +1,12 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v11 - Grok Bot native",
+  "milestone": "v11 - Grok Bot native (complete)",
   "phases": [],
   "next": {
-    "command": "/gsd:autonomous --from 63",
-    "label": "Execute Phase 63",
-    "reason": "Phase 62 complete; Phase 63 of 2 executing (Wave 1)"
+    "command": "/gsd:new-milestone",
+    "label": "Start the next milestone",
+    "reason": "v11 complete; audit passed 17/17; archive awaits confirmation"
   },
-  "updated_at": "2026-10-09T10:55:00.000Z"
+  "updated_at": "2026-10-09T12:30:00.000Z"
 }

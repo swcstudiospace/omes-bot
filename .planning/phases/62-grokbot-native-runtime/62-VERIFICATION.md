@@ -54,7 +54,7 @@ D-01 constant-time compare; D-02 query token never accepted; D-03 non-loopback w
 - `bash omega_prime/scripts/assemble-prompts.sh --check`, `python -m omega_prime.tooling.catalog --check`, `python -m omega_prime.setup_check --root .` -> exit 0.
 - `ruff check` and `ruff format --check omega_prime/` -> exit 0; `mypy omega_prime/` -> exit 0 (273 files); `pyright` on `mcp_server.py`, `omega_prime/grokbot` and the grokbot tests -> 0 errors.
 - `pip-audit --progress-spinner off -r requirements-lock.txt --ignore-vuln PYSEC-2026-4114` -> exit 0 ("No known vulnerabilities found, 1 ignored").
-- CI on `f2c33ed`: `supply-chain` success (it failed on 4 of the last 5 merges before the lock repair); remaining jobs recorded below when complete.
+- CI on `f2c33ed` (GitHub Actions): `ci` 10/10 jobs success (`verify`, `lint` and `types` on Python 3.12, 3.13 and 3.14, plus `docs`) and `supply-chain` success (it failed on 4 of the last 5 merges before the lock repair).
 
 ## Known limitations
 

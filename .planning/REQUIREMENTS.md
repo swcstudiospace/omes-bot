@@ -53,33 +53,33 @@ The v10 requirements are archived in `milestones/v10-REQUIREMENTS.md`.
 
 ### Enterprise improvements (Phase 63)
 
-- [ ] **GRI-01**: Streamable HTTP. The same app serves MCP Streamable HTTP at `/mcp`
+- [x] **GRI-01**: Streamable HTTP. The same app serves MCP Streamable HTTP at `/mcp`
   (stateful sessions, SDK security settings) next to legacy SSE; both obey the same auth,
   origin, limit and audit rules
-- [ ] **GRI-02**: Scoped credentials. Tokens live in a hashed, 0600 token file with ids,
+- [x] **GRI-02**: Scoped credentials. Tokens live in a hashed, 0600 token file with ids,
   scopes (`read`, `call`, `admin`) and expiry; `python -m omega_prime.grokbot.tokens
   new|list|revoke` manages them (plaintext shown once, never stored); the server picks up
   changes without a restart, a revoked or expired token stops working immediately, and an
   unreadable token file denies everyone (fail closed)
-- [ ] **GRI-03**: Approval gateway. An admin-scoped HTTP API (`GET/POST /admin/approvals`,
+- [x] **GRI-03**: Approval gateway. An admin-scoped HTTP API (`GET/POST /admin/approvals`,
   `DELETE /admin/approvals/{tool}`) approves gated tools at runtime with a TTL, records the
   approver principal (never the bot) and audits every change; a `call`-scope token cannot
   reach it
-- [ ] **GRI-04**: Traffic protection. Two-tier token-bucket limits (per principal and
+- [x] **GRI-04**: Traffic protection. Two-tier token-bucket limits (per principal and
   global) on HTTP requests and on tool calls answer 429 / `rate_limited` with `Retry-After`;
   repeated failed authentication from one client is throttled; a per-tool circuit breaker
   fails fast with `circuit_open` after consecutive infrastructure failures, half-opens with
   jitter and recovers; every limit is configurable and disabled with 0
-- [ ] **GRI-05**: Observability. Prometheus text at `/metrics` (read scope or above),
+- [x] **GRI-05**: Observability. Prometheus text at `/metrics` (read scope or above),
   W3C `traceparent` propagation with a request id on every response and audit record, and
   NDJSON structured logs with redaction (`--log-format json`)
-- [ ] **GRI-06**: Live verifier. The host serves its own truthful manifest at
+- [x] **GRI-06**: Live verifier. The host serves its own truthful manifest at
   `GET /manifest.json` (read scope). `python -m omega_prime.grokbot.verify --url URL` drives a
   real MCP client against a running host over SSE and Streamable HTTP (health and readiness,
   manifest vs `tools/list`, initialize, scoped call, gated-tool refusal, auth and origin
   negatives) and returns JSON plus an exit code; `oneclick --self-test` starts a host, runs
   it, checks the graceful SIGTERM exit and CI runs it
-- [ ] **GRI-07**: Deployment kit. `python -m omega_prime.grokbot.deploy render --target
+- [x] **GRI-07**: Deployment kit. `python -m omega_prime.grokbot.deploy render --target
   {docker,compose,systemd,k8s}` writes hardened artifacts (non-root, read-only root
   filesystem, healthcheck, SIGTERM grace, resource limits, no inline secrets); a CI workflow
   builds the image, scans it and emits an SBOM
@@ -108,12 +108,12 @@ The v10 requirements are archived in `milestones/v10-REQUIREMENTS.md`.
 | GRK-08 | 62 | Complete |
 | GRK-09 | 62 | Complete |
 | GRK-10 | 62 | Complete |
-| GRI-01 | 63 | Pending |
-| GRI-02 | 63 | Pending |
-| GRI-03 | 63 | Pending |
-| GRI-04 | 63 | Pending |
-| GRI-05 | 63 | Pending |
-| GRI-06 | 63 | Pending |
-| GRI-07 | 63 | Pending |
+| GRI-01 | 63 | Complete |
+| GRI-02 | 63 | Complete |
+| GRI-03 | 63 | Complete |
+| GRI-04 | 63 | Complete |
+| GRI-05 | 63 | Complete |
+| GRI-06 | 63 | Complete |
+| GRI-07 | 63 | Complete |
 
 **Coverage:** 17 requirements, 17 mapped, 0 unmapped.

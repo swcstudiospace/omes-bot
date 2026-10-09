@@ -1,5 +1,32 @@
 # Milestones
 
+## v11 — Grok Bot native (2026-10-09)
+
+**Status:** Complete. 2/2 phases, 14/14 plans, 17/17 requirements Done. Audit passed with no exceptions.
+
+**Core value delivered:** One command attaches Omega Prime to Grok Bot as a hardened, observable, verifiable tool
+host. Phase 62 made the shipped runtime correct and secure by default (fail-closed auth and startup, truthful health
+and manifest, tamper-evident audit, graceful drain, strict launcher, real-transport tests). Phase 63 added seven
+improvements: Streamable HTTP, scoped revocable credentials, an approval gateway, rate limits with a circuit breaker,
+metrics with trace context and NDJSON logs, a live conformance verifier, and a deployment kit with a hardened image.
+
+**Verification:** `pytest omega_prime/tests` → exit 0, 1793 passed (three chunks). Evals 26 passed. `assemble-prompts.sh
+--check`, `catalog --check`, `setup_check` → exit 0. `ruff`, `ruff format --check` → exit 0. `mypy omega_prime` → exit 0,
+294 files. `pyright` → 0 errors. `actionlint` and `docker build --check` clean. `pip-audit -r requirements-lock.txt
+--ignore-vuln PYSEC-2026-4114` → no known vulnerabilities. The image was built, run read-only as uid 10001, verified
+by the live verifier inside the container, stopped with exit 0 in 1.3 s, and scanned: 0 vulnerabilities.
+
+**Repaired on the way:** an uninstallable `requirements-lock.txt` (merged Dependabot majors) and a non-atomic cron job
+store had left `main` red; event-loop blocking tool calls, a token leaking into access logs and scope denials missing
+from the audit log were found and fixed.
+
+**Archive:** not moved. `.planning/v11-MILESTONE-AUDIT.md`; phase directories stay under `.planning/phases/` until
+the user confirms moving them (same rule as v10).
+
+**Decisions:** Python MCP host instead of the graph's TypeScript layout; static scoped bearer tokens instead of HMAC
+webhook ingress; per-principal scopes instead of tenant sandboxes; Dependabot ignores `oauthlib` 4 and
+`huggingface-hub` 2 until their dependents relax.
+
 ## v10 — Prime merge (2026-10-08)
 
 **Status:** Complete. 8/8 phases, 10/10 plans, 32/32 requirements Done.
