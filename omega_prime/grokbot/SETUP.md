@@ -35,24 +35,74 @@ connector asks for it (Grok Bot settings or your host's env):
 Skip what you don't use: every unconfigured client reports
 `not_configured` instead of failing.
 
-## 3. Optional: attach the tool host
+## 3. Attach the tool host (1-Click Native Integration)
 
-Without this step Omega Prime still answers from its prompt, skills, and
-routines. With it, the bot also calls the real Omega Prime tools.
+Omega Prime supports both **stdio** (local process) and **remote SSE** (HTTP Server-Sent Events) transports for Grok Bot MCP integration.
 
-On a machine you control (Linux, Mac, or WSL2):
+### Option A: Turnkey 1-Click Native Launcher (Recommended)
+
+Run the 1-click script to run preflight health checks, generate the manifest, and start the MCP server:
 
 ```bash
-git clone https://github.com/swcstudiospace/omes-bot.git omega-prime
-cd omega-prime
-python -m venv .venv && .venv/bin/pip install -e .
-.venv/bin/python -m omega_prime.mcp_server --root .
+# stdio mode (local IDE / sandbox)
+./scripts/grokbot-1click.sh --transport stdio
+
+# SSE mode (remote Grok Bot connection over HTTP/SSE)
+./scripts/grokbot-1click.sh --transport sse --port 8000 --token "$MCP_AUTH_TOKEN" --export-manifest grokbot-manifest.json
 ```
 
-Then add it as a **custom MCP** server in your Grok Bot's settings,
-pointing at that command. Prefer a sandbox: see
-`omega_prime/hosting/openshell/sandbox-policy.yaml`. Rivet AgentOS notes:
-`omega_prime/hosting/agentos/NOTES.md`.
+Or invoke the Python module directly:
+```bash
+python -m omega_prime.grokbot.oneclick --transport sse --port 8000
+```
+
+### Option B: Remote MCP Transport over SSE / HTTP
+
+Grok Bot cloud instances can connect directly to your Omega Prime MCP server over SSE:
+
+```bash
+python -m omega_prime.mcp_server --transport sse --host 0.0.0.0 --port 8000 --token "$MCP_AUTH_TOKEN"
+```
+
+Endpoints exposed:
+- `GET /sse`: Server-Sent Events stream for MCP communication.
+- `POST /messages/`: Inbound message channel.
+- `GET /healthz`: Health status, version, and roster tool count.
+- `GET /readyz`: Readiness check.
+
+### Option C: Grok Bot 1-Click Manifest Export
+
+Generate an exact JSON configuration manifest to import into Grok Bot settings or custom assistant profiles:
+
+```bash
+python -m omega_prime.grokbot.manifest --transport sse --url https://your-server.com/sse --token "$MCP_AUTH_TOKEN" --out grokbot-manifest.json
+```
+
+### Enterprise Operations & Tooling
+
+1. **Preflight Health Doctor**:
+   ```bash
+   python -m omega_prime.grokbot.doctor
+   ```
+   Validates Python version, virtualenv, submodule checkout, prompt assemblies, dependencies, and SSE port availability.
+
+2. **Process Watchdog & Supervisor**:
+   ```bash
+   python -m omega_prime.grokbot.supervisor --state-file .planning/grokbot_supervisor.json python -m omega_prime.mcp_server --transport sse
+   ```
+   Monitors the server with auto-restart backoff and graceful `SIGTERM` draining.
+
+3. **Local Turn Emulator & Smoke Harness**:
+   ```bash
+   python -m omega_prime.grokbot.emulator --smoke
+   ```
+   Simulates Grok Bot turns and MCP tool rounds locally with credential-redacted JSONL telemetry recorded in `.planning/grokbot_audit.jsonl`.
+
+4. **Dynamic Capability & Prompt Synchronizer**:
+   ```bash
+   python -m omega_prime.grokbot.sync --check grokbot-manifest.json
+   ```
+   Detects configuration drift between active repository capabilities and Grok Bot settings.
 
 ## 4. Smoke prompt
 

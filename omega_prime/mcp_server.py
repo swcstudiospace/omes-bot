@@ -427,9 +427,43 @@ def main(argv: list[str] | None = None) -> int:
         metavar="TOOL:APPROVER",
         help="pre-approve one gated tool (repeatable)",
     )
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "sse"],
+        default="stdio",
+        help="transport type for MCP (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="host for SSE transport (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="port for SSE transport (default: 8000)",
+    )
+    parser.add_argument(
+        "--token",
+        default=None,
+        help="optional bearer token for SSE transport",
+    )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
+    if args.transport == "sse":
+        from omega_prime.grokbot.remote import serve_sse
+
+        return serve_sse(
+            root,
+            host=args.host,
+            port=args.port,
+            token=args.token or os.environ.get("MCP_AUTH_TOKEN"),
+            home=args.home,
+            no_roster=args.no_roster,
+        )
+
     roster: list[str] | None = None
     if not args.no_roster:
         roster_path = (

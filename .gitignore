@@ -43,4 +43,8 @@ omega_prime/sessions.db
 /prime-kernel/
 /prime-agent-dir/
 
+# Grok Bot runtime logs and supervisor state
+.planning/grokbot_*.json
+.planning/grokbot_*.jsonl
+
 .DS_Store
