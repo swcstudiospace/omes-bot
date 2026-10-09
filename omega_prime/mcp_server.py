@@ -363,6 +363,7 @@ def list_tools_handler(registry: ToolRegistry, roster: list[str] | None = None):
     tools = _mcp_tools(registry, roster)
 
     async def _list_tools(ctx: Any, params: Any) -> Any:
+        del ctx, params
         return ListToolsResult(tools=tools)
 
     return _list_tools
@@ -374,6 +375,7 @@ def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
     allowed = set(roster) if roster is not None else None
 
     async def _call_tool(ctx: Any, params: Any) -> Any:
+        del ctx
         from mcp.types import CallToolResult
 
         if allowed is not None and params.name not in allowed:
