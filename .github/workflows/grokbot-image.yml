@@ -131,6 +131,9 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: omega-prime-mcp:ci
+          # Vulnerabilities only. The secret scanner flags PyRIT's own red-team
+          # privacy datasets (sample text with masked keys) inside site-packages.
+          scanners: vuln
           severity: CRITICAL
           ignore-unfixed: true
           exit-code: "1"
