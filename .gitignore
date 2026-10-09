@@ -46,5 +46,6 @@ omega_prime/sessions.db
 # Grok Bot runtime logs and supervisor state
 .planning/grokbot_*.json
 .planning/grokbot_*.jsonl
+.planning/grokbot_*.lock
 
 .DS_Store

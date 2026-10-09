@@ -29,6 +29,7 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from omega_prime.grokbot._io import read_secret_file
 from omega_prime.grokbot.interceptors import (
     ToolCallInterceptor,
     call_from_context,
@@ -598,66 +599,132 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--token",
         default=None,
-        help="optional bearer token for SSE transport",
+        help=(
+            "DEPRECATED bearer token for SSE transport (visible in the process "
+            "list; prefer --token-file or --token-env)"
+        ),
+    )
+    parser.add_argument(
+        "--token-file",
+        type=Path,
+        default=None,
+        help="read the bearer token from this file (must not be group/world-readable)",
+    )
+    parser.add_argument(
+        "--token-env",
+        default="MCP_AUTH_TOKEN",
+        metavar="NAME",
+        help="environment variable holding the bearer token (default: MCP_AUTH_TOKEN)",
+    )
+    parser.add_argument(
+        "--public-url",
+        default=None,
+        metavar="URL",
+        help="externally visible URL of the SSE endpoint, when behind a proxy",
+    )
+    parser.add_argument(
+        "--allow-host",
+        action="append",
+        default=[],
+        metavar="HOST[:PORT]",
+        help="additional accepted Host header value (repeatable)",
+    )
+    parser.add_argument(
+        "--allow-origin",
+        action="append",
+        default=[],
+        metavar="ORIGIN",
+        help="additional accepted Origin header value (repeatable)",
+    )
+    parser.add_argument(
+        "--allow-insecure-no-auth",
+        action="store_true",
+        help="allow serving SSE without a bearer token on a non-loopback host",
+    )
+    parser.add_argument(
+        "--audit-log",
+        type=Path,
+        default=os.environ.get("OMEGA_PRIME_AUDIT_LOG") or None,
+        metavar="PATH",
+        help="append a hash-chained audit trail here (env: OMEGA_PRIME_AUDIT_LOG)",
+    )
+    parser.add_argument(
+        "--max-body-bytes",
+        type=int,
+        default=1_048_576,
+        metavar="N",
+        help="largest accepted SSE request body (default: 1048576)",
+    )
+    parser.add_argument(
+        "--shutdown-grace",
+        type=float,
+        default=20.0,
+        metavar="SECONDS",
+        help="seconds to let in-flight SSE calls finish on shutdown (default: 20)",
     )
     args = parser.parse_args(argv)
 
     root = args.root.resolve()
+
+    def _fail(reason: object) -> int:
+        print(f"omega-prime-mcp-server: {reason}", file=sys.stderr)
+        return 2
+
+    approvals: list[tuple[str, str]] = []
+    for item in args.approve:
+        tool, _, approver = item.partition(":")
+        if not tool or not approver:
+            return _fail(f"bad --approve {item!r}, want TOOL:APPROVER")
+        approvals.append((tool, approver))
+
     if args.transport == "sse":
+        from omega_prime.grokbot.audit import GrokBotAuditTracer
         from omega_prime.grokbot.remote import serve_sse
 
+        try:
+            token = _resolve_token(args)
+            audit = GrokBotAuditTracer(args.audit_log) if args.audit_log else None
+        except ValueError as exc:
+            return _fail(exc)
         return serve_sse(
             root,
             host=args.host,
             port=args.port,
-            token=args.token or os.environ.get("MCP_AUTH_TOKEN"),
+            token=token,
             home=args.home,
             no_roster=args.no_roster,
+            public_url=args.public_url,
+            allowed_hosts=tuple(args.allow_host),
+            allowed_origins=tuple(args.allow_origin),
+            allow_insecure_no_auth=args.allow_insecure_no_auth,
+            audit=audit,
+            approvals=approvals,
+            max_body_bytes=args.max_body_bytes,
+            shutdown_grace=args.shutdown_grace,
         )
 
-    roster: list[str] | None = None
-    if not args.no_roster:
-        roster_path = (
-            root / "omega_prime" / "contracts" / "tool-rosters" / "omega-prime.yaml"
-        )
-        try:
-            roster = roster_names(roster_path.read_text(encoding="utf-8"))
-        except OSError as exc:
-            print(
-                f"omega-prime-mcp-server: cannot read roster {roster_path}: {exc}",
-                file=sys.stderr,
-            )
-            return 2
     try:
-        policy = SeatPolicy.load(
-            root / "omega_prime" / "contracts" / "policies" / "omega-prime.json"
+        runtime = load_runtime(
+            root, args.home, no_roster=args.no_roster, approvals=approvals
         )
-    except (OSError, ValueError) as exc:
-        print(
-            f"omega-prime-mcp-server: cannot load seat policy: {exc}", file=sys.stderr
-        )
-        return 2
-    log = ApprovalLog()
-    for item in args.approve:
-        tool, _, approver = item.partition(":")
-        if not tool or not approver:
-            print(
-                f"omega-prime-mcp-server: bad --approve {item!r}, want TOOL:APPROVER",
-                file=sys.stderr,
-            )
-            return 2
-        outcome = log.approve(tool, approver)
-        if not outcome.get("approved"):
-            print(
-                f"omega-prime-mcp-server: cannot pre-approve {tool}: {outcome.get('error')}",
-                file=sys.stderr,
-            )
-            return 2
-    registry = default_registry(
-        root, args.home, policy=policy, approval_log=log, env=dict(os.environ)
-    )
-    asyncio.run(_serve(build_server(registry, roster)))
+    except ValueError as exc:
+        return _fail(exc)
+    asyncio.run(_serve(build_server(runtime.registry, runtime.roster)))
     return 0
+
+
+def _resolve_token(args: argparse.Namespace) -> str | None:
+    """`--token-file` > `--token` > the `--token-env` variable; none means no auth."""
+    if args.token_file is not None:
+        return read_secret_file(args.token_file)
+    if args.token:
+        print(
+            "omega-prime-mcp-server: warning: --token is visible to other users "
+            "in the process list; use --token-file or --token-env instead",
+            file=sys.stderr,
+        )
+        return str(args.token)
+    return os.environ.get(args.token_env) or None
 
 
 if __name__ == "__main__":
