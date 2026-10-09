@@ -271,10 +271,14 @@ def create_sse_app(
         audit if audit is not None else GrokBotAuditTracer(default_audit_path(root))
     )
     in_flight = InFlightInterceptor()
+    # Order matters: a denial stops the chain, and `after` only runs for
+    # interceptors whose `before` ran. Observers (audit, later metrics) must
+    # therefore come BEFORE denying interceptors (scope, later rate limits), or a
+    # denied call would leave no record. In-flight accounting stays first.
     chain: tuple[ToolCallInterceptor, ...] = (
         in_flight,
-        ScopeInterceptor(),
         AuditInterceptor(tracer),
+        ScopeInterceptor(),
         *interceptors,
     )
     gate = ToolGate()

@@ -39,6 +39,7 @@ from omega_prime.grokbot.remote import (
     install_access_log_filter,
 )
 from omega_prime.grokbot.security import (
+    SCOPE_CALL,
     SCOPE_READ,
     Principal,
     TokenStore,
@@ -301,30 +302,75 @@ def test_e2e_tool_outside_the_roster_is_an_error(tmp_path: Path) -> None:
     ]
 
 
-def test_e2e_read_only_principal_cannot_call_tools(tmp_path: Path) -> None:
+READER_TOKEN = "reader-token-0123456789abcdef"
+CALLER_TOKEN = "caller-token-0123456789abcdef"
+
+
+def test_e2e_scope_denial_is_audited_and_the_tool_does_not_run(
+    tmp_path: Path,
+) -> None:
     reader = Principal("reader", frozenset({SCOPE_READ}), "read only")
-    store = TokenStore([(reader, hash_token(TOKEN))])
+    caller = Principal("caller", frozenset({SCOPE_READ, SCOPE_CALL}), "may call")
+    store = TokenStore(
+        [(reader, hash_token(READER_TOKEN)), (caller, hash_token(CALLER_TOKEN))]
+    )
     app = _app(tmp_path, token=None, token_store=store)
+    ran: list[str] = []
+
+    def probe() -> dict[str, Any]:
+        ran.append("ran")
+        return {"todos": []}
+
+    # Re-registering an allowed (rostered, policy-permitted) name keeps the call
+    # valid for everything except the scope check.
+    app.state.runtime.registry.register(
+        "todo_read", "records that it ran", {"type": "object"}, probe
+    )
     with _serve(app) as host:
 
-        async def go() -> tuple[int, bool, str]:
-            async with _client(host) as client:
+        async def call_as(token: str) -> tuple[int, bool, str]:
+            async with _client(host, token=token) as client:
                 listing = await client.list_tools()
                 result = await client.call_tool("todo_read", {})
             text = "".join(getattr(part, "text", "") for part in result.content)
             return len(listing.tools), bool(result.is_error), text
 
-        listed, is_error, text = _run(go())
-        executed = host.records()
+        listed, denied, denied_text = _run(call_as(READER_TOKEN))
+        ran_after_denial = list(ran)
+        records_after_denial = host.records()
+        _, allowed_error, allowed_text = _run(call_as(CALLER_TOKEN))
+        records = host.records()
+        verified, count, _ = host.audit.verify_integrity()
+        text = host.audit.log_path.read_text(encoding="utf-8")
 
-    assert listed == len(app.state.tool_names)
-    assert is_error is True
-    assert "forbidden" in text
+    assert listed == len(app.state.tool_names)  # `read` still lists tools
+    assert denied is True
+    assert "forbidden" in denied_text
+    assert ran_after_denial == []  # the tool body never ran for the reader
     assert app.state.in_flight.count == 0
-    # NOTE: with the plan's chain order (InFlight, Scope, Audit) a Scope denial
-    # stops the chain before AuditInterceptor.before runs, so no tool_call record
-    # is written for it. Only assert that nothing was recorded as executed ok.
-    assert [r for r in executed if r["status"] == "ok"] == []
+
+    assert len(records_after_denial) == 1
+    record = records_after_denial[0]
+    assert record["tool_name"] == "todo_read"
+    assert record["caller"] == "reader"
+    assert record["status"] == "denied"
+    assert record["is_error"] is True
+    assert record["details"]["denial"] == "forbidden"
+    assert record["details"]["transport"] == "sse"
+
+    # Control: a principal holding `call` runs the tool and is recorded as ok.
+    assert allowed_error is False
+    assert json.loads(allowed_text) == {"todos": []}
+    assert ran == ["ran"]
+    assert [(r["caller"], r["status"]) for r in records] == [
+        ("reader", "denied"),
+        ("caller", "ok"),
+    ]
+    assert records[1]["details"]["denial"] is None
+    assert verified is True
+    assert count == len(records)
+    assert READER_TOKEN not in text
+    assert CALLER_TOKEN not in text
 
 
 def test_e2e_approval_gated_tool_needs_a_pre_approval(tmp_path: Path) -> None:
