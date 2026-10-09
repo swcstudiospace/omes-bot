@@ -100,6 +100,8 @@ def test_mcp_sse_health_endpoints(tmp_path: Path) -> None:
         "policy": "ok",
         "audit": "ok",
         "shutdown": "ok",
+        "token_store": "ok",
+        "streamable_http": "ok",
     }
 
 

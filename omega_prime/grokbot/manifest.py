@@ -246,20 +246,29 @@ def generate_manifest(
     env: Mapping[str, str] | None = None,
     token_env: str | None = DEFAULT_TOKEN_ENV,
     auth_enabled: bool | None = None,
+    runtime: Runtime | None = None,
 ) -> dict[str, Any]:
     """Generate the Grok Bot manifest for what the host at `root` serves.
 
-    `auth_token` only decides `auth.type`; its value is never stored. Raises
-    `RuntimeConfigError` when the host would refuse to start.
+    `auth_token` only decides `auth.type`; its value is never stored. Pass
+    `runtime` to reuse a host's already built `Runtime` instead of loading a
+    second registry. Raises `RuntimeConfigError` when the host would refuse
+    to start.
     """
-    repo = Path(root) if root is not None else find_repo_root()
+    if root is not None:
+        repo = Path(root)
+    elif runtime is not None:
+        repo = runtime.root
+    else:
+        repo = find_repo_root()
     template_data = _read_template(repo)
     prompt_path = repo / "omega_prime" / "prompts-assembled" / "OMEGA_PRIME.xml"
     system_prompt = (
         prompt_path.read_text(encoding="utf-8") if prompt_path.is_file() else ""
     )
 
-    runtime = _runtime(repo, home, env)
+    if runtime is None:
+        runtime = _runtime(repo, home, env)
     tools = list(runtime.tool_names)
     flags = prime_family_flags(repo, env)
     lint = lint_template(repo)

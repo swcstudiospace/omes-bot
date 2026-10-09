@@ -6,15 +6,17 @@
 before serving when authentication is missing on a non-loopback bind, when the
 roster or seat policy is invalid, or when the transport settings are malformed.
 
-- Authentication: pure-ASGI bearer `AuthMiddleware` over a hashed `TokenStore`.
-  `/healthz` and `/readyz` are public; nothing else is.
+- Authentication: pure-ASGI bearer `AuthMiddleware` over a hashed `TokenStore`
+  (an env token, a token file, or both). `/healthz` and `/readyz` are public;
+  nothing else is.
 - Transport security: the MCP SDK's `TransportSecuritySettings` (Host and Origin
   validation) and its request-body limit; CORS is added only for origins named
-  explicitly and never answers `*`.
-- Tool calls: interceptors count in-flight calls, enforce the `call` scope and
-  write one hash-chained `tool_call` audit record; calls run in a worker thread
-  behind one `ToolGate`, so a slow tool never freezes health, keepalives or
-  shutdown. Failed authentication writes an `auth_failure` record (never the token).
+  explicitly and never answers `*`. Legacy SSE and Streamable HTTP share it.
+- Tool calls: one shared interceptor list and one `ToolGate` serve both
+  transports. Observers (audit, metrics) run before every denying interceptor.
+  Calls run in a worker thread, so a slow tool never freezes health, keepalives
+  or shutdown. Failed authentication writes an `auth_failure` record (never the
+  token).
 - Lifecycle: `serve_sse` returns 2 on configuration errors and drains gracefully:
   the first SIGTERM/SIGINT flips `/readyz` to 503 and waits for in-flight tool
   calls (bounded by `shutdown_grace`), a second signal forces exit.
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import contextlib
 import logging
+import math
 import os
 import sys
 import time
@@ -44,6 +47,7 @@ from starlette.responses import JSONResponse, PlainTextResponse
 from starlette.routing import Mount, Route
 
 from omega_prime import __version__ as PACKAGE_VERSION
+from omega_prime.grokbot.approvals_api import approval_routes
 from omega_prime.grokbot.audit import GrokBotAuditTracer, default_audit_path
 from omega_prime.grokbot.interceptors import (
     AuditInterceptor,
@@ -51,13 +55,41 @@ from omega_prime.grokbot.interceptors import (
     ScopeInterceptor,
     ToolCallInterceptor,
 )
+from omega_prime.grokbot.manifest import generate_manifest
+from omega_prime.grokbot.metrics import (
+    MetricsInterceptor,
+    MetricsMiddleware,
+    MetricsRegistry,
+    metrics_endpoint,
+    record_auth_failure,
+    register_build_info,
+)
+from omega_prime.grokbot.ratelimit import (
+    AuthFailureThrottle,
+    AuthThrottleMiddleware,
+    RateLimiter,
+    RateLimitMiddleware,
+    ToolRateLimitInterceptor,
+)
+from omega_prime.grokbot.resilience import ToolCircuitBreakerInterceptor
 from omega_prime.grokbot.security import (
+    SCOPE_READ,
+    SCOPES,
     AuthMiddleware,
     SecurityConfigError,
     TokenStore,
     check_bind_safety,
     is_loopback_host,
+    principal_from_request,
 )
+from omega_prime.grokbot.streamable import build_streamable_http
+from omega_prime.grokbot.telemetry import (
+    ROOT_LOGGER_NAME,
+    AccessLogMiddleware,
+    RequestContextMiddleware,
+    configure_logging,
+)
+from omega_prime.grokbot.tokens import CompositeTokenStore, FileTokenStore
 from omega_prime.mcp_server import (
     SERVER_NAME,
     SERVER_VERSION,
@@ -75,9 +107,19 @@ DEFAULT_MAX_BODY_BYTES = 1_048_576
 _LOOPBACK_HOST_PATTERNS = ("127.0.0.1:*", "localhost:*", "[::1]:*")
 _WILDCARD_BINDS = frozenset({"", "0.0.0.0", "::", "[::]"})
 _CORS_METHODS = ["GET", "POST", "OPTIONS", "DELETE"]
-_CORS_HEADERS = ["Authorization", "Content-Type", "Mcp-Session-Id", "Last-Event-ID"]
+_CORS_HEADERS = [
+    "Authorization",
+    "Content-Type",
+    "Mcp-Session-Id",
+    "Last-Event-ID",
+    "X-Request-Id",
+    "traceparent",
+]
 _AUDITED_PATH_CHARS = 200
-_GUARDED_PREFIXES = ("/sse", "/messages")
+_GUARDED_PREFIXES = ("/sse", "/messages", "/mcp")
+_LOG_FORMATS = ("text", "json")
+_REALM_HEADER = 'Bearer realm="omega-prime"'
+_DEFAULT_APPROVAL_TTL = 3600.0
 
 
 def _bracket(host: str) -> str:
@@ -203,6 +245,75 @@ def _audit_writable(path: Path) -> bool:
     return directory.is_dir() and os.access(directory, os.W_OK | os.X_OK)
 
 
+def _require_log_format(value: str) -> None:
+    if value not in _LOG_FORMATS:
+        raise ValueError("log_format must be 'text' or 'json'")
+
+
+def _require_scope_name(name: str, value: str) -> None:
+    if value not in SCOPES:
+        joined = ", ".join(SCOPES)
+        raise ValueError(f"{name} must be one of {joined}")
+
+
+def _require_positive(name: str, value: float) -> None:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+        or value <= 0
+    ):
+        raise ValueError(f"{name} must be a positive finite number")
+
+
+def _sse_url(host: str, port: int) -> str:
+    """SSE URL for the bind address. Wildcard hosts are left for the manifest."""
+    name = host.strip()
+    if name in _WILDCARD_BINDS:
+        if not name:
+            return f"http://:{port}/sse"
+        if ":" in name and not (name.startswith("[") and name.endswith("]")):
+            return f"http://[{name}]:{port}/sse"
+        return f"http://{name}:{port}/sse"
+    return f"http://{_bracket(name)}:{port}/sse"
+
+
+def _assemble_token_store(
+    token: str | None,
+    token_store: TokenStore | None,
+    token_store_path: Path | str | None,
+    clock: Callable[[], float] | None,
+) -> TokenStore:
+    """Env/file store plus an optional hashed file, first match wins.
+
+    A hashed file that cannot be read stays enabled and denies everyone; the
+    env token, when one was also configured, still verifies.
+    """
+    if token_store is not None:
+        base: TokenStore = token_store
+    elif token:
+        base = TokenStore.from_token(token)
+    else:
+        base = TokenStore()
+    if token_store_path is None:
+        return base
+    file_store = (
+        FileTokenStore(token_store_path)
+        if clock is None
+        else FileTokenStore(token_store_path, clock=clock)
+    )
+    if not base.enabled:
+        return file_store
+    return CompositeTokenStore([file_store, base])
+
+
+def _json_error(status: int, error: str) -> JSONResponse:
+    headers = {"Cache-Control": "no-store"}
+    if status == 401:
+        headers["WWW-Authenticate"] = _REALM_HEADER
+    return JSONResponse({"error": error}, status_code=status, headers=headers)
+
+
 def create_sse_app(
     root: Path | str,
     *,
@@ -222,8 +333,22 @@ def create_sse_app(
     shutdown_grace: float = 20.0,
     env: dict[str, str] | None = None,
     interceptors: Sequence[ToolCallInterceptor] = (),
+    token_store_path: Path | str | None = None,
+    rate_limit: int = 600,
+    global_rate_limit: int = 0,
+    tool_rate_limit: int = 300,
+    auth_failure_limit: int = 10,
+    breaker_threshold: int = 5,
+    breaker_cooldown: float = 30.0,
+    metrics_enabled: bool = True,
+    metrics_scope: str = "read",
+    log_format: str = "text",
+    session_idle_timeout: float = 1800.0,
+    max_sessions: int = 64,
+    approval_max_ttl: float = 86400.0,
+    clock: Callable[[], float] | None = None,
 ) -> Starlette:
-    """Build the Starlette app hosting the MCP server over SSE.
+    """Build the Starlette app hosting the MCP server over SSE and Streamable HTTP.
 
     Raises `SecurityConfigError` (no authentication on a non-loopback bind, a
     short token, a malformed public URL or host/origin entry),
@@ -231,20 +356,23 @@ def create_sse_app(
     `ValueError` (invalid limit) before anything is served. `host` and `port` are
     the address the caller will bind; they only shape Host validation and the
     bind-safety check. `token` is the single bearer token of an `env-token`
-    principal; `token_store` replaces it.
+    principal; `token_store` replaces it. `token_store_path` adds a hashed token
+    file and enables authentication even when that file cannot be read.
+    `log_format` is accepted so callers share one signature with `serve_sse`;
+    this function never configures process logging. `clock`, when set, drives
+    the token file, both rate limiters, the auth-failure throttle, the circuit
+    breaker and the approval log.
     """
     root = Path(root)
     if shutdown_grace < 0:
         raise ValueError("shutdown_grace must not be negative")
     if max_body_bytes <= 0:
         raise ValueError("max_body_bytes must be a positive number of bytes")
+    _require_log_format(log_format)
+    _require_scope_name("metrics_scope", metrics_scope)
+    _require_positive("approval_max_ttl", approval_max_ttl)
 
-    if token_store is not None:
-        store = token_store
-    elif token:
-        store = TokenStore.from_token(token)
-    else:
-        store = TokenStore()
+    store = _assemble_token_store(token, token_store, token_store_path, clock)
     check_bind_safety(
         host, auth_enabled=store.enabled, allow_insecure=allow_insecure_no_auth
     )
@@ -267,18 +395,59 @@ def create_sse_app(
     runtime: Runtime = load_runtime(
         root, home, no_roster=no_roster, approvals=approvals, env=env
     )
+    # The registry already holds this log. Swap the clock on the same object so
+    # TTL checks inside tool dispatch see the injected clock.
+    if clock is not None:
+        runtime.approval_log._clock = clock
     tracer = (
         audit if audit is not None else GrokBotAuditTracer(default_audit_path(root))
     )
+    if clock is None:
+        request_limiter = RateLimiter(rate_limit, global_rate_limit)
+        tool_limiter = RateLimiter(tool_rate_limit)
+        throttle = AuthFailureThrottle(auth_failure_limit)
+        breakers = ToolCircuitBreakerInterceptor(
+            failure_threshold=breaker_threshold,
+            cooldown_seconds=breaker_cooldown,
+        )
+    else:
+        request_limiter = RateLimiter(rate_limit, global_rate_limit, clock=clock)
+        tool_limiter = RateLimiter(tool_rate_limit, clock=clock)
+        throttle = AuthFailureThrottle(auth_failure_limit, clock=clock)
+        breakers = ToolCircuitBreakerInterceptor(
+            failure_threshold=breaker_threshold,
+            cooldown_seconds=breaker_cooldown,
+            clock=clock,
+        )
+    metrics = MetricsRegistry()
+    if metrics_enabled:
+        register_build_info(
+            metrics, version=SERVER_VERSION, package_version=PACKAGE_VERSION
+        )
+    count_auth_failure = record_auth_failure(metrics) if metrics_enabled else None
+
     in_flight = InFlightInterceptor()
-    # Order matters: a denial stops the chain, and `after` only runs for
-    # interceptors whose `before` ran. Observers (audit, later metrics) must
-    # therefore come BEFORE denying interceptors (scope, later rate limits), or a
-    # denied call would leave no record. In-flight accounting stays first.
-    chain: tuple[ToolCallInterceptor, ...] = (
+
+    def served_tool_names() -> list[str]:
+        return runtime.tool_names
+
+    def gated_tool_names() -> list[str]:
+        return runtime.gated_tools
+
+    # A denial stops the chain, and `after` runs only for interceptors whose
+    # `before` ran. Observers must precede every denying interceptor or a denied
+    # call leaves no audit record and no denial metric.
+    observers: list[ToolCallInterceptor] = [
         in_flight,
         AuditInterceptor(tracer),
+    ]
+    if metrics_enabled:
+        observers.append(MetricsInterceptor(metrics, tool_names=served_tool_names))
+    chain: tuple[ToolCallInterceptor, ...] = (
+        *observers,
         ScopeInterceptor(),
+        ToolRateLimitInterceptor(tool_limiter),
+        breakers,
         *interceptors,
     )
     gate = ToolGate()
@@ -292,12 +461,39 @@ def create_sse_app(
     sse_transport = SseServerTransport(
         "/messages/", security_settings=security, max_request_body_size=max_body_bytes
     )
-    server = build_server(
+    sse_server = build_server(
         runtime.registry,
         runtime.roster,
         interceptors=chain,
         transport="sse",
         gate=gate,
+    )
+    http_server = build_server(
+        runtime.registry,
+        runtime.roster,
+        interceptors=chain,
+        transport="http",
+        gate=gate,
+    )
+    streamable = build_streamable_http(
+        http_server,
+        security_settings=security,
+        max_body_bytes=max_body_bytes,
+        max_sessions=max_sessions,
+        session_idle_timeout=session_idle_timeout,
+    )
+    # "down" only after the Streamable HTTP lifespan has failed or finished.
+    # Before it starts, ASGI servers are not accepting traffic yet.
+    streamable_state = {"down": False}
+
+    manifest = generate_manifest(
+        root,
+        host_url=_sse_url(host, port),
+        public_url=public_url,
+        home=home,
+        env=env,
+        auth_enabled=store.enabled,
+        runtime=runtime,
     )
 
     auth_mode = "required" if store.enabled else "disabled"
@@ -317,32 +513,60 @@ def create_sse_app(
 
     async def readyz(request: Request) -> JSONResponse:
         shutting_down = bool(request.app.state.shutting_down)
+        token_store_check = "degraded" if getattr(store, "degraded", False) else "ok"
+        streamable_check = "fail" if streamable_state["down"] else "ok"
         checks = {
             "registry": "ok" if runtime.tool_names else "fail",
             "roster": "ok" if runtime.roster is not None else "disabled",
             "policy": "ok",
             "audit": "ok" if _audit_writable(tracer.log_path) else "fail",
             "shutdown": "draining" if shutting_down else "ok",
+            "token_store": token_store_check,
+            "streamable_http": streamable_check,
         }
         ready = (
-            checks["registry"] == "ok" and checks["audit"] == "ok" and not shutting_down
+            checks["registry"] == "ok"
+            and checks["audit"] == "ok"
+            and checks["token_store"] == "ok"
+            and checks["streamable_http"] == "ok"
+            and not shutting_down
         )
         return JSONResponse(
             {"ready": ready, "checks": checks}, status_code=200 if ready else 503
         )
 
-    def record_auth_failure(event: dict[str, Any]) -> None:
-        tracer.log_event(
-            "auth_failure",
-            caller="anonymous",
-            status="denied",
-            is_error=True,
-            details={
-                "reason": event.get("reason"),
-                "path": str(event.get("path", ""))[:_AUDITED_PATH_CHARS],
-                "client": event.get("client"),
-            },
-        )
+    async def manifest_json(request: Request) -> JSONResponse:
+        if store.enabled:
+            principal = principal_from_request(request)
+            if principal is None:
+                return _json_error(401, "unauthorized")
+            if not principal.allows(SCOPE_READ):
+                return _json_error(403, "forbidden")
+        return JSONResponse(manifest, headers={"Cache-Control": "no-store"})
+
+    def on_auth_failure(event: dict[str, Any]) -> None:
+        try:
+            tracer.log_event(
+                "auth_failure",
+                caller="anonymous",
+                status="denied",
+                is_error=True,
+                details={
+                    "reason": event.get("reason"),
+                    "path": str(event.get("path", ""))[:_AUDITED_PATH_CHARS],
+                    "client": event.get("client"),
+                },
+            )
+        except Exception:
+            logger.warning("auth failure audit write failed", exc_info=True)
+        if count_auth_failure is not None:
+            try:
+                count_auth_failure(event)
+            except Exception:
+                logger.warning("auth failure metric update failed", exc_info=True)
+        client = event.get("client")
+        if isinstance(client, str) and client:
+            throttle.record(client)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: Starlette) -> AsyncIterator[None]:
@@ -359,11 +583,23 @@ def create_sse_app(
                 "set a public URL or allowed hosts to enable it"
             )
         try:
-            yield
+            async with streamable.lifespan():
+                try:
+                    yield
+                finally:
+                    streamable_state["down"] = True
+        except Exception:
+            streamable_state["down"] = True
+            raise
         finally:
             tracer.close()
 
-    middleware: list[Middleware] = []
+    # Outermost first. CORS only when an origin was named. Auth only when a
+    # store is enabled. The origin guard only when the SDK's own check is off.
+    middleware: list[Middleware] = [Middleware(RequestContextMiddleware)]
+    if metrics_enabled:
+        middleware.append(Middleware(MetricsMiddleware, metrics))
+    middleware.append(Middleware(AccessLogMiddleware))
     if origins:
         middleware.append(
             Middleware(
@@ -374,24 +610,47 @@ def create_sse_app(
                 allow_credentials=False,
             )
         )
+    middleware.append(Middleware(AuthThrottleMiddleware, throttle=throttle))
     if store.enabled:
         middleware.append(
             Middleware(
                 AuthMiddleware,
                 store=store,
                 public_paths=PUBLIC_PATHS,
-                on_failure=record_auth_failure,
+                on_failure=on_auth_failure,
             )
         )
+    middleware.append(Middleware(RateLimitMiddleware, limiter=request_limiter))
     if not host_validation:
         middleware.append(Middleware(_OriginGuard, allowed_origins=origins))
 
-    routes = [
+    routes: list[Any] = [
         Route("/healthz", healthz, methods=["GET"]),
         Route("/readyz", readyz, methods=["GET"]),
-        Route("/sse", _SseEndpoint(sse_transport, server), methods=["GET"]),
+        Route("/sse", _SseEndpoint(sse_transport, sse_server), methods=["GET"]),
         Mount("/messages", app=sse_transport.handle_post_message),
+        streamable.route,
+        Route("/manifest.json", manifest_json, methods=["GET"]),
     ]
+    if metrics_enabled:
+        routes.append(
+            Route(
+                "/metrics",
+                metrics_endpoint(metrics, required_scope=metrics_scope),
+                methods=["GET"],
+            )
+        )
+    if store.enabled:
+        default_ttl = min(_DEFAULT_APPROVAL_TTL, float(approval_max_ttl))
+        routes.extend(
+            approval_routes(
+                approval_log=runtime.approval_log,
+                gated_tools=gated_tool_names,
+                audit=tracer,
+                default_ttl_seconds=default_ttl,
+                max_ttl_seconds=float(approval_max_ttl),
+            )
+        )
     app = Starlette(routes=routes, middleware=middleware, lifespan=lifespan)
     app.state.runtime = runtime
     app.state.tool_names = list(runtime.tool_names)
@@ -399,6 +658,11 @@ def create_sse_app(
     app.state.in_flight = in_flight
     app.state.gate = gate
     app.state.shutting_down = False
+    app.state.metrics = metrics
+    app.state.token_store = store
+    app.state.approval_log = runtime.approval_log
+    app.state.rate_limiter = request_limiter
+    app.state.breakers = breakers
     return app
 
 
@@ -487,6 +751,21 @@ class StripQueryFromAccessLog(logging.Filter):
         return True
 
 
+def _drop_closed_log_handlers() -> None:
+    """Detach `omega_prime` handlers whose stream is already closed.
+
+    `configure_logging` retargets its handler with `setStream`, which flushes the
+    previous stream. A replaced stderr (pytest's `capsys`, for example) leaves
+    that stream closed, and the flush raises `ValueError: I/O operation on
+    closed file`, which `serve_sse` would otherwise report as a bad configuration.
+    """
+    target = logging.getLogger(ROOT_LOGGER_NAME)
+    for handler in list(target.handlers):
+        stream = getattr(handler, "stream", None)
+        if stream is not None and getattr(stream, "closed", False):
+            target.removeHandler(handler)
+
+
 def install_access_log_filter() -> StripQueryFromAccessLog:
     """Attach `StripQueryFromAccessLog` to `uvicorn.access` once; return it.
 
@@ -521,15 +800,33 @@ def serve_sse(
     shutdown_grace: float = 20.0,
     env: dict[str, str] | None = None,
     interceptors: Sequence[ToolCallInterceptor] = (),
+    token_store_path: Path | str | None = None,
+    rate_limit: int = 600,
+    global_rate_limit: int = 0,
+    tool_rate_limit: int = 300,
+    auth_failure_limit: int = 10,
+    breaker_threshold: int = 5,
+    breaker_cooldown: float = 30.0,
+    metrics_enabled: bool = True,
+    metrics_scope: str = "read",
+    log_format: str = "text",
+    session_idle_timeout: float = 1800.0,
+    max_sessions: int = 64,
+    approval_max_ttl: float = 86400.0,
+    clock: Callable[[], float] | None = None,
 ) -> int:
-    """Serve the MCP SSE host until a shutdown signal; 0 after a clean exit.
+    """Serve the MCP host until a shutdown signal; 0 after a clean exit.
 
     Returns 2 after printing `omega-prime-mcp-server: <reason>` to stderr when
-    the configuration is refused (see `create_sse_app`).
+    the configuration is refused (see `create_sse_app`). Configures process
+    logging (`log_format`) and turns uvicorn's access log off; `AccessLogMiddleware`
+    is the access log, and `StripQueryFromAccessLog` stays installed behind it.
     """
     try:
         if not 0 <= port <= 65535:
             raise ValueError(f"port {port} is out of range")
+        _drop_closed_log_handlers()
+        configure_logging(log_format)
         app = create_sse_app(
             root,
             token=token,
@@ -548,13 +845,26 @@ def serve_sse(
             shutdown_grace=shutdown_grace,
             env=env,
             interceptors=interceptors,
+            token_store_path=token_store_path,
+            rate_limit=rate_limit,
+            global_rate_limit=global_rate_limit,
+            tool_rate_limit=tool_rate_limit,
+            auth_failure_limit=auth_failure_limit,
+            breaker_threshold=breaker_threshold,
+            breaker_cooldown=breaker_cooldown,
+            metrics_enabled=metrics_enabled,
+            metrics_scope=metrics_scope,
+            log_format=log_format,
+            session_idle_timeout=session_idle_timeout,
+            max_sessions=max_sessions,
+            approval_max_ttl=approval_max_ttl,
+            clock=clock,
         )
     except ValueError as exc:
         print(f"omega-prime-mcp-server: {exc}", file=sys.stderr)
         return 2
     runtime: Runtime = app.state.runtime
-    store_enabled = token_store.enabled if token_store is not None else bool(token)
-    auth = "required" if store_enabled else "off"
+    auth = "required" if app.state.token_store.enabled else "off"
     print(
         f"Serving {SERVER_NAME} MCP on http://{host}:{port}/sse "
         f"({len(runtime.tool_names)} tools, authentication {auth})"
@@ -565,6 +875,7 @@ def serve_sse(
         host=host,
         port=port,
         log_level="info",
+        access_log=False,
         timeout_graceful_shutdown=max(1, int(shutdown_grace)),
     )
     # After `Config` (which applies uvicorn's logging configuration), before serving.
