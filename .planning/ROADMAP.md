@@ -25,11 +25,20 @@ contradicted LOOP-01/02/03/06 during continuation; plans 61-01/02 repaired those
 paths. A 32-requirement integration audit then found durability/privacy, typed
 consumer, disabled-prompt, historical-fixture and clean-prerequisite gaps; plans
 61-03..06 repaired them and a review-repair wave (2026-10-09) cleared two blockers
-and fourteen warnings. The final independent audit accounts for 27 wired, 3 broken
-and 2 human-needed; the user approved exceptions for LOOP-07 and REPO-04 and chose to
-stop before the milestone lifecycle (open: REPO-05, DONE-01, DONE-02). Do not replay
-completed baseline plans or add native architecture scope. The original archive
-remains historical.
+and fourteen warnings. The final independent audit accounts for 32/32 satisfied
+requirements (30 wired, 2 user-approved exceptions for LOOP-07 and REPO-04).
+
+## Phases
+
+- [x] **Phase 53: Prime discovery + parity baseline** - Capability map and overlap map land under `.planning/research/`; the Rust baseline is logged in `VENDOR.md`.
+- [x] **Phase 54: Rust workspace CI integration** - CI builds and tests the prime-agent workspace as the parity oracle (pinned toolchain, `--locked`); cargo-deny license gate.
+- [x] **Phase 55: RLM recursion port** - `rlm.spawn`/`collect`/`list_subagents`/`delete_subagent`/`create_session`/`progress_note` and persistent-REPL semantics ported into `omega_prime`.
+- [x] **Phase 56: Continual harness + /refine port** - Port `/refine`, rollback, learning, and prompt preservation into the one agent.
+- [x] **Phase 57: Agent loop upgrade: goals, heartbeats, autonomous, messaging** - Real goal continuation, APScheduler-bound heartbeats, autonomous turn limits, and agent messaging.
+- [x] **Phase 58: Connector layer + parity suite** - Typed, versioned connectors and strict parity fixtures for all 7 Prime capability families.
+- [x] **Phase 59: Repository hardening + enterprise open source** - Full AGPL-3.0 licensing, SPDX headers, community files, docs, and supply-chain gates.
+- [x] **Phase 60: Milestone audit + closeout** - Initial v10 milestone audit and verification closeout.
+- [x] **Phase 61: Prime loop gap closure** - Gap closure across production loop, heartbeat scheduling, typed adapters, RLM durability, and prime-agent submodule integration.
 
 ## Phase Details
 
