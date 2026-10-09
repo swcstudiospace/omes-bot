@@ -6,12 +6,12 @@
     {
       "id": 64,
       "name": "Desk runtime activation",
-      "status": "in_progress"
+      "status": "complete"
     },
     {
       "id": 65,
       "name": "Receipts, gates and service clients",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": 66,
@@ -26,8 +26,8 @@
   ],
   "next": {
     "command": "/gsd:execute-phase",
-    "label": "Execute Phase 64",
-    "reason": "v12 scoped; Phase 64 desk runtime activation ready"
+    "label": "Execute Phase 65",
+    "reason": "Phase 64 verified; receipts, gates, service clients"
   },
-  "updated_at": "2026-10-09T13:05:00.000Z"
+  "updated_at": "2026-10-09T22:10:00.000Z"
 }

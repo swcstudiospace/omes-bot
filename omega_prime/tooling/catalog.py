@@ -82,14 +82,14 @@ def full_inventory_registry(root: Path, home: Path):
     live-parent families, so asking it for absent tools would invent
     default-false/empty metadata (WARN-03). The catalog instead registers the
     actual family definitions: real ``register_*`` calls against the real
-    root, a throwaway session registry for messaging, and unbound RLM and
-    delegate parents. Handlers are never dispatched here, so no capability
-    operation executes during generation.
+    root, a throwaway session registry for messaging, an unbound RLM parent —
+    and ``delegate_task`` comes from the default registry itself, which
+    registers it on the in-process desk parent (DESK-03). Handlers are never
+    dispatched here, so no capability operation executes during generation.
     """
     from omega_prime.agent.messaging import SessionRegistry
     from omega_prime.tools.agent_message import register_messaging_tools
     from omega_prime.tools.autonomous import register_autonomous_tools
-    from omega_prime.tools.delegate import register_delegate_tools
     from omega_prime.tools.goals import register_goal_tools
     from omega_prime.tools.harness import register_harness_tools
     from omega_prime.tools.heartbeat import register_heartbeat_tools
@@ -104,7 +104,6 @@ def full_inventory_registry(root: Path, home: Path):
     register_messaging_tools(registry, "catalog", session_registry=SessionRegistry())
     register_rlm_tools(registry, None)
     register_prime_kernel_tools(registry, root)
-    register_delegate_tools(registry, None)
     return registry
 
 

@@ -56,18 +56,27 @@ class JobStore:
         self._save()
         return job_id
 
-    def tick(self, now: int | float, runner: Callable[[str], Any]) -> list[dict]:
+    def tick(
+        self,
+        now: int | float,
+        runner: Callable[[str], Any],
+        *,
+        skip_kind: str | None = None,
+    ) -> list[dict]:
         """Run each due job that is not complete. Leave a later job unchanged.
 
         ``runner(prompt)`` is called once per due job. ``last_result`` becomes
         that value and ``last_ran_at`` becomes ``now``. An interval moves
         ``due_at`` to ``now + interval_seconds``. A one-shot job completes.
         Each execution is recorded in the job's bounded history, and a job
-        already claimed or completed for ``now`` is not re-run.
+        already claimed or completed for ``now`` is not re-run. Jobs of
+        ``skip_kind`` are left untouched (another driver owns them).
         """
         ran: list[dict] = []
         for job in self.jobs:
             if job.get("completed"):
+                continue
+            if skip_kind is not None and job.get("kind") == skip_kind:
                 continue
             if job["due_at"] > now:
                 continue
@@ -140,13 +149,170 @@ class JobStore:
             raise
 
 
+DESK_LEAD_KIND = "desk_lead_pass"
+"""Job kind marker stored on desk lead pass jobs (Phase 64 DESK-04).
+
+A desk pass re-runs the lead routine (:func:`run_lead_pass`) over the shared
+intake store on schedule, dispatching tickets through the runtime's parent
+shim. It rides the same :class:`JobStore` scheduler as everything else and
+follows the v10 heartbeat precedent (61-02): jobs fire serialized — one tick
+runs each due pass once, in order — and the claim is persisted to disk before
+the pass starts, so no store lock is held across the model calls inside it.
+"""
+
+
+def schedule_desk_lead_pass(
+    store: JobStore,
+    *,
+    due_at: int | float,
+    interval_seconds: int | float,
+    intake_path: str | Path | None = None,
+    limit: int = 5,
+    prompt: str = "run one desk lead pass",
+) -> str:
+    """Schedule a recurring desk lead pass and return its id.
+
+    A pass with no interval would be a single reminder, not a desk loop, so
+    like the heartbeat kind it requires a positive ``interval_seconds``.
+    ``intake_path`` pins the shared ``IntakeStore`` file; ``None`` means the
+    runner resolves it (state dir, then the work root). ``limit`` bounds each
+    pass's ticket batch.
+    """
+    if isinstance(interval_seconds, bool) or interval_seconds <= 0:
+        raise ValueError("a desk lead pass needs a positive interval_seconds")
+    if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+        raise ValueError("limit must be a positive integer")
+    job_id = store.schedule(prompt, due_at, interval_seconds=interval_seconds)
+    for job in store.jobs:
+        if isinstance(job, dict) and job.get("id") == job_id:
+            job["kind"] = DESK_LEAD_KIND
+            job["intake_path"] = None if intake_path is None else str(intake_path)
+            job["limit"] = limit
+            break
+    store._save()
+    return job_id
+
+
+def list_desk_lead_passes(store: JobStore) -> list[dict]:
+    """All desk lead pass jobs, complete or not."""
+    return [
+        job
+        for job in store.jobs
+        if isinstance(job, dict) and job.get("kind") == DESK_LEAD_KIND
+    ]
+
+
+def desk_lead_runner(
+    parent: Any = None,
+    work_root: str | Path | None = None,
+    *,
+    bot: str = "bot-00-omega-prime",
+) -> Callable[[dict], Any]:
+    """Build the production runner for ``desk_lead_pass`` jobs.
+
+    Each pass resolves the same ``IntakeStore`` the lead tools use (the
+    shared state dir via :func:`desk_intake_path`) and dispatches tickets
+    through the parent shim, so the routine and ``lead_intake_next`` /
+    ``lead_intake_ack`` see the same records. The lead stack is imported
+    inside the runner, so plain cron ticks never load it.
+    """
+
+    def runner(job: dict) -> Any:
+        from omega_prime.routines.desk_lead import (
+            desk_intake_path,
+            make_dispatch,
+            run_lead_pass,
+        )
+        from omega_prime.tools.lead import IntakeStore
+
+        intake_path = job.get("intake_path") or desk_intake_path(work_root)
+        intake = IntakeStore(intake_path)
+        limit = job.get("limit")
+        if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
+            limit = 5
+        return run_lead_pass(
+            intake, make_dispatch(parent, work_root, bot=bot), limit=limit, by=bot
+        )
+
+    return runner
+
+
+def tick_desk_lead_passes(
+    store: JobStore, now: int | float, lead_runner: Callable[[dict], Any]
+) -> list[dict]:
+    """Run each due ``desk_lead_pass`` job once, in order.
+
+    Mirrors the v10 heartbeat tick: only desk jobs are considered, a job
+    claimed or already run for ``now`` is skipped, and the claim is saved to
+    disk before ``lead_runner(job)`` starts — so a concurrent tick (or
+    process) sees ``claimed_at`` and nothing holds a store lock across the
+    pass's model calls.
+    """
+    ran: list[dict] = []
+    for job in store.jobs:
+        if job.get("kind") != DESK_LEAD_KIND or job.get("completed"):
+            continue
+        if job["due_at"] > now:
+            continue
+        history = job.get("history")
+        if not isinstance(history, list):
+            history = []
+            job["history"] = history
+        if job.get("claimed_at") == now:
+            continue
+        if any(
+            isinstance(entry, dict) and entry.get("ran_at") == now for entry in history
+        ):
+            continue
+        job["claimed_at"] = now
+        store._save()
+        job["last_result"] = lead_runner(job)
+        job["last_ran_at"] = now
+        history.append({"ran_at": now, "result": job["last_result"]})
+        del history[:-HISTORY_LIMIT]
+        job["claimed_at"] = None
+        interval = job.get("interval_seconds")
+        if interval is not None:
+            job["due_at"] = now + interval
+        else:
+            job["completed"] = True
+        ran.append(job)
+    if ran:
+        store._save()
+    return ran
+
+
+def run_desk_lead_passes(
+    store: JobStore,
+    now: int | float,
+    parent: Any = None,
+    work_root: str | Path | None = None,
+    *,
+    bot: str = "bot-00-omega-prime",
+) -> list[dict]:
+    """Production entry point: tick due desk passes with real dispatch.
+
+    ``parent`` is the runtime's in-process agent shim (``runtime.parent``)
+    and ``work_root`` the runtime work root. Passes always run through a real
+    dispatch closure — never ``dispatch=None``; without a parent every ticket
+    comes back explicitly blocked with a failure receipt.
+    """
+    return tick_desk_lead_passes(
+        store, now, desk_lead_runner(parent, work_root, bot=bot)
+    )
+
+
 def run_due_jobs(
     store: JobStore,
     now: int | float,
     model: Model,
     tools: dict[str, Any] | None,
 ) -> list[dict]:
-    """Run each due job through a new ``Agent`` and store ``final_response``."""
+    """Run each due job through a new ``Agent`` and store ``final_response``.
+
+    ``desk_lead_pass`` jobs are skipped: they are driven by
+    :func:`run_desk_lead_passes` and must never burn a model call here.
+    """
 
     def runner(prompt: str) -> str:
         agent = Agent(model=model, tools=tools)
@@ -154,7 +320,17 @@ def run_due_jobs(
         response = result.get("final_response") if isinstance(result, dict) else ""
         return response if isinstance(response, str) else ""
 
-    return store.tick(now, runner)
+    return store.tick(now, runner, skip_kind=DESK_LEAD_KIND)
 
 
-__all__ = ["HISTORY_LIMIT", "JobStore", "run_due_jobs"]
+__all__ = [
+    "DESK_LEAD_KIND",
+    "HISTORY_LIMIT",
+    "JobStore",
+    "desk_lead_runner",
+    "list_desk_lead_passes",
+    "run_desk_lead_passes",
+    "run_due_jobs",
+    "schedule_desk_lead_pass",
+    "tick_desk_lead_passes",
+]

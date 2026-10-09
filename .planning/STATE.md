@@ -2,20 +2,20 @@
 gsd_state_version: "1.0"
 milestone: v12
 milestone_name: Programming Desk merge
-current_phase: 64
-current_phase_name: Desk runtime activation
+current_phase: 65
+current_phase_name: Receipts, gates and service clients
 status: in_progress
-stopped_at: "v12 scoped (SEED-005 + SEED-014 active; source pinned at programming-desk 9de3aa3); Phase 64 planning."
-last_updated: "2026-10-09T13:05:00.000Z"
+stopped_at: "Phase 64 complete (DESK-01..04, DESK-08). 1916 passed. Phase 65 next."
+last_updated: "2026-10-09T22:10:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: v11 archived; v12 scoped from verified SEED-005 evidence (8/8 gaps confirmed); Phase 64 starting.
+last_activity_desc: Phase 64 desk runtime activation verified (1916 passed, mypy clean).
 state_head: 5934ff9
 progress:
   total_phases: 4
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 0
   completed_plans: 0
-  percent: 0
+  percent: 25
 ---
 
 # Project State
@@ -29,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-10-09)
 
 ## Current Position
 
-Phase: 64 (Desk runtime activation) - IN PROGRESS
+Phase: 65 (Receipts, gates and service clients) - IN PROGRESS
 Status: v12 scoped 2026-10-09 (REQUIREMENTS/ROADMAP; SEED-005 evidence 8/8 CONFIRMED-GAP)
 Last activity: 2026-10-09 - v11 archive; v12 scoping
 
-Phase completion: 0 of 4 (64-67).
+Phase completion: 1 of 4 (64 done).
 
 ## Accumulated Context
 
@@ -106,5 +106,5 @@ None.
 ## Session
 
 **Last session:** 2026-10-09T13:05:00.000Z
-**Stopped at:** v12 scoped; Phase 64 planning/execution next.
-**Resume file:** .planning/phases/64-desk-runtime-activation/64-CONTEXT.md
+**Stopped at:** Phase 64 verified; Phase 65 next.
+**Resume file:** .planning/phases/64-desk-runtime-activation/64-VERIFICATION.md

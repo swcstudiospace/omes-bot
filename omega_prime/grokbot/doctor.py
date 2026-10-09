@@ -41,7 +41,8 @@ CONNECTOR_ENV_VARS = (
     "HINDSIGHT_API_KEY",
 )
 # Tools registered only when their `prime.<family>.enabled` flag is on (default
-# off), or where a live agent is available (`delegate_task`, messaging).
+# off), or where a live agent is available (messaging). `delegate_task` is
+# served by the default registry on the in-process desk parent (DESK-03).
 _GATED_TOOL_PREFIXES = (
     "rlm_",
     "harness_",
@@ -50,7 +51,7 @@ _GATED_TOOL_PREFIXES = (
     "autonomous_",
     "prime_",
 )
-_GATED_TOOL_NAMES = frozenset({"delegate_task", "agent_message_send", "agent_observe"})
+_GATED_TOOL_NAMES = frozenset({"agent_message_send", "agent_observe"})
 _MAX_LISTED = 10
 
 

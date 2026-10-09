@@ -128,8 +128,7 @@ def test_default_registry_serves_the_roster(tmp_path: Path):
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
     gated = (
-        {"delegate_task"}
-        | set(RLM_TOOL_NAMES)
+        set(RLM_TOOL_NAMES)
         | set(HARNESS_TOOL_NAMES)
         | set(GOAL_TOOL_NAMES)
         | set(HEARTBEAT_TOOL_NAMES)
@@ -138,7 +137,9 @@ def test_default_registry_serves_the_roster(tmp_path: Path):
         | set(KERNEL_TOOL_NAMES)
     )
     assert served == [name for name in roster if name not in gated]
-    assert "delegate_task" not in served
+    # DESK-03: delegate_task is served on the in-process desk parent, even
+    # with no provider env (the tool itself answers not_configured then).
+    assert "delegate_task" in served
 
 
 def test_roster_call_refusal_policy_and_env(tmp_path: Path):

@@ -34,9 +34,16 @@ def register_growth_tools(
     skills_root: str | Path,
     memory_dir: str | Path,
     session_db: str | Path,
+    memory_store: MemoryStore | None = None,
 ) -> list[str]:
-    """Register the four growth tools. Handlers close over the three paths."""
-    store = MemoryStore(memory_dir)
+    """Register the four growth tools. Handlers close over the three paths.
+
+    ``memory_store`` injects an existing ``MemoryStore`` (DESK-01: the host
+    builds one shared store for the growth tools and the lead pack, so
+    recalls see retains from both); by default one is built from
+    ``memory_dir``.
+    """
+    store = memory_store if memory_store is not None else MemoryStore(memory_dir)
     provider = BuiltinMemoryProvider(store)
     manager = MemoryManager()
     manager.add_provider(provider)

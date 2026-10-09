@@ -97,7 +97,7 @@ def test_stdio_serves_with_runtime_and_approvals(
     loaded: list[tuple[Path, Path, bool, list[tuple[str, str]]]] = []
     served: list[object] = []
 
-    def _load_runtime(root, home, *, no_roster, approvals):
+    def _load_runtime(root, home, *, no_roster, approvals, work_root=None):
         loaded.append((root, home, no_roster, list(approvals)))
         return runtime
 
@@ -565,8 +565,15 @@ def test_stdio_ignores_sse_enterprise_flags(
 ) -> None:
     served: list[object] = []
 
-    def _load_runtime(root: Path, home: Path, *, no_roster: bool, approvals: object):
-        del root, home, no_roster, approvals
+    def _load_runtime(
+        root: Path,
+        home: Path,
+        *,
+        no_roster: bool,
+        approvals: object,
+        work_root: object = None,
+    ):
+        del root, home, no_roster, approvals, work_root
         return SimpleNamespace(registry=object(), roster=["read_file"])
 
     async def _serve(server: object) -> None:

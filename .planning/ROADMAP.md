@@ -28,7 +28,7 @@ receipts, path ownership, executable gates, contract-first cross-bot protocol). 
 subbots**, Grok Bot native; not a second gateway deployment. Every SEED-005 gap re-verified
 8/8 CONFIRMED-GAP on this tree (see `milestones/v12-phases/64-*` CONTEXT once archived).
 
-- [ ] **Phase 64: Desk runtime activation** - Desk contexts configured (memory/intake/roster/events/substrate/registry), install-vs-work root split, `delegate_task` served, lead pass wired to a production entry point, desk env surface. (DESK-01..04, DESK-08)
+- [x] **Phase 64: Desk runtime activation** - Desk contexts configured (memory/intake/roster/events/substrate/registry), install-vs-work root split, `delegate_task` served, lead pass wired to a production entry point, desk env surface. (DESK-01..04, DESK-08)
 - [ ] **Phase 65: Receipts, gates and service clients** - Command-capture receipt verification with a real approver, target-aware gates, Railway/Greptile/Vercel/Playwright/Play/ASC clients behind credentials. (DESK-05..07)
 - [ ] **Phase 66: Grok Bot clone-and-run proof** - Truthful host/manifest/roster for the desk-activated tool set; fresh-clone → attach → desk tool call over a real transport; three-source port evidence; docs. (DESK-09..11)
 - [ ] **Phase 67: Milestone audit + closeout** - Per-requirement audit, archive to `milestones/v12-phases/`, roadmap collapse, full gates on the final tree. (DONE-01, DONE-02)

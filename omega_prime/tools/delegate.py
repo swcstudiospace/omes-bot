@@ -2,10 +2,15 @@
 
 The handler reads ``goal``, ``tasks``, and ``background`` from the model.
 ``max_depth`` and ``max_children`` stay on the parent and default to 2 and 1.
+``parent=None`` keeps the tool served but honestly unconfigured: every call
+returns ``not_configured: provider`` instead of a fabricated child, and the
+registry's ``runtime_bindings`` publish ``delegate_parent: None`` so callers
+(lead-pass dispatch, RLM) see the same absence.
 """
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from omega_prime.agent.delegate import delegate_task as run_delegate_task
@@ -13,6 +18,10 @@ from omega_prime.tools.registry import ToolRegistry
 
 # Offered after the growth tools. omega_prime/contracts/tool-rosters/omega-prime.yaml lists this.
 DELEG_TOOL_NAMES = ("delegate_task",)
+
+# runtime_bindings key publishing this family's parent (None when no
+# provider env is configured — see omega_prime.mcp_server._desk_child_model).
+DELEGATE_PARENT_BINDING = "delegate_parent"
 
 
 def register_delegate_tools(registry: ToolRegistry, parent: Any) -> list[str]:
@@ -23,6 +32,8 @@ def register_delegate_tools(registry: ToolRegistry, parent: Any) -> list[str]:
         tasks: list | None = None,
         background: bool = False,
     ) -> str:
+        if parent is None:
+            return json.dumps({"error": "not_configured: provider"}, ensure_ascii=False)
         return run_delegate_task(
             parent,
             goal,
@@ -38,6 +49,7 @@ def register_delegate_tools(registry: ToolRegistry, parent: Any) -> list[str]:
     for name in DELEG_TOOL_NAMES:
         description, parameters = _SCHEMAS[name]
         registry.register(name, description, parameters, handlers[name])
+    registry.runtime_bindings[DELEGATE_PARENT_BINDING] = parent
     return list(DELEG_TOOL_NAMES)
 
 
@@ -73,4 +85,4 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
 }
 
 
-__all__ = ["DELEG_TOOL_NAMES", "register_delegate_tools"]
+__all__ = ["DELEGATE_PARENT_BINDING", "DELEG_TOOL_NAMES", "register_delegate_tools"]

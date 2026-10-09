@@ -20,25 +20,25 @@ in `milestones/v11-REQUIREMENTS.md`.
 
 ### Desk runtime activation (Phase 64)
 
-- [ ] **DESK-01**: Desk contexts are configured at host build. `LeadContext` receives a shared
+- [x] **DESK-01**: Desk contexts are configured at host build. `LeadContext` receives a shared
   `MemoryStore`, live `IntakeStore`/`RosterStore`/`EventStore` under `OMEGA_PRIME_STATE_DIR`,
   the `SubstrateClient` and the registry; `lead_doctor` reports green on memory, tools and
   substrate on a real process (no credential required), and `lead_brief`, `lead_intake_next`,
   `lead_memory_retain/recall`, `lead_event_emit` return real results, not `not_configured`.
-- [ ] **DESK-02**: Install root and work root are separate. A work root (`--work-root` /
+- [x] **DESK-02**: Install root and work root are separate. A work root (`--work-root` /
   `OMEGA_PRIME_WORK_ROOT`, default = install root) drives the coding/file/terminal tools, the
   IDE/LSP/DAP jail and `QualityContext.root`, while roster/policy/contract/prompt/ownership
   lookups stay at the install root. Proven by a test that edits, searches and lint-checks a
   file in a foreign repo tree and refuses escapes outside the work root.
-- [ ] **DESK-03**: `delegate_task` is served. The host (MCP stdio session and Grok Bot host)
+- [x] **DESK-03**: `delegate_task` is served. The host (MCP stdio session and Grok Bot host)
   gets a parent/session handle and registers the delegate tool; the served list includes it
   (manifest, `/healthz` tool count and `catalog --check` agree); a delegated child turn runs
   in-process and returns a result.
-- [ ] **DESK-04**: The lead pass runs in production. One dispatch closure (ticket →
+- [x] **DESK-04**: The lead pass runs in production. One dispatch closure (ticket →
   delegate/subagent → receipt dict) is wired to `run_lead_pass` and reachable from a real
   entry point (cron job or heartbeat tick), sharing the same `IntakeStore` as the lead tools;
   an end-to-end intake → claim → ticket → dispatch → receipt → ack flow passes on real stores.
-- [ ] **DESK-08**: Desk configuration surface. `OMEGA_PRIME_DESK_*` env (bus URL, notifier,
+- [x] **DESK-08**: Desk configuration surface. `OMEGA_PRIME_DESK_*` env (bus URL, notifier,
   docs index, work root) flows into the desk contexts through the same pattern as the existing
   provider env wiring; unconfigured optional surfaces degrade loudly, never silently.
 

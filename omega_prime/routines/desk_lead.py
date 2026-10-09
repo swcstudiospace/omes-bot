@@ -5,16 +5,189 @@ tickets dispatch through an injected `dispatch(ticket)` callable (the desk
 never invents specialist work, so without a dispatcher tickets go blocked);
 intakes are acked from the outcomes and every receipt is validated before
 the report consolidates it. Invalid receipts are listed, never dropped.
+
+Production wiring (Phase 64 DESK-04): :func:`make_dispatch` builds the real
+dispatch closure — ticket → one child agent turn through the runtime's parent
+shim → a receipt dict in the :mod:`omega_prime.receipts` shape — and
+:func:`desk_intake_path` names the one ``IntakeStore`` file the lead tools and
+the cron ``desk_lead_pass`` job kind (``omega_prime.cron.scheduler``) share.
+A dispatcher that cannot run a child returns an explicit blocked outcome with
+a failure receipt; success is never fabricated. ``dispatch=None`` stays a
+test-only shape: production callers always pass a closure.
 """
 
 from __future__ import annotations
 
+import json
+import os
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from omega_prime.receipts import ReceiptError, validate_receipt
 from omega_prime.tools.lead import IntakeStore
 from omega_prime.tools.todo import TodoStore, todo_write
+
+DEFAULT_BOT = "bot-00-omega-prime"
+
+#: The state-dir environment variable the lead tools (64-A wiring) and the
+#: cron desk pass both resolve the shared stores from.
+STATE_DIR_ENV = "OMEGA_PRIME_STATE_DIR"
+
+
+def desk_intake_path(
+    work_root: str | Path | None = None,
+    *,
+    state_dir: str | Path | None = None,
+) -> Path:
+    """The one ``IntakeStore`` file the lead tools and the cron job share.
+
+    ``OMEGA_PRIME_STATE_DIR`` wins — the lead tools build their stores under
+    it — so a cron pass and ``lead_intake_next``/``lead_intake_ack`` see the
+    same records. Without that env, the work root's ``omega_prime/state``
+    directory is used. Pass ``state_dir`` explicitly in tests to pin the file.
+    """
+    if state_dir is None:
+        state_dir = os.environ.get(STATE_DIR_ENV) or ""
+    if state_dir:
+        return Path(state_dir) / "intake.json"
+    base = Path(work_root) if work_root is not None else Path.cwd()
+    return base / "omega_prime" / "state" / "intake.json"
+
+
+def make_dispatch(
+    parent: Any,
+    work_root: str | Path | None = None,
+    *,
+    bot: str = DEFAULT_BOT,
+) -> Callable[[dict], dict]:
+    """Build the production dispatch closure for :func:`run_lead_pass`.
+
+    ``parent`` is the runtime's in-process agent shim (``runtime.parent``):
+    an object with ``child_model`` (and ``tools``) able to spawn child agent
+    turns, or ``None`` when no provider environment is configured. Each
+    ticket becomes one child goal through the shim; the child's outcome
+    becomes a receipt in the :mod:`omega_prime.receipts` shape — a real
+    receipt for a real child run, and an explicit blocked outcome with a
+    failure receipt when the parent is missing or the child fails. Success
+    is never fabricated.
+    """
+
+    def dispatch(ticket: dict) -> dict:
+        ticket_id = str(ticket.get("ticket_id") or "ticket")
+        cmd = "delegate_task(goal=desk ticket)"
+        if parent is None:
+            reason = "no parent agent shim: no provider environment configured"
+            return {
+                "status": "blocked",
+                "reason": reason,
+                "receipt": _failure_receipt(bot, ticket_id, cmd, reason, reason),
+            }
+        ask = str(ticket.get("ask") or "").strip()
+        root_line = f"Work root: {work_root}\n" if work_root is not None else ""
+        goal = (
+            f"Desk ticket {ticket_id} (intake {ticket.get('intake_id')}).\n"
+            f"Ask: {ask}\n"
+            f"{root_line}\n"
+            "Do the work with your tools inside the work root, then reply "
+            "with a short final report of what you changed and verified."
+        )
+        from omega_prime.agent.delegate import delegate_task  # late import: no cycle
+
+        try:
+            raw = delegate_task(parent, goal)
+        except Exception as exc:  # model/provider failure is an explicit block
+            reason = f"child dispatch raised {type(exc).__name__}: {exc}"
+            return {
+                "status": "blocked",
+                "reason": reason,
+                "receipt": _failure_receipt(bot, ticket_id, cmd, reason, str(exc)),
+            }
+        summary, error = _child_summary(raw)
+        if error is not None:
+            reason = f"child agent failed: {error}"
+            return {
+                "status": "blocked",
+                "reason": reason,
+                "receipt": _failure_receipt(bot, ticket_id, cmd, reason, error),
+            }
+        receipt = {
+            "task_id": ticket_id,
+            "bot": bot,
+            "commands": [
+                {
+                    "cmd": cmd,
+                    "exit_code": 0,
+                    "output_tail": summary[-2000:],
+                }
+            ],
+            "claims": [
+                {
+                    "claim": (
+                        f"desk ticket {ticket_id} dispatched through the "
+                        "parent shim; the child agent turned once and "
+                        "reported a final response"
+                    ),
+                    "evidence_command_index": 0,
+                }
+            ],
+            "unverified": [
+                "the child's final response is not independently re-executed"
+            ],
+            "destructive": False,
+            "approved_by": None,
+        }
+        return {"status": "done", "receipt": receipt, "summary": summary}
+
+    return dispatch
+
+
+def _child_summary(raw: Any) -> tuple[str, str | None]:
+    """Extract the child's summary from a ``delegate_task`` result.
+
+    Returns ``(summary, None)`` on a real child response and
+    ``("", error)`` when the delegate refused or the child said nothing.
+    """
+    if not isinstance(raw, str):
+        return "", f"delegate returned {type(raw).__name__}, not a string"
+    try:
+        payload = json.loads(raw)
+    except ValueError:
+        payload = None
+    if isinstance(payload, dict):
+        error = payload.get("error")
+        if isinstance(error, str) and error.strip():
+            return "", error
+        summary = payload.get("summary", payload.get("summaries"))
+        if isinstance(summary, list):
+            summary = "\n".join(str(item) for item in summary)
+        if isinstance(summary, str):
+            return summary, None
+        return "", "delegate result has no summary"
+    if not raw.strip():
+        return "", "empty final response"
+    return raw, None
+
+
+def _failure_receipt(
+    bot: str, ticket_id: str, cmd: str, reason: str, tail: str
+) -> dict:
+    """An explicit, shape-valid failure receipt: the dispatch did not hold."""
+    return {
+        "task_id": ticket_id,
+        "bot": bot,
+        "commands": [{"cmd": cmd, "exit_code": 1, "output_tail": str(tail)[-2000:]}],
+        "claims": [
+            {
+                "claim": reason,
+                "evidence_command_index": 0,
+                "expects_failure": True,
+            }
+        ],
+        "unverified": [],
+        "destructive": False,
+        "approved_by": None,
+    }
 
 
 def run_lead_pass(
@@ -23,7 +196,7 @@ def run_lead_pass(
     *,
     todos: TodoStore | None = None,
     limit: int = 5,
-    by: str = "bot-00-omega-prime",
+    by: str = DEFAULT_BOT,
 ) -> dict[str, Any]:
     """Run one lead pass over the intake queue. Return tickets + report."""
     if isinstance(limit, bool) or not isinstance(limit, int) or limit < 1:
@@ -62,6 +235,29 @@ def run_lead_pass(
             tickets.append(ticket)
             continue
         outcome = dispatch(ticket)
+        if isinstance(outcome, dict) and outcome.get("status") == "blocked":
+            # An explicit dispatcher block: requeue with the dispatcher's
+            # reason and keep the failure receipt on the ticket — listed,
+            # never dropped, never read as done.
+            ticket["status"] = "blocked"
+            ticket["reason"] = str(
+                outcome.get("reason") or "dispatcher reported blocked"
+            )
+            failed = outcome.get("receipt")
+            if isinstance(failed, dict):
+                ticket["receipt"] = failed
+                try:
+                    validate_receipt(failed)
+                except ReceiptError as exc:
+                    invalid.append(
+                        {
+                            "ticket_id": ticket["ticket_id"],
+                            "problems": str(exc).splitlines(),
+                        }
+                    )
+            intake.ack(record["intake_id"], {"status": "open", "by": by})
+            tickets.append(ticket)
+            continue
         receipt = outcome.get("receipt") if isinstance(outcome, dict) else None
         if not isinstance(receipt, dict):
             ticket["status"] = "blocked"
@@ -110,4 +306,10 @@ def run_lead_pass(
     }
 
 
-__all__ = ["run_lead_pass"]
+__all__ = [
+    "DEFAULT_BOT",
+    "STATE_DIR_ENV",
+    "desk_intake_path",
+    "make_dispatch",
+    "run_lead_pass",
+]
