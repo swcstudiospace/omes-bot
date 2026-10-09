@@ -1017,3 +1017,28 @@ def test_cli_passes_name_image_port_and_public_url(tmp_path: Path) -> None:
     assert "example.com/bot:2.0" in text
     assert "containerPort: 9000" in text
     assert "https://bot.example.com" in text
+
+
+def test_promotion_without_staging_or_approval_warns_twice(tmp_path: Path) -> None:
+    out = _rendered(tmp_path, "k8s")
+    assert check(out) == []
+    (out / "promotion.yaml").write_text("promotion: true\n", encoding="utf-8")
+    findings = check(out)
+    assert _ids(findings, "error") == set()
+    assert _ids(findings, "warning") == {
+        "promote-without-staging-evidence",
+        "missing-promotion-approval-record",
+    }
+    assert len(findings) == 2
+    assert FINDING_CATALOG["promote-without-staging-evidence"][0] == "warning"
+    assert FINDING_CATALOG["missing-promotion-approval-record"][0] == "warning"
+    assert deploy.main(["check", str(out)]) == 0
+
+
+def test_promotion_with_staging_and_approval_is_quiet(tmp_path: Path) -> None:
+    out = _rendered(tmp_path, "k8s")
+    (out / "promotion.yaml").write_text("promotion: true\n", encoding="utf-8")
+    assert "promote-without-staging-evidence" in _ids(check(out), "warning")
+    (out / "staging-receipt.json").write_text('{"ok": true}\n', encoding="utf-8")
+    (out / "approval.json").write_text('{"approver": "oncall"}\n', encoding="utf-8")
+    assert check(out) == []

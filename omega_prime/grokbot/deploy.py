@@ -19,6 +19,7 @@ CLI: `python -m omega_prime.grokbot.deploy render|check ...`.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import json
 import re
 import shlex
@@ -93,6 +94,14 @@ FINDING_CATALOG: dict[str, tuple[str, str]] = {
     "unrecognized-file": (
         "warning",
         "an explicitly named file is not a Dockerfile, compose, Kubernetes or unit file",
+    ),
+    "promote-without-staging-evidence": (
+        "warning",
+        "production promotion has no staging receipt or image digest",
+    ),
+    "missing-promotion-approval-record": (
+        "warning",
+        "production promotion has no approval or audit record",
     ),
 }
 
@@ -1539,6 +1548,62 @@ def _analyze(
     return report.findings, k8s_docs, workload
 
 
+def _is_promotion_name(name: str) -> bool:
+    """True when a file name marks the set as a production promotion."""
+    base = name.lower()
+    return base.startswith("promot") or base.startswith(("prod-", "prod_", "prod."))
+
+
+def _is_staging_evidence(name: str) -> bool:
+    """True for a staging receipt or an image digest file."""
+    base = name.lower()
+    return "staging" in base or base.endswith(".digest")
+
+
+def _is_approval_record(name: str) -> bool:
+    """True for a promotion approval or audit record file."""
+    base = name.lower()
+    return "approv" in base or "audit" in base
+
+
+def _promotion_findings(peers: list[tuple[Path, str]]) -> list[Finding]:
+    """Staging-first gate: a promotion marker without evidence warns, never errors."""
+    promotion: str | None = None
+    staging = False
+    approval = False
+    for file_path, label in peers:
+        name = file_path.name
+        if promotion is None and _is_promotion_name(name):
+            promotion = label
+        if _is_staging_evidence(name):
+            staging = True
+        if _is_approval_record(name):
+            approval = True
+    if promotion is None:
+        return []
+    findings: list[Finding] = []
+    if not staging:
+        findings.append(
+            Finding(
+                "promote-without-staging-evidence",
+                "warning",
+                promotion,
+                "production promotion has no staging receipt or image digest; "
+                "verify on staging first",
+            )
+        )
+    if not approval:
+        findings.append(
+            Finding(
+                "missing-promotion-approval-record",
+                "warning",
+                promotion,
+                "production promotion has no approval or audit record",
+            )
+        )
+    return findings
+
+
 def check(path: str | Path) -> list[Finding]:
     """Scan a file or a directory of artifacts. Raises `FileNotFoundError` for a bad path."""
     root = Path(path)
@@ -1572,6 +1637,21 @@ def check(path: str | Path) -> list[Finding]:
                 "no NetworkPolicy restricts ingress to the workload",
             )
         )
+    if root.is_dir():
+        peers = [
+            (p, p.relative_to(root).as_posix())
+            for p in sorted(root.rglob("*"))
+            if p.is_file()
+        ]
+    else:
+        peers = [(root, root.name)]
+        with contextlib.suppress(OSError):
+            peers += [
+                (p, p.name)
+                for p in sorted(root.parent.iterdir())
+                if p.is_file() and p != root
+            ]
+    findings.extend(_promotion_findings(peers))
     return sorted(
         findings, key=lambda f: (f.file, f.severity != "error", f.id, f.message)
     )
