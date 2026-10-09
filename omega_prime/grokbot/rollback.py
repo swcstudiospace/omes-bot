@@ -24,6 +24,13 @@ chmodded to its ``modes.json`` mode (0600 when the snapshot records none).
 Before overwriting anything, the current live bytes are preserved with
 ``upgrade.snapshot`` under the label ``pre-rollback``
 (``pre-rollback-<n>`` when that label is taken; snapshots never overwrite).
+A taken ``pre-rollback*`` label raises ``upgrade.SnapshotExistsError`` and
+is retried under a fresh label; an explicitly-named live path overlapping
+the snapshot directory raises ``upgrade.SnapshotOverlapError``, which is
+deliberately NOT a ``SnapshotExistsError`` subclass and is never retried
+(retrying a caller error under a fresh label could never succeed — it
+would loop forever with the audit locks held and nothing restored — so it
+propagates and the ``with`` hold below releases the locks).
 Audit safety: rollback holds the audit tracer's sidecar lock convention
 (exclusive ``flock`` on ``<audit-log>.lock``, same as
 :class:`GrokBotAuditTracer`) across the pre-rollback backup and the
@@ -222,13 +229,20 @@ def _check_stored_copies(
 
 
 def _take_pre_rollback_snapshot(dest_dir: Path, live_paths: list[str]) -> Path:
-    """Preserve current live bytes under a fresh ``pre-rollback*`` label."""
+    """Preserve current live bytes under a fresh ``pre-rollback*`` label.
+
+    Only a taken label (``SnapshotExistsError``) is retried with a fresh
+    suffix; ``SnapshotOverlapError`` is not a ``SnapshotExistsError``
+    subclass, so an overlapping live path propagates instead of looping.
+    """
     label = PRE_ROLLBACK_LABEL
     suffix = 0
     while True:
         try:
             return snapshot(live_paths, dest_dir, label=label)
         except SnapshotExistsError:
+            # Label collision only: SnapshotOverlapError is a distinct
+            # error type and is deliberately not caught here.
             suffix += 1
             label = f"{PRE_ROLLBACK_LABEL}-{suffix}"
 

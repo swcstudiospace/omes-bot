@@ -111,10 +111,17 @@ def _hold_launch_lock(base: Path) -> Iterator[None]:
     A foreign-owned or otherwise unusable lock file never blocks a launch:
     warn on stderr and proceed without the lock (fail-open for availability;
     the rerun guard plus failed-status receipt still protect correctness).
+
+    Acquisition (dir setup, ownership check, open, flock) is tried/excepted;
+    the body ``yield`` sits outside that ``try`` so body failures (including
+    an ``OSError`` from manifest export, e.g. disk full) propagate untouched
+    instead of being mistaken for lock-acquisition failures.
     """
     target = Path(base)
     lock_path = target.with_name(f"{target.name}.lock")
+    fd: int | None = None
     try:
+        skip = False
         ensure_private_dir(target.parent)
         try:
             st = os.stat(lock_path)
@@ -131,19 +138,18 @@ def _hold_launch_lock(base: Path) -> Iterator[None]:
                     "proceeding without lock",
                     file=sys.stderr,
                 )
-                yield
-                return
-        fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
+                skip = True
+        if not skip:
+            fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, PRIVATE_FILE_MODE)
     except OSError as exc:
         print(
             f"{_PREFIX}: warning: cannot use lock {lock_path} ({exc}); "
             "proceeding without lock",
             file=sys.stderr,
         )
-        yield
-        return
-    try:
-        if _fcntl is not None:
+        fd = None
+    else:
+        if fd is not None and _fcntl is not None:
             try:
                 _fcntl.flock(fd, _fcntl.LOCK_EX)
             except OSError as exc:
@@ -152,11 +158,13 @@ def _hold_launch_lock(base: Path) -> Iterator[None]:
                     "proceeding without lock",
                     file=sys.stderr,
                 )
-                yield
-                return
+                os.close(fd)
+                fd = None
+    try:
         yield
     finally:
-        os.close(fd)  # closing the descriptor releases the lock
+        if fd is not None:
+            os.close(fd)  # closing the descriptor releases the lock
 
 
 def run_doctor_checks(

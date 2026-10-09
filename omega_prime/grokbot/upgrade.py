@@ -61,16 +61,23 @@ Public functions:
 Exceptions (`SnapshotError` base): `SnapshotMissingError` (also a
 `FileNotFoundError`) for a missing snapshot, `SnapshotCorruptError` for an
 unreadable or empty digest table, `SnapshotExistsError` (also a
-`FileExistsError`) when the label is already taken or an explicitly-named
-source overlaps `dest_dir`.
+`FileExistsError`) when the label is already taken, and
+`SnapshotOverlapError` when an explicitly-named source overlaps `dest_dir`.
+`SnapshotOverlapError` is deliberately NOT a `SnapshotExistsError`
+subclass: a taken label is retryable under a fresh label, while an overlap
+is a caller error that retrying can never fix (rollback's pre-rollback
+path retries only `SnapshotExistsError`, so overlap propagates instead of
+looping forever with locks held and nothing restored).
 
 Guarantees: snapshots never overwrite (re-snapshot under a fresh label); a
 publish that loses a label race reports `SnapshotExistsError` (a concurrent
 `os.replace` onto an existing label is translated, so pre-rollback retry
 works); missing or non-regular sources are skipped, never fatal; an
-explicitly-named source at or under `dest_dir` raises `SnapshotExistsError`
-instead of being silently dropped, so a backup of live state the upgrade
-will overwrite can never come back empty; only files discovered by
+explicitly-named source at or under `dest_dir` raises
+`SnapshotOverlapError` (never silently dropped, and never a
+`SnapshotExistsError`, so label-collision retry can never mistake it for a
+taken label) because a backup of live state the upgrade will overwrite can
+never come back empty; only files discovered by
 expanding a source directory have the `dest_dir` subtree pruned from the
 walk, so snapshotting a parent of `dest_dir` never nests backups inside
 themselves; symlinks are followed and stored as regular files; copies are
@@ -122,6 +129,17 @@ class SnapshotCorruptError(SnapshotError):
 
 class SnapshotExistsError(SnapshotError, FileExistsError):
     """A snapshot already occupies the label; snapshots never overwrite."""
+
+
+class SnapshotOverlapError(SnapshotError):
+    """An explicitly-named source overlaps `dest_dir`; snapshots never nest.
+
+    Deliberately NOT a `SnapshotExistsError` subclass: a taken label is
+    retryable under a fresh label, while an overlap is a caller error that
+    retrying can never fix. In particular, rollback's pre-rollback path
+    retries only `SnapshotExistsError`, so this error propagates instead
+    of looping forever with locks held and nothing restored.
+    """
 
 
 def _check_label(label: str) -> None:
@@ -218,7 +236,8 @@ def snapshot(
     loses a concurrent label race (the atomic `os.replace` onto an existing
     label) is translated to `SnapshotExistsError` so callers can retry under
     a fresh label. An explicitly-named source at or under `dest_dir` raises
-    `SnapshotExistsError` instead of snapshotting silently empty; only files
+    `SnapshotOverlapError` (not a `SnapshotExistsError`: never retry it
+    under a fresh label) instead of snapshotting silently empty; only files
     found by expanding a source directory are pruned when they fall inside
     `dest_dir`, so snapshotting a parent of `dest_dir` never nests backups.
     Each live source's mode bits
@@ -237,7 +256,7 @@ def snapshot(
         candidate = os.path.abspath(raw)
         overlap = candidate == dest_abs or candidate.startswith(dest_abs + os.sep)
         if overlap and os.path.lexists(raw):
-            raise SnapshotExistsError(
+            raise SnapshotOverlapError(
                 f"refusing snapshot {final}: explicitly-named source {candidate} "
                 f"overlaps dest_dir {dest_abs} (snapshots never nest backups inside "
                 "themselves; snapshot the live state elsewhere)"
@@ -388,6 +407,7 @@ __all__ = [
     "SnapshotError",
     "SnapshotExistsError",
     "SnapshotMissingError",
+    "SnapshotOverlapError",
     "apply_guard",
     "snapshot",
     "verify_snapshot",

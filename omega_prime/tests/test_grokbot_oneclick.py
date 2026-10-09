@@ -835,3 +835,85 @@ def test_unusable_lock_file_fails_open(
     with oneclick._hold_launch_lock(base):
         pass
     assert "proceeding without lock" in capsys.readouterr().err
+
+
+def test_body_oserror_propagates_without_lock_warning(
+    tmp_path: Path, capsys: pytest.CaptureFixture
+) -> None:
+    """A body OSError (e.g. manifest export disk-full) is not a lock error."""
+    base = tmp_path / "omega-prime-oneclick-59997.launch"
+    with (
+        pytest.raises(OSError, match="No space left"),
+        oneclick._hold_launch_lock(base),
+    ):
+        raise OSError(28, "No space left on device")
+    assert "proceeding without lock" not in capsys.readouterr().err
+
+
+def test_foreign_lock_body_oserror_is_not_a_lock_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A body OSError under a foreign-owned lock still propagates as OSError."""
+    base = tmp_path / "omega-prime-oneclick-59996.launch"
+    base.with_name(f"{base.name}.lock").write_bytes(b"foreign")
+    real_uid = os.getuid()
+    monkeypatch.setattr(os, "getuid", lambda: real_uid + 1)
+    with (
+        pytest.raises(OSError, match="No space left"),
+        oneclick._hold_launch_lock(base),
+    ):
+        raise OSError(28, "No space left on device")
+    err = capsys.readouterr().err
+    assert "owned by another user" in err
+    assert "cannot use lock" not in err
+
+
+def test_lock_acquisition_failure_still_runs_body(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """Acquisition failure warns and proceeds: the body still runs."""
+    base = tmp_path / "omega-prime-oneclick-59995.launch"
+
+    def _deny_open(*args: Any, **kwargs: Any) -> Any:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(os, "open", _deny_open)
+    ran: list[bool] = []
+    with oneclick._hold_launch_lock(base):
+        ran.append(True)
+    assert ran == [True]
+    assert "proceeding without lock" in capsys.readouterr().err
+
+
+def test_export_oserror_propagates_through_launch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture
+) -> None:
+    """A manifest-export OSError aborts the launch as OSError, not a lock skip."""
+    _isolate_supervisor(tmp_path, monkeypatch)
+    monkeypatch.setattr(
+        "omega_prime.grokbot.rerun._port_open", lambda host, port: False
+    )
+    served: list[bool] = []
+
+    def _fake_serve(**serve_kwargs: Any) -> int:
+        served.append(True)
+        return 0
+
+    monkeypatch.setattr("omega_prime.grokbot.remote.serve_sse", _fake_serve)
+
+    def _deny_write(*args: Any, **kwargs: Any) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(oneclick, "atomic_write_text", _deny_write)
+    monkeypatch.setenv("MCP_AUTH_TOKEN", TOKEN)
+    out = tmp_path / "m.json"
+    with pytest.raises(OSError, match="No space left"):
+        run_oneclick(
+            find_repo_root(),
+            transport="sse",
+            port=_free_port(),
+            export_manifest=out,
+            skip_doctor=True,
+        )
+    assert served == []
+    assert "proceeding without lock" not in capsys.readouterr().err

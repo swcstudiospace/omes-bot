@@ -311,3 +311,66 @@ def test_rollback_restores_audit_log_with_missing_parent(tmp_path: Path) -> None
     assert json.loads(lines[-1])["event"] == "rollback"
     assert stat.S_IMODE((src / "logs").stat().st_mode) == 0o700
     assert tracer.verify_integrity()[0] is True
+
+
+def test_rollback_surfaces_overlap_instead_of_looping(tmp_path: Path) -> None:
+    """A live path under the snapshots dir surfaces, never retries forever."""
+    from omega_prime.grokbot.upgrade import SnapshotOverlapError
+
+    sources = _seed_state(tmp_path / "live")
+    snap = snapshot(sources, tmp_path / "snapshots")
+    table = _read_table(snap, "sources.json")
+    rel = sorted(table)[0]
+    evil = _write(tmp_path / "snapshots" / "evil.json", b'{"v": 1}')
+    before = evil.read_bytes()
+    table[rel] = os.path.abspath(evil)
+    (snap / "sources.json").write_text(
+        json.dumps(table, sort_keys=True) + "\n", encoding="utf-8"
+    )
+
+    with pytest.raises(SnapshotOverlapError, match="overlaps dest_dir"):
+        rollback(snap, [evil])
+
+    assert evil.read_bytes() == before
+    assert [
+        p.name
+        for p in (tmp_path / "snapshots").iterdir()
+        if p.name.startswith("pre-rollback")
+    ] == []
+
+
+def test_rollback_pre_snapshot_retries_label_collision_not_overlap(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Genuine label collisions retry once; overlap propagates immediately."""
+    import omega_prime.grokbot.rollback as rollback_mod
+    from omega_prime.grokbot.upgrade import (
+        SnapshotExistsError,
+        SnapshotOverlapError,
+    )
+
+    sources = _seed_state(tmp_path / "live")
+    snap = snapshot(sources, tmp_path / "snapshots")
+    calls: list[str] = []
+    real_snapshot = rollback_mod.snapshot
+
+    def _collide_once(paths: list[str], dest_dir: Path, *, label: str) -> Path:
+        calls.append(label)
+        if len(calls) == 1:
+            raise SnapshotExistsError(f"snapshot {dest_dir / label} already exists")
+        return real_snapshot(paths, dest_dir, label=label)
+
+    monkeypatch.setattr(rollback_mod, "snapshot", _collide_once)
+    result = rollback_mod.rollback(snap, sources)
+    assert calls == ["pre-rollback", "pre-rollback-1"]
+    assert Path(str(result["pre_rollback_snapshot"])).name == "pre-rollback-1"
+
+    def _overlap_always(paths: list[str], dest_dir: Path, *, label: str) -> Path:
+        calls.append(label)
+        raise SnapshotOverlapError("refusing snapshot: overlaps dest_dir")
+
+    monkeypatch.setattr(rollback_mod, "snapshot", _overlap_always)
+    before_calls = len(calls)
+    with pytest.raises(SnapshotOverlapError, match="overlaps dest_dir"):
+        rollback_mod.rollback(snap, sources)
+    assert len(calls) == before_calls + 1
