@@ -79,7 +79,10 @@ product's optional Prime flags are off. Provision that read-only checkout before
 running the suite; it does not require running the retained failing Rust tests.
 
 Using it as a Grok Bot? Follow [grokbot/SETUP.md](omega_prime/grokbot/SETUP.md):
-install, secrets, optional tool host, then the smoke prompt. The Add-Bot
+install, secrets, optional tool host, then the smoke prompt. The remote host
+(SSE and Streamable HTTP, scoped tokens, approvals) is
+[docs/grok-bot-native.md](docs/grok-bot-native.md); deploying it is
+[docs/deploy.md](docs/deploy.md). The Add-Bot
 template is [omega_prime/grokbot/templates/OMEGA_PRIME.md](omega_prime/grokbot/templates/OMEGA_PRIME.md).
 
 To turn the Prime capability families on and drive the bot with them, see
@@ -213,7 +216,8 @@ tmpfs. That test is not a pin exclusion.
 
 ## Docs
 
-Start in [docs/](docs/README.md): setup, user guide, tool host, substrate
+Start in [docs/](docs/README.md): setup, user guide, tool host, the
+[Grok Bot native host](docs/grok-bot-native.md), substrate
 surface, the agent loop, connector contracts, migration from pre-v10, the
 merge ADR, and the GitBook sync guide. Docs are verified in CI — links
 resolve, generated pages stay current.
@@ -226,7 +230,7 @@ resolve, generated pages stay current.
 | `omega_prime/prime/` | Typed connector adapters over the ported Prime capabilities |
 | `omega_prime/prime_kernel/` | In-process loader for the pinned `rlm` runtime, skills, and crate extension |
 | `native/omega-prime-prime/` | PyO3 bindings that call all nine Prime crates: goals, autonomous limits, `/goal` and `/autonomous`, the REPL protocol, heartbeats, refinement, plus telemetry, types, providers, the model catalog, tool-argument validation, daemon frames, session search, and CLI modes |
-| `omega_prime/grokbot/` | Add-Bot template, setup guide, rosters |
+| `omega_prime/grokbot/` | Add-Bot template, setup guide, remote tool host |
 | `docs/` | GitBook docs set (`SUMMARY.md` is the nav) |
 | `assets/` | Icon and banner art |
 | `.planning/` | Milestone history (v1–v10) and the audit trail |

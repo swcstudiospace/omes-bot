@@ -38,10 +38,13 @@ Skip what you don't use: every unconfigured client reports
 
 ## 3. Attach the tool host (1-Click Native Integration)
 
-The tool host speaks MCP over **stdio** (a local process) or **remote SSE**
-(HTTP Server-Sent Events). The remote host fails closed: it refuses to start on
-a non-loopback address without a bearer token, an invalid roster or seat policy
-stops startup (exit 2), and it never accepts a token in the URL.
+The tool host speaks MCP over **stdio** (a local process) or a **remote
+listener** that serves legacy SSE (`/sse`, `/messages/`) and Streamable HTTP
+(`/mcp`) on the same port. The remote host fails closed: it refuses to start
+on a non-loopback address without a bearer token or a token store, an invalid
+roster or seat policy stops startup (exit 2), and it never accepts a token in
+the URL. The operator reference is `docs/grok-bot-native.md`. Deploying the
+same process is `docs/deploy.md`.
 
 ### Option A: Turnkey 1-click launcher (recommended)
 
@@ -49,59 +52,104 @@ stops startup (exit 2), and it never accepts a token in the URL.
 # stdio (local IDE or sandbox)
 ./scripts/grokbot-1click.sh --transport stdio
 
-# Remote SSE: preflight, mint a token, export the manifest, serve
+# Remote: preflight, mint a token, export the manifest, serve SSE and /mcp
 ./scripts/grokbot-1click.sh --transport sse --host 0.0.0.0 --port 8000 \
   --public-url https://bot.example.com \
   --generate-token --token-file ~/.config/omega-prime/token \
+  --token-store ~/.config/omega-prime/tokens.json \
+  --log-format json \
   --export-manifest grokbot-manifest.json
 ```
 
-In order, the launcher runs the preflight doctor (a failed check aborts with
-exit 3; warnings never do; `--no-strict` continues anyway), refuses an
-unauthenticated non-loopback bind (exit 2), mints a bearer token with
-`--generate-token` (shown once on stderr and, with `--token-file`, saved there
-with mode 0600), exports the manifest (it never contains the token), and serves.
-Add `--dry-run` to do everything except serve. To reuse a token, point
-`--token-file` at an existing 0600 file or set `MCP_AUTH_TOKEN` (`--token-env NAME`
-renames the variable). `--token` also works but warns, because argv is visible
-to other users on the machine.
+`./scripts/grokbot-1click.sh` and `python -m omega_prime.grokbot.oneclick` take
+the same flags. In order, the launcher runs the preflight doctor (a failed
+check aborts with exit 3; warnings never do; `--no-strict` continues anyway),
+refuses an unauthenticated non-loopback bind (exit 2), mints a bearer token
+with `--generate-token` (shown once on stderr and, with `--token-file`, saved
+there with mode 0600), exports the manifest (it never contains the token), and
+serves. Add `--dry-run` to do everything except serve. `--self-test` starts a
+throwaway loopback host, runs the live verifier, and requires a clean SIGTERM
+(it conflicts with `--dry-run` and never prints the token). To reuse a token,
+point `--token-file` at an existing 0600 file, set `MCP_AUTH_TOKEN`
+(`--token-env NAME` renames the variable), or pass `--token-store` (a hashed
+multi-token file; it counts as authentication). `--log-format` is `text` or
+`json`. `--token` also works but warns, because argv is visible to other users
+on the machine. Rate limits and the circuit breaker stay on
+`python -m omega_prime.mcp_server`.
 
-### Option B: Remote MCP transport over SSE / HTTP
+### Option B: Remote MCP transport (SSE and Streamable HTTP)
 
-Grok Bot cloud instances connect to your host over SSE:
+Grok Bot cloud instances connect to your host over SSE. Other MCP clients use
+`/mcp` on the same origin:
 
 ```bash
 python -m omega_prime.mcp_server --transport sse --host 0.0.0.0 --port 8000 \
   --token-file ~/.config/omega-prime/token \
+  --token-store ~/.config/omega-prime/tokens.json \
   --public-url https://bot.example.com \
-  --audit-log /var/lib/omega-prime/audit.jsonl
+  --audit-log /var/lib/omega-prime/audit.jsonl \
+  --log-format json
 ```
 
 Endpoints:
 
-- `GET /sse`: Server-Sent Events stream (bearer token required).
-- `POST /messages/`: inbound message channel (bearer token required).
-- `GET /healthz`: status, version, the number of tools actually served, auth mode (public).
-- `GET /readyz`: 200 when ready, 503 while draining or when the audit log is not writable (public).
+- `GET /sse` and `POST /messages/`: legacy SSE (bearer token required).
+- `GET` / `POST` / `DELETE /mcp`: Streamable HTTP (bearer token required).
+- `GET /healthz`: status, version, tools actually served, auth mode (public).
+- `GET /readyz`: 200 when ready; 503 while draining, when the audit log is not
+  writable, or when a token-store file is unreadable (public).
+- `GET /manifest.json`: served tools, `approval_required`, and a `digest`
+  (scope `read`).
+- `GET /metrics`: Prometheus text (scope `read` unless `--metrics-scope` says
+  otherwise).
+- `GET` / `POST /admin/approvals` and `DELETE /admin/approvals/{tool}`: approval
+  gateway (scope `admin`; not mounted at all when authentication is off).
 
-Useful flags: `--allow-origin ORIGIN` and `--allow-host HOST[:PORT]` (repeatable)
-for browser-based clients, `--max-body-bytes`, `--shutdown-grace SECONDS`,
-`--approve TOOL:APPROVER` to pre-approve one approval-gated tool, and
-`--allow-insecure-no-auth` as an explicit opt-out of the token requirement.
+Useful flags: `--allow-origin ORIGIN` and `--allow-host HOST[:PORT]` (repeatable),
+`--max-body-bytes`, `--shutdown-grace SECONDS`, `--approve TOOL:APPROVER`,
+`--rate-limit` (default 600/min), `--tool-rate-limit` (default 300/min),
+`--auth-failure-limit` (default 10 per 60 s), `--breaker-threshold` (default 5;
+`0` disables the breaker) and `--breaker-cooldown` (default 30 s). `0` also
+disables `--rate-limit`, `--tool-rate-limit`, and `--auth-failure-limit`.
+`--allow-insecure-no-auth` is the explicit opt-out of the token requirement.
 
 What the host guarantees:
 
 - The token is read from the `Authorization: Bearer` header only, compared in
-  constant time; a missing or wrong token gets 401 with `WWW-Authenticate: Bearer`.
-- Host and Origin headers are validated; CORS answers only origins you name.
+  constant time; a missing or wrong token, including `?token=`, gets 401 with
+  `WWW-Authenticate: Bearer`.
+- Scopes are `read`, `call`, and `admin` (`call` includes `read`; `admin`
+  includes both).
+  The single `--token-file` / `MCP_AUTH_TOKEN` principal is `read`+`call`. Mint
+  and revoke store tokens with `python -m omega_prime.grokbot.tokens new|list|revoke`.
+  A revoked or expired token is rejected without a restart; the host re-reads
+  the file within about a second.
+- Host and Origin are validated on a loopback bind and whenever you set
+  `--public-url` or `--allow-host`. CORS answers only origins you name.
 - Every tool call and every authentication failure is appended to a hash-chained
   audit log. Arguments are recorded as key names plus a digest, never as values.
   `python -m omega_prime.grokbot.audit verify` detects an edited, removed or
-  reordered record.
+  reordered record; `tail` prints the newest lines.
 - Tool calls run one at a time in a worker thread, so a slow tool never freezes
   health checks or shutdown.
 - SIGTERM or SIGINT drains in-flight calls (up to `--shutdown-grace` seconds,
-  default 20) while `/readyz` answers 503, then exits 0. A second signal forces exit.
+  default 20) while `/readyz` answers 503, then exits 0. With nothing in flight
+  that is about a second. A second signal forces exit.
+
+An admin token approves a gated tool without a restart. The approver is that
+token's label or id, never the bot. A `call` token receives 403:
+
+```bash
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tool":"TOOL","ttl_seconds":600}' \
+  http://127.0.0.1:8000/admin/approvals
+```
+
+`TOOL` must be one of the `gated_tools` from `GET /admin/approvals`. Omit
+`ttl_seconds` for a one-hour grant (never longer than `--approval-max-ttl`,
+default 24 h). `DELETE /admin/approvals/TOOL` revokes it. Full curl forms,
+metric names, and the verifier are in `docs/grok-bot-native.md`.
 
 ### Option C: Grok Bot 1-click manifest export
 

@@ -44,6 +44,36 @@ Network operations and browser sessions enforce fail-closed egress boundaries:
 - Test coverage and evidence are validated through hermetic test suites and runtime
   verifications (`omega_prime/tests/test_web.py` and `omega_prime/tests/test_browser_egress.py`).
 
+## Remote tool host
+
+The Grok Bot listener (`python -m omega_prime.mcp_server --transport sse`,
+or `./scripts/grokbot-1click.sh`) authenticates with static scoped bearer
+tokens. It is not OAuth.
+
+- The credential is the `Authorization: Bearer` header only. A token in the
+  query string is ignored (401) and is not written to the access log.
+- Scopes are `read`, `call`, and `admin`. `admin` includes the lower two.
+  The single `--token-file` or `MCP_AUTH_TOKEN` principal is `read` and
+  `call`. `/admin/approvals` requires `admin` and is not mounted when
+  authentication is off. The approver stored on a grant is that token's
+  label or id, never the bot seat.
+- The hashed token file (mode 0600) stores SHA-256 digests.
+  `python -m omega_prime.grokbot.tokens revoke` takes effect on the next
+  check, without a restart. An unreadable store denies that file's tokens
+  and `/readyz` returns 503.
+- A non-loopback bind without a token or a token store exits 2.
+  `--allow-insecure-no-auth` is the only opt-out. A strict preflight
+  failure from the 1-click launcher exits 3.
+- Host and Origin are checked. CORS answers only origins configured on the
+  command line, never `*`. Another principal's `Mcp-Session-Id` on `/mcp`
+  is 404.
+- The audit log is hash-chained. Tool arguments are stored as key names and
+  a digest, never as values. `verify` reports an edited, removed, or
+  reordered line.
+
+One process, one seat. Tools run one at a time. Operator detail is
+`docs/grok-bot-native.md`.
+
 ## Dependency exceptions
 
 `requirements-lock.txt` pins `oauthlib==3.3.1` because `tweepy==4.17.0`

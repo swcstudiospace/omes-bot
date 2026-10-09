@@ -1,0 +1,488 @@
+# Grok Bot native host
+
+Run the Omega Prime tool host on a machine you control and point a Grok Bot
+at it. The same process serves legacy MCP SSE and Streamable HTTP, with one
+roster, one seat policy, and one approval log.
+
+The ten-minute path is section 3 of
+`omega_prime/grokbot/SETUP.md`. This page is the operator reference for the
+running host. Container, compose, systemd, and Kubernetes installs are
+[Deploying the tool host](deploy.md). What each Prime family does behind a
+bot is [Driving the bot](driving-the-bot.md). Sandbox notes stay on
+[Tool host](tool-host.md).
+
+The default roster serves 108 tools. `delegate_task` is not one of them: it
+needs a live parent agent. Prime families stay off until
+`omega-prime.json` turns them on.
+
+## One-command start
+
+`./scripts/grokbot-1click.sh` finds the repo and runs
+`python -m omega_prime.grokbot.oneclick` with the same arguments.
+
+```bash
+# local process (IDE or sandbox); no HTTP listener
+./scripts/grokbot-1click.sh --transport stdio
+
+# remote host: doctor, bind check, optional manifest, then serve
+./scripts/grokbot-1click.sh --transport sse --host 0.0.0.0 --port 8000 \
+  --public-url https://bot.example.com \
+  --generate-token --token-file ~/.config/omega-prime/token \
+  --token-store ~/.config/omega-prime/tokens.json \
+  --log-format json \
+  --export-manifest grokbot-manifest.json
+```
+
+`--transport` is `stdio` (the default) or `sse`. On SSE the launcher, in
+order:
+
+1. Resolves a bearer token: `--token-file` if that file exists, else
+   `--token`, else the environment variable named by `--token-env` (default
+   `MCP_AUTH_TOKEN`). A missing `--token-file` is allowed only with
+   `--generate-token`.
+2. Refuses a non-loopback bind with no token and no `--token-store` (exit 2).
+   `--allow-insecure-no-auth` is the explicit opt-out and prints a warning.
+3. Runs the preflight doctor unless `--skip-doctor`. A failed check aborts
+   with exit 3 when strict (the default for `sse`; stdio defaults to
+   non-strict). Warnings do not abort. `--no-strict` continues anyway.
+4. With `--export-manifest`, or on `--dry-run`, writes the manifest. The
+   file never contains a token.
+5. Serves, unless `--dry-run`, which stops after the checks and the export.
+
+`--generate-token` is SSE-only. It mints a token when none is configured,
+prints it once on stderr, and with `--token-file` saves it mode 0600. If a
+token is already configured the flag is ignored. The token is never written
+to stdout, to `--json` output, or to the manifest. `--token` on the command
+line still works and warns: other users can read argv.
+
+`--public-url` must be an `http` or `https` URL with a host. The manifest
+records `<url>/sse`. `--log-format` is `text` (default) or `json` and is
+forwarded to the server. `--token-store PATH` is a hashed multi-token file;
+giving one counts as authentication for the bind check.
+
+Other launcher flags: `--root`, `--host` (default `127.0.0.1`), `--port`
+(default 8000), `--allow-origin` and `--allow-host` (repeatable),
+`--audit-log`, `--json` (one JSON object on stdout; text on stderr).
+
+Exit codes: 0 success, 2 configuration (bad token, unsafe bind, bad public
+URL, `--generate-token` without SSE), 3 a failed doctor check while strict.
+
+Rate limits, the circuit breaker, session caps, and metrics stay at the
+server defaults under the launcher. Set them on
+`python -m omega_prime.mcp_server` (below).
+
+## The server command
+
+```bash
+python -m omega_prime.mcp_server --transport sse --host 0.0.0.0 --port 8000 \
+  --token-file ~/.config/omega-prime/token \
+  --token-store ~/.config/omega-prime/tokens.json \
+  --public-url https://bot.example.com \
+  --audit-log /var/lib/omega-prime/audit.jsonl \
+  --log-format json
+```
+
+`--transport sse` is the remote host. `--transport stdio` (the default)
+speaks MCP on stdin/stdout and does not listen. Token order on the server
+is `--token-file`, then `--token`, then `--token-env`. A token file must be
+a regular file and must not be group- or world-accessible (`chmod 600`).
+The minimum token length is 16 characters.
+
+Useful server flags (each maps to the running host; `0` disables a limit
+where the help text says so):
+
+| Flag | Default | Effect |
+| --- | --- | --- |
+| `--rate-limit N` | 600 | HTTP requests per minute per principal |
+| `--global-rate-limit N` | 0 | HTTP requests per minute for every principal together |
+| `--tool-rate-limit N` | 300 | Tool calls per minute per principal |
+| `--auth-failure-limit N` | 10 | Auth failures per 60 seconds per client |
+| `--breaker-threshold N` | 5 | Infrastructure failures before a tool's circuit opens |
+| `--breaker-cooldown SECONDS` | 30 | How long that circuit stays open |
+| `--no-metrics` | metrics on | Do not mount `/metrics` |
+| `--metrics-scope {read,call,admin}` | `read` | Scope required to read `/metrics` |
+| `--log-format {text,json}` | `text` | Process log format |
+| `--session-idle-timeout SECONDS` | 1800 | Drop an idle Streamable HTTP session |
+| `--max-sessions N` | 64 | Concurrent Streamable HTTP sessions |
+| `--approval-max-ttl SECONDS` | 86400 | Longest TTL `POST /admin/approvals` accepts |
+| `--max-body-bytes N` | 1048576 | Largest accepted request body |
+| `--shutdown-grace SECONDS` | 20 | Drain window after the first SIGTERM or SIGINT |
+| `--approve TOOL:APPROVER` | none | Pre-approve one gated tool at startup (repeatable) |
+| `--allow-host`, `--allow-origin` | loopback only | Extra Host and Origin values (repeatable) |
+| `--allow-insecure-no-auth` | off | Listen on a non-loopback address with no credential |
+| `--no-roster` | roster on | Serve every registered tool, not the roster |
+
+A negative limit, or a non-positive `--session-idle-timeout`,
+`--max-sessions`, or `--approval-max-ttl`, is a usage error (exit 2) before
+either transport starts. Configuration the host refuses — a short token, an
+unauthenticated non-loopback bind, a bad public URL, an invalid roster or
+seat policy — also exits 2, with `omega-prime-mcp-server:` and the reason
+on stderr.
+
+## Endpoints
+
+Public probes (no token):
+
+| Method | Path | Response |
+| --- | --- | --- |
+| GET | `/healthz` | `{"status":"healthy","service":"omega-prime-mcp-server","version","package_version","rostered_tools","auth"}`. `auth` is `required` or `disabled`. |
+| GET | `/readyz` | 200 `{"ready":true,"checks":...}` or 503. Checks: `registry`, `roster`, `policy`, `audit`, `shutdown`, `token_store`, `streamable_http`. 503 while draining, when the audit log is not writable, when a token-store file is unreadable or corrupt (`token_store: degraded`), or when the Streamable HTTP lifespan is down. |
+
+Authenticated when a token or token store is configured (bearer; see below).
+With authentication disabled, `/admin/*` is not mounted (404) and
+`/manifest.json` is public. `/metrics` is still mounted unless
+`--no-metrics`, but it requires a principal, so with authentication off it
+answers 401.
+
+| Method | Path | Who |
+| --- | --- | --- |
+| GET | `/sse` | Legacy SSE stream. |
+| POST | `/messages/` | Legacy SSE inbound channel. |
+| GET, POST, DELETE | `/mcp` | Streamable HTTP. A body over `--max-body-bytes` is 413. Session number `--max-sessions` + 1 is 503. A session idle for `--session-idle-timeout` seconds is dropped and its id then 404s. |
+| GET | `/manifest.json` | Scope `read` when authentication is on; public when it is off. The manifest of the settings this process is actually using, built once and cached. Tool count matches `/healthz` `rostered_tools`. Includes `approval_required` and a `digest`. `auth.type` is `bearer` when authentication is on. The token value is never in the document. The recorded URL is the SSE URL; Streamable HTTP is the `/mcp` route on the same origin. |
+| GET | `/metrics` | Scope from `--metrics-scope` (default `read`). Prometheus text, `text/plain; version=0.0.4; charset=utf-8`. Absent with `--no-metrics`. With authentication off there is no principal, so the route answers 401. |
+| GET | `/admin/approvals` | Scope `admin`. Live approvals and gated tool names. |
+| POST | `/admin/approvals` | Scope `admin`. Approve one gated tool. |
+| DELETE | `/admin/approvals/{tool}` | Scope `admin`. Revoke one approval. |
+
+Every response carries `X-Request-Id` and a W3C `traceparent`.
+
+A client sends `Authorization: Bearer <token>`. Grok Bot cloud instances use
+the SSE URL (`<public-url>/sse` or `http://<host>:<port>/sse`). Current MCP
+clients use `<origin>/mcp`. A session on `/mcp` belongs to the principal
+that opened it: someone else's `Mcp-Session-Id` is 404, the same answer as
+an unknown session.
+
+## Security model
+
+Authentication reads the `Authorization` header only. A token in the query
+string, including `?token=`, is ignored and the request is 401 with
+`WWW-Authenticate: Bearer realm="omega-prime"`. Comparison is constant time
+over SHA-256 digests. Failure records carry a reason (`missing`,
+`malformed`, `invalid`), never the credential.
+
+### Scopes
+
+Three scopes, each covering the ones below it: `admin` includes `call` and
+`read`; `call` includes `read`.
+
+| Scope | Allows |
+| --- | --- |
+| `read` | `GET /manifest.json` and, by default, `GET /metrics` |
+| `call` | Those, plus tool calls |
+| `admin` | Those, plus `/admin/approvals` |
+
+The single token from `--token-file`, `--token`, or `MCP_AUTH_TOKEN` is one
+principal, id `env-token`, with scopes `read` and `call`. It can list and
+call tools. It receives 403 on `/admin/approvals`. A read-only store token
+that calls a tool gets an MCP error result
+`forbidden: principal <id> lacks the call scope`. That denial is written to
+the audit log and counted in `omega_tool_denials_total`.
+
+There is no OAuth, no refresh, and no per-tenant seat. Principals are
+credentials on this one process.
+
+### Token file and the token store
+
+`--token-file` is one plaintext line, mode 0600. The hashed store is a
+different file, `--token-store`, managed by:
+
+```bash
+python -m omega_prime.grokbot.tokens new --file ~/.config/omega-prime/tokens.json \
+  --label bot
+python -m omega_prime.grokbot.tokens new --file ~/.config/omega-prime/tokens.json \
+  --scope admin --label approver
+python -m omega_prime.grokbot.tokens list --file ~/.config/omega-prime/tokens.json
+python -m omega_prime.grokbot.tokens list --file ~/.config/omega-prime/tokens.json --json
+python -m omega_prime.grokbot.tokens revoke --file ~/.config/omega-prime/tokens.json tok_1a2b3c4d
+```
+
+`new` prints the plaintext token once on stdout and the id on stderr. The
+file stores SHA-256 only, mode 0600, shape
+`{"version":1,"tokens":[{"id","sha256","scopes","label","created_at","expires_at","revoked_at"}]}`.
+Ids are `tok_` plus 8 hex digits. `--scope` is repeatable (`read`, `call`,
+`admin`); omitted, the token gets `read` and `call`. `--label` is free
+text. `--ttl-days` must be positive. `list` never prints digests. `revoke`
+marks the id; an unknown id exits 1.
+
+The host re-reads the file when its size or mtime changes, at most once a
+second. A revoked or expired token fails the next check with 401 and the
+process does not restart. An unreadable or corrupt store denies every token
+in that store and `/readyz` reports `token_store: degraded` (503). If a
+single bearer token is also configured, that token still verifies; the file
+store is consulted first. Readiness stays 503 until the file can be parsed.
+
+Give the bot a `read`+`call` token. Keep `admin` on a separate token. The
+approver recorded for a grant is that token's label, or its id when the
+label is empty — never the bot.
+
+### Host and Origin
+
+Host validation is on when the bind is loopback, or you set `--public-url`,
+or you pass `--allow-host`. Allowed Host values then include loopback
+(`127.0.0.1`, `localhost`, `::1`), the bind address, and the public URL's
+host. `--allow-origin` adds browser origins; `--public-url` adds its origin.
+CORS answers only origins you named, never `*`.
+
+On a non-loopback bind with a credential but no public URL and no
+`--allow-host`, Host validation stays off. A request that sends an `Origin`
+not on the allow list to `/sse`, `/messages`, or `/mcp` is still 403
+(`Invalid Origin header`). A client that sends no `Origin` passes that check.
+
+### Audit log
+
+Every tool call and every authentication failure is one JSON line in a
+hash-chained log. The default path is `$OMEGA_PRIME_AUDIT_LOG` or
+`./.planning/grokbot_audit.jsonl`. The server's `--audit-log` overrides it.
+New files are mode 0600.
+
+Argument values are not stored. A tool-call record keeps the argument key
+names (`arg_keys`) and a SHA-256 of the canonical arguments (`args_sha256`).
+`details` is redacted before it is hashed (bearer tokens, `omk_` tokens,
+API-key assignments, `Authorization` and `Cookie` values).
+
+```bash
+python -m omega_prime.grokbot.audit verify
+python -m omega_prime.grokbot.audit verify --path /var/lib/omega-prime/audit.jsonl --all
+python -m omega_prime.grokbot.audit tail -n 20
+```
+
+`verify` exits 0 when the chain is intact and 1 when a record was edited,
+removed, or reordered (it names the first bad line). `--all` includes
+rotated backups (`.1`, `.2`, …). `tail` prints the newest records as JSON
+lines; `-n` defaults to 20.
+
+## Approval gateway
+
+Approval-gated tools (deploys, publishes, merges, tracker writes) stay
+gated. `--approve TOOL:APPROVER` grants one at startup. Otherwise an admin
+principal grants a TTL at runtime. The bot's own token cannot: a `call`
+token receives 403 `{"error":"admin scope required"}`, and the approval log
+refuses an approver equal to the seat id `bot-00-omega-prime`.
+
+The routes exist only when authentication is enabled. Bodies larger than
+4096 bytes are 413. The JSON object may contain only `tool` and
+`ttl_seconds`. Omit `ttl_seconds` and the grant lasts
+`min(3600, --approval-max-ttl)` seconds. A non-positive TTL, or one above
+`--approval-max-ttl`, is 422 (it is not clamped). A name that is not in the
+gated set is 404. Revoking a missing or already expired approval is 404.
+
+```bash
+# gated names, and approvals that are still live
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://127.0.0.1:8000/admin/approvals
+
+# 201: approved, tool, approved_by, expires_at
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"tool":"TOOL","ttl_seconds":600}' \
+  http://127.0.0.1:8000/admin/approvals
+
+# {"revoked":true}
+curl -sS -X DELETE -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://127.0.0.1:8000/admin/approvals/TOOL
+```
+
+Replace `TOOL` with a name from `gated_tools` in the list response. Grants
+are audited as `approval_granted` and revokes as `approval_revoked`, with
+the tool, the TTL, and the approver. The approval log is in memory: a
+restart drops it. Startup `--approve` flags are applied again on the next
+start.
+
+## Traffic protection
+
+These knobs are on `python -m omega_prime.mcp_server`. `/healthz` and
+`/readyz` are never limited and never count as auth failures. `0` disables
+the HTTP limit, the global HTTP limit, the tool-call limit, the auth-failure
+throttle, and the breaker (`--breaker-threshold 0`). `--breaker-cooldown 0`
+does not disable the breaker; it only shortens the open period.
+
+- **HTTP rate limit.** `--rate-limit` (default 600 requests/min per
+  principal; the bucket holds that many, then refills). The key is the
+  principal id, or the client address when there is no principal.
+  `--global-rate-limit` (default 0, off) caps every principal together. A
+  denial is 429 `{"error":"rate_limited","retry_after":n}` plus a
+  `Retry-After` header, `n` in whole seconds.
+- **Tool-call rate limit.** `--tool-rate-limit` (default 300/min per
+  principal, or `local` when the caller has no principal). The denial is an
+  MCP error, code `rate_limited`, and it is audited.
+- **Auth-failure throttle.** `--auth-failure-limit` (default 10 failures in
+  60 seconds per client address). Further requests from that client are 429
+  `{"error":"too_many_auth_failures","retry_after":n}` and do not reach
+  authentication, so they do not extend the window.
+- **Circuit breaker.** `--breaker-threshold` (default 5) consecutive
+  infrastructure failures on one tool open its circuit for
+  `--breaker-cooldown` seconds (default 30), jittered by 20 percent. While
+  open, calls are denied with code `circuit_open` and the tool does not
+  run. After the cooldown one probe is allowed. Infrastructure means an
+  `upstream_error`, a handler exception, a timeout, or a connection
+  failure. Policy, approval, validation, `not_configured`, `forbidden`,
+  `rate_limited`, and `circuit_open` do not open the breaker.
+
+Both transports share one gate, so a limit or an open circuit applies
+whether the client used `/sse` or `/mcp`.
+
+## Observability
+
+`GET /metrics` (scope `read` unless `--metrics-scope` says otherwise)
+exposes:
+
+| Series | Labels |
+| --- | --- |
+| `omega_http_requests_total` | `method`, `path` (a fixed group: `/sse`, `/messages`, `/mcp`, `/healthz`, `/readyz`, `/metrics`, `/manifest.json`, `/admin`, or `other`), `status` class |
+| `omega_http_request_duration_seconds` | `method`, `path` |
+| `omega_http_in_flight` | — |
+| `omega_tool_calls_total` | `tool` (or `unknown` if the name is not served), `status` (`ok`, `error`, `denied`) |
+| `omega_tool_call_duration_seconds` | `tool` |
+| `omega_tool_calls_in_flight` | — |
+| `omega_tool_denials_total` | `code` |
+| `omega_auth_failures_total` | `reason` (`missing`, `malformed`, `invalid`, `other`) |
+| `omega_build_info` | `version`, `package_version` (value 1) |
+
+The host mints `X-Request-Id` (the first 16 hex characters of the trace id)
+and ignores a client-supplied one. A well-formed inbound `traceparent` is
+continued with a new span; a malformed one is replaced and not echoed. The
+same request id is stored on the audit record for that call.
+
+`--log-format json` writes one JSON object per line on the `omega_prime`
+logger: `ts` (UTC), `level`, `logger`, `msg`, `request_id`, and any
+JSON-safe extra fields. `text` is the plain format. Both redact credentials
+before the line is emitted. The access log (`omega_prime.access`) records
+method, path with the query string removed, status, duration, principal id,
+and request id. It does not record headers or bodies. The server's own
+uvicorn access log is off, so a token a client puts in a URL is not written
+there either.
+
+## Operations
+
+**Doctor** — preflight, no server required:
+
+```bash
+python -m omega_prime.grokbot.doctor --host 0.0.0.0 --auth --strict
+```
+
+Checks Python and the venv, the `prime-agent` checkout, the assembled
+prompt, MCP dependencies, manifest generation, seat policy, the roster,
+template integrity, the audit chain, bind exposure, token strength,
+connector secret names (not values), and whether `--port` (default 8000)
+is free. `--json` prints a machine-readable summary. Exit 1 on any failure;
+with `--strict`, on any warning too.
+
+**Supervisor** — restarts a crashed or unhealthy child, capped exponential
+backoff, budget resets after `--stable-after` seconds (default 60). Exit 1
+when `--max-restarts` (default 5) is exhausted. The default child is
+`python -m omega_prime.mcp_server --transport sse`.
+
+```bash
+python -m omega_prime.grokbot.supervisor \
+  --state-file .planning/grokbot_supervisor.json \
+  --health-url http://127.0.0.1:8000/healthz -- \
+  python -m omega_prime.mcp_server --transport sse \
+  --token-file ~/.config/omega-prime/token
+python -m omega_prime.grokbot.supervisor --status \
+  --state-file .planning/grokbot_supervisor.json
+python -m omega_prime.grokbot.supervisor --stop \
+  --state-file .planning/grokbot_supervisor.json
+```
+
+`--stop` signals the supervisor, which then stops the child (SIGTERM, then
+SIGKILL after `--stop-grace`, default 10 seconds).
+
+**Emulator** — the same runtime the server uses (roster, seat policy,
+approvals, audit), in-process:
+
+```bash
+python -m omega_prime.grokbot.emulator --smoke
+python -m omega_prime.grokbot.emulator --tool todo_read --args '{}' --json
+```
+
+`--approve TOOL:APPROVER` pre-approves for that run. A failed smoke exits 1;
+bad configuration exits 2.
+
+**Sync** — drift against a saved manifest, only in content the bot would
+see (instructions, skills, routines, tools, approval-gated tools,
+capabilities). A manifest exported for another transport or URL is not
+drift. Exit 1 on drift, 2 on a bad file.
+
+```bash
+python -m omega_prime.grokbot.sync --check grokbot-manifest.json
+python -m omega_prime.grokbot.sync --export-prompt prompt.xml --json
+```
+
+On SIGTERM or SIGINT the host sets `/readyz` to 503 and waits for in-flight
+tool calls, up to `--shutdown-grace` seconds (default 20), then exits 0.
+With nothing in flight that is about a second. A second signal forces exit.
+
+## Live verifier
+
+`python -m omega_prime.grokbot.verify` checks a host that is already
+running (this machine or a deployed container). It does not print the
+token.
+
+```bash
+python -m omega_prime.grokbot.verify \
+  --url http://127.0.0.1:8000 \
+  --token-file ~/.config/omega-prime/token \
+  --admin-token-env OMEGA_PRIME_ADMIN_TOKEN \
+  --transport both \
+  --json
+```
+
+Flags: `--url` (required), `--token-env NAME` or `--token-file PATH`,
+`--admin-token-env NAME`, `--transport sse|http|both`, `--gated-tool NAME`,
+`--require-auth`, `--timeout S` (default 10), `--json`. The human table
+goes to stderr. `--json` writes the report to stdout. Exit 0 when every
+check passed or was skipped, 1 when any failed, 2 on bad usage or an
+unreachable URL.
+
+The checks cover `/healthz` and `/readyz`, missing and invalid bearer
+tokens, a token in `?token=` still 401, a foreign `Origin` rejected,
+`X-Request-Id` and `traceparent`, `/manifest.json` (tool count matches
+`rostered_tools`, a digest is present, the token string is absent), and
+`/metrics` (`omega_http_requests_total`, auth required). For each requested
+transport it initializes, lists tools, calls one read-only tool (preferring
+`todo_read`), calls an unknown name, and calls an approval-gated tool
+expecting a refusal. With `--admin-token-env` it also checks that the call
+token is forbidden on `/admin/approvals` and that approve, then revoke,
+opens and closes the gate. The gated tool is not run for its side effects.
+
+```bash
+python -m omega_prime.grokbot.oneclick --self-test
+```
+
+`--self-test` picks a free loopback port, mints a token into a mode-0600
+temp file, starts
+`python -m omega_prime.mcp_server --transport sse` on that port, waits for
+`/readyz`, runs the verifier on both transports with auth required, sends
+SIGTERM, and requires exit 0 within the drain grace plus five seconds. It
+conflicts with `--dry-run` (usage error), never prints the token, removes
+its temp files, and exits 0 only when every check passed.
+
+## Deployment
+
+Images, compose, systemd, and Kubernetes are rendered and checked with
+`python -m omega_prime.grokbot.deploy`. The hardening, the token mount, the
+state volume, and the probe paths are [Deploying the tool host](deploy.md).
+Do not copy those manifests from this page.
+
+The image is about 2 GB because the dependency tree includes PyRIT and
+transformers. Every target runs non-root on a read-only root filesystem
+with one writable state volume.
+
+## Limits
+
+- Credentials are static scoped bearer tokens. This host does not speak
+  OAuth.
+- One seat. One process, one roster, one seat policy. Scopes separate
+  callers; they do not create tenants.
+- Tools run one at a time, in a worker thread, on one shared gate for both
+  transports. They share files without locks. A slow tool does not freeze
+  `/healthz` or shutdown.
+- State needs a writable volume. Memory, the session database, and the
+  audit log are files. On the read-only image that volume is
+  `/var/lib/omega-prime` (`OMEGA_PRIME_STATE_DIR`,
+  `OMEGA_PRIME_AUDIT_LOG`); see [Deploying the tool host](deploy.md).
+  Approvals are not on that volume: they live in the process and are gone
+  after a restart unless you pass `--approve` again.
+- Streamable HTTP sessions live in the process (at most `--max-sessions`,
+  default 64). One replica, unless a proxy pins a session to it.

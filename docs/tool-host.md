@@ -1,6 +1,10 @@
 # Tool host
 
-Run the real Omega Prime tools behind your bot over MCP.
+Run the real Omega Prime tools behind your bot over MCP. Stdio is a local
+process. The remote listener (`--transport sse`) serves legacy SSE and
+Streamable HTTP on one port, with bearer auth, an approval API, and
+`/metrics`. Operators: [Grok Bot native host](grok-bot-native.md). Images
+and units: [Deploying the tool host](deploy.md).
 
 ## The server
 
@@ -15,6 +19,27 @@ agent, so orchestration stays in the bot, not behind MCP. The Prime
 families that need no live parent (harness, goals, heartbeat, autonomous,
 kernel) join when their `omega-prime.json` flags are on; RLM and messaging
 need a live parent or session, so the MCP server never registers them.
+
+Remote endpoints, all on the same process:
+
+| Path | Auth |
+| --- | --- |
+| `GET /healthz`, `GET /readyz` | public; `/readyz` is 503 while draining, when the audit log is not writable, or when a token store is unreadable |
+| `GET /sse`, `POST /messages/` | bearer; legacy SSE |
+| `GET` / `POST` / `DELETE /mcp` | bearer; Streamable HTTP |
+| `GET /manifest.json` | scope `read`; served tools, `approval_required`, `digest` |
+| `GET /metrics` | scope `read` by default |
+| `/admin/approvals` | scope `admin`; not mounted when authentication is off |
+
+The token is the `Authorization: Bearer` header only. `?token=` is 401.
+Scopes are `read`, `call`, and `admin`. A non-loopback bind without a
+credential exits 2. A failed strict preflight from the 1-click launcher
+exits 3. Start with `./scripts/grokbot-1click.sh` or
+`python -m omega_prime.grokbot.oneclick` (`--generate-token`,
+`--token-file`, `--token-store`, `--public-url`, `--log-format`,
+`--dry-run`, `--self-test`). Prove a running host with
+`python -m omega_prime.grokbot.verify`. Details, curl examples, and limits:
+[Grok Bot native host](grok-bot-native.md).
 
 Policy and approval denials come back as MCP error results with
 the registry's own text. Approval-gated tools (deploys,

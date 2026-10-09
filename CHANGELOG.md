@@ -6,6 +6,69 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Remote tool host
+
+#### Added
+
+- Streamable HTTP at `/mcp` beside legacy SSE (`/sse`, `/messages/`), on one
+  process, one roster, and one shared tool gate.
+- Scoped bearer tokens (`read`, `call`, `admin`) in a hashed mode-0600 file,
+  managed by `python -m omega_prime.grokbot.tokens new|list|revoke`, reloaded
+  without a restart. The single `--token-file` / `MCP_AUTH_TOKEN` principal
+  stays `read`+`call`.
+- Admin approval API `GET`/`POST /admin/approvals` and
+  `DELETE /admin/approvals/{tool}` (TTL, revoke, audited). The approver is
+  the admin principal, never the bot. The routes are not mounted when
+  authentication is off.
+- Per-principal HTTP and tool-call rate limits (defaults 600/min and
+  300/min), an auth-failure throttle (10 per 60 s), and a per-tool circuit
+  breaker (5 infrastructure failures, 30 s cooldown). `0` disables each one.
+- Prometheus `GET /metrics`, `X-Request-Id` and W3C `traceparent` on every
+  response, and `--log-format json` NDJSON logs. Access logs omit the query
+  string and headers.
+- `GET /manifest.json` for the tools this process actually serves, plus
+  `approval_required` and a digest. `GET /readyz` reports the token store
+  and Streamable HTTP.
+- Live checker `python -m omega_prime.grokbot.verify`, and
+  `python -m omega_prime.grokbot.oneclick --self-test` (verifier, then
+  SIGTERM). The 1-click launcher also accepts `--token-store` and
+  `--log-format`.
+- Operator guide `docs/grok-bot-native.md`. Deployment stays in
+  `docs/deploy.md` (the image is about 2 GB because the dependency tree
+  includes PyRIT and transformers).
+
+#### Changed
+
+- `omega_prime/grokbot/SETUP.md` section 3, `docs/tool-host.md`, the README
+  Grok Bot pointers, and `SECURITY.md` describe the remote host that ships:
+  header-only bearer auth, both transports, and the admin approval API.
+
+#### Fixed
+
+- `requirements-lock.txt` installs again. Merged Dependabot majors had made
+  it uninstallable (`oauthlib` 4 against tweepy's `<4` pin, and
+  `huggingface-hub` 2 against tokenizers' `<2` pin). Dependabot now ignores
+  those two major bumps.
+- `JobStore._save` replaces the cron job file by temp file, fsync, and
+  rename. A crash mid-write no longer truncates the schedule.
+- Access logs no longer include the query string. The integrated host turns
+  uvicorn's access log off; a token in `?token=` is not a credential and is
+  not written there.
+- Scope denials are in the audit log and in `omega_tool_denials_total`.
+  Audit and metrics run before the interceptors that deny, so a `read`
+  token's `forbidden` result is recorded.
+- Tool calls run in a worker thread behind one gate, one at a time. A slow
+  tool no longer blocks the event loop (health checks, keepalives, shutdown),
+  and a tool that calls `asyncio.run` can run.
+
+#### Security
+
+- Remote authentication is header-only bearer tokens with `read` / `call` /
+  `admin` scopes, constant-time digest compare, and a fail-closed
+  non-loopback bind (exit 2 without a credential; exit 3 on a strict
+  preflight failure). `/admin/approvals` requires `admin`. Argument values
+  are not written to the audit log.
+
 ### v10 — Prime merge
 
 #### Added
