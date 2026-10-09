@@ -1,21 +1,21 @@
 ---
 gsd_state_version: "1.0"
-milestone: v11
-milestone_name: Grok Bot native
-current_phase: 63
-current_phase_name: Seven enterprise improvements
-status: complete
-stopped_at: "v11 archived: 62/63 phase dirs in milestones/v11-phases/, requirements + roadmap archived, roadmap collapsed. v12 Programming Desk merge scoping started (SEED-005, SEED-014)."
-last_updated: "2026-10-09T12:45:00.000Z"
+milestone: v12
+milestone_name: Programming Desk merge
+current_phase: 64
+current_phase_name: Desk runtime activation
+status: in_progress
+stopped_at: "v12 scoped (SEED-005 + SEED-014 active; source pinned at programming-desk 9de3aa3); Phase 64 planning."
+last_updated: "2026-10-09T13:05:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: Phase 63 verified on real processes and the real image, pushed to main; v11 milestone audit passed (17/17).
-state_head: d684f5e
+last_activity_desc: v11 archived; v12 scoped from verified SEED-005 evidence (8/8 gaps confirmed); Phase 64 starting.
+state_head: 5934ff9
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_phases: 4
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,19 +24,32 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-10-09)
 
-**Core value:** One Omega Prime agent runs Hermes, Omp, and Prime in one
-Python process, and one command attaches it to Grok Bot as a hardened tool host.
-**Current focus:** None. v11 is complete; no next milestone is scoped.
+**Core value:** One Omega Prime agent runs Hermes, Omp, and Prime in one Python process, and one command attaches it to Grok Bot as a hardened tool host.
+**Current focus:** v12 Programming Desk merge — the seven-seat desk runtime real under one bot (subbots via delegate_task/RLM), receipts machine-checked, gates targeting the work repo, Grok Bot native end to end.
 
 ## Current Position
 
-Phase: 63 (Seven enterprise improvements) - COMPLETE
-Status: v11 audit passed 17/17 (`.planning/v11-MILESTONE-AUDIT.md`)
-Last activity: 2026-10-09 - Phase 63 closed (GRI-01..07 complete)
+Phase: 64 (Desk runtime activation) - IN PROGRESS
+Status: v12 scoped 2026-10-09 (REQUIREMENTS/ROADMAP; SEED-005 evidence 8/8 CONFIRMED-GAP)
+Last activity: 2026-10-09 - v11 archive; v12 scoping
 
-Phase completion: 2 of 2.
+Phase completion: 0 of 4 (64-67).
 
 ## Accumulated Context
+
+### Decisions (v12, 2026-10-09)
+
+- Source: `/root/src/repos/programming-desk` @ `9de3aa3` (seven-seat desk OS). Merge direction
+  (user, 2026-10-09): behavior-port the pattern under Omega Prime — one bot controlling
+  subbots — Grok Bot native; no second gateway deployment, no new third-party dependencies.
+- SEED-005 re-verified on the current tree: 8/8 claims CONFIRMED-GAP (empty desk seams,
+  install-vs-work root, `delegate_task` unserved, lead pass test-only, self-referential gates,
+  self-attested receipts + self-approval deadlock, five missing service clients, no desk
+  config surface). Evidence: `phases/64-desk-runtime-activation/64-CONTEXT.md`.
+- Install root vs work root split is additive; default work root = install root (today's
+  behavior unchanged).
+- Substrate mediation stays; Tailscale forwarders default; no Railway resource changes
+  (user decisions 2026-10-07).
 
 ### Decisions (v11, 2026-10-09)
 
@@ -72,6 +85,7 @@ Phase completion: 2 of 2.
 
 ### Prior milestones
 
+v12 Programming Desk merge scoped 2026-10-09 (4 phases 64-67, 13 requirements; in progress).
 v11 Grok Bot native closed 2026-10-09: 2 phases (62-63), 17/17 requirements, 0 open. v10 Prime merge closed 2026-10-09:
 9 phases (53-61), 32/32 requirements (30 wired, 2 user-approved exceptions).
 
@@ -91,6 +105,6 @@ None.
 
 ## Session
 
-**Last session:** 2026-10-09T12:45:00.000Z
-**Stopped at:** v11 archive complete; v12 "Programming Desk merge" scoping started (SEED-005, SEED-014).
-**Resume file:** .planning/ROADMAP.md
+**Last session:** 2026-10-09T13:05:00.000Z
+**Stopped at:** v12 scoped; Phase 64 planning/execution next.
+**Resume file:** .planning/phases/64-desk-runtime-activation/64-CONTEXT.md

@@ -1,12 +1,33 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v11 - Grok Bot native (complete)",
-  "phases": [],
+  "milestone": "v12 - Programming Desk merge (in progress)",
+  "phases": [
+    {
+      "id": 64,
+      "name": "Desk runtime activation",
+      "status": "in_progress"
+    },
+    {
+      "id": 65,
+      "name": "Receipts, gates and service clients",
+      "status": "pending"
+    },
+    {
+      "id": 66,
+      "name": "Grok Bot clone-and-run proof",
+      "status": "pending"
+    },
+    {
+      "id": 67,
+      "name": "Milestone audit + closeout",
+      "status": "pending"
+    }
+  ],
   "next": {
-    "command": "/gsd:new-milestone",
-    "label": "Scope the next milestone",
-    "reason": "v11 archived (milestones/v11-phases); next milestone scoping: v12 Programming Desk merge (SEED-005, SEED-014)"
+    "command": "/gsd:execute-phase",
+    "label": "Execute Phase 64",
+    "reason": "v12 scoped; Phase 64 desk runtime activation ready"
   },
-  "updated_at": "2026-10-09T12:45:00.000Z"
+  "updated_at": "2026-10-09T13:05:00.000Z"
 }

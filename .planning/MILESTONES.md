@@ -1,5 +1,13 @@
 # Milestones
 
+## v12 — Programming Desk merge (scoped 2026-10-09, in progress)
+
+**Status:** Phases 64-67 scoped from verified SEED-005/SEED-014 evidence; Phase 64 in progress.
+**Core value (planned):** one Omega Prime runs the seven-seat Programming Desk natively — desk
+tools live, subbots via `delegate_task`, machine-checked receipts, gates targeting the work
+repo — Grok Bot native end to end from a fresh clone. Source: `programming-desk` @ `9de3aa3`.
+**Requirements:** DESK-01..11, DONE-01, DONE-02 (see REQUIREMENTS.md).
+
 ## v11 — Grok Bot native (2026-10-09)
 
 **Status:** Complete. 2/2 phases, 14/14 plans, 17/17 requirements Done. Audit passed with no exceptions.

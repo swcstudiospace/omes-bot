@@ -1,119 +1,87 @@
-# Requirements: Omega Prime v11 Grok Bot native
+# Requirements: Omega Prime v12 Programming Desk merge
 
 **Defined:** 2026-10-09
-**Core Value:** One command attaches Omega Prime to Grok Bot as a hardened,
-observable, verifiable tool host - production-grade and enterprise-ready,
-with every claim in its manifest and docs backed by a command and an exit code.
+**Core Value:** One Omega Prime (`bot-00-omega-prime`) runs the seven-seat Programming Desk
+natively — desk tools configured and live, the agent programming a target repo, subbots via
+`delegate_task`, receipts machine-checked, gates targeting the work repo — all served through
+the Grok Bot host, so a fresh clone runs the scripts and the backend through Grok Bot properly.
 
-Source plan: ultrathink graph `ut-mv0nfl17-58362dc4` (Linear SPE-8895..SPE-8900),
-translated from its stack-agnostic wording to this Python MCP host. Evidence for
-Phase 62 is the defect inventory in `.planning/phases/62-grokbot-native-runtime/62-CONTEXT.md`.
-The v10 requirements are archived in `milestones/v10-REQUIREMENTS.md`.
+Source: `/root/src/repos/programming-desk` (seven-seat desk OS: LEAD + five build seats +
+QUALITY off-channel; verification receipts; path ownership; executable quality gates;
+contract-first cross-bot protocol) pinned at `9de3aa3`. Merge direction per user instruction
+(2026-10-09): behavior-port the design pattern **under Omega Prime — a single bot controlling
+subbots** — not a second gateway deployment. The v5 surface port (49/50 desk tools, 24 skills)
+is real but unconfigured: every SEED-005 gap was re-verified on the current tree
+(8/8 CONFIRMED-GAP; scout report archived in this phase's CONTEXT). Dormant seeds activated:
+SEED-005, SEED-014 (real end-to-end verification evidence). The v11 requirements are archived
+in `milestones/v11-REQUIREMENTS.md`.
 
-## v11 Requirements
+## v12 Requirements
 
-### Runtime completion (Phase 62)
+### Desk runtime activation (Phase 64)
 
-- [x] **GRK-01**: Remote auth fails closed. Bearer tokens are verified in constant time from
-  the `Authorization` header only; `?token=` is rejected; a missing or invalid token gets
-  401 with `WWW-Authenticate: Bearer`; the server refuses to start on a non-loopback bind
-  without a token unless `--allow-insecure-no-auth` is given
-- [x] **GRK-02**: Browser-origin safety. Host/Origin validation uses the MCP SDK transport
-  security (loopback names, public URL, explicit allow-lists); CORS is emitted only for
-  explicitly allowed origins (no wildcard, no duplicate stack); request-body and session
-  limits come from configuration
-- [x] **GRK-03**: Startup fails closed. An unreadable or invalid seat policy, roster, token
-  file, or `--approve` entry exits 2 with a one-line reason on both transports;
-  `--approve` is honored on the remote transport
-- [x] **GRK-04**: Health is truthful. `/healthz` reports the version and the number of tools
-  actually served; `/readyz` is 503 until startup checks pass and again once shutdown begins
-- [x] **GRK-05**: Audit is wired and tamper-evident. Every remote `tools/call` and auth
-  failure is appended to a hash-chained, size-rotated, 0600 log with the principal,
-  argument key names and an argument digest (never raw secrets);
-  `python -m omega_prime.grokbot.audit verify` detects edits, deletions and reordering
-- [x] **GRK-06**: The manifest is truthful. `tools` equals what the host serves for the same
-  settings; `approval_required` lists gated tools; capabilities derive from configuration;
-  it carries the public URL (never `0.0.0.0`), the version and a content digest; no token is
-  ever written; every skill and routine the template names exists on disk (lint)
-- [x] **GRK-07**: The 1-click launcher is strict. A failing preflight aborts with exit 3
-  unless `--no-strict`; secrets come from env or a 0600 file (an argv token warns);
-  `--generate-token` mints a token shown once; `--dry-run` runs preflight, manifest and
-  bind-safety and exits 0 without serving
-- [x] **GRK-08**: Lifecycle is graceful. SIGTERM/SIGINT drain in-flight tool calls within a
-  grace period, flush the audit log and exit 0; the supervisor's `--stop` stops the
-  supervisor and its child, probes `/healthz`, resets its restart budget after stable
-  uptime, writes state atomically and exits non-zero when it gives up
-- [x] **GRK-09**: Tooling is correct. `sync --check` reports drift only for content Grok Bot
-  would see; `doctor` adds policy, roster, token, template and audit-chain checks and honors
-  the configured host; the emulator drives the same runtime (policy, approvals,
-  interceptors) the server uses
-- [x] **GRK-10**: Proof over a real transport. At least one test serves the ASGI app on a
-  socket and drives it with the MCP client (initialize, list tools, call a tool, 401 and
-  Origin rejections, audit record written)
+- [ ] **DESK-01**: Desk contexts are configured at host build. `LeadContext` receives a shared
+  `MemoryStore`, live `IntakeStore`/`RosterStore`/`EventStore` under `OMEGA_PRIME_STATE_DIR`,
+  the `SubstrateClient` and the registry; `lead_doctor` reports green on memory, tools and
+  substrate on a real process (no credential required), and `lead_brief`, `lead_intake_next`,
+  `lead_memory_retain/recall`, `lead_event_emit` return real results, not `not_configured`.
+- [ ] **DESK-02**: Install root and work root are separate. A work root (`--work-root` /
+  `OMEGA_PRIME_WORK_ROOT`, default = install root) drives the coding/file/terminal tools, the
+  IDE/LSP/DAP jail and `QualityContext.root`, while roster/policy/contract/prompt/ownership
+  lookups stay at the install root. Proven by a test that edits, searches and lint-checks a
+  file in a foreign repo tree and refuses escapes outside the work root.
+- [ ] **DESK-03**: `delegate_task` is served. The host (MCP stdio session and Grok Bot host)
+  gets a parent/session handle and registers the delegate tool; the served list includes it
+  (manifest, `/healthz` tool count and `catalog --check` agree); a delegated child turn runs
+  in-process and returns a result.
+- [ ] **DESK-04**: The lead pass runs in production. One dispatch closure (ticket →
+  delegate/subagent → receipt dict) is wired to `run_lead_pass` and reachable from a real
+  entry point (cron job or heartbeat tick), sharing the same `IntakeStore` as the lead tools;
+  an end-to-end intake → claim → ticket → dispatch → receipt → ack flow passes on real stores.
+- [ ] **DESK-08**: Desk configuration surface. `OMEGA_PRIME_DESK_*` env (bus URL, notifier,
+  docs index, work root) flows into the desk contexts through the same pattern as the existing
+  provider env wiring; unconfigured optional surfaces degrade loudly, never silently.
 
-### Enterprise improvements (Phase 63)
+### Receipts, gates and service clients (Phase 65)
 
-- [x] **GRI-01**: Streamable HTTP. The same app serves MCP Streamable HTTP at `/mcp`
-  (stateful sessions, SDK security settings) next to legacy SSE; both obey the same auth,
-  origin, limit and audit rules
-- [x] **GRI-02**: Scoped credentials. Tokens live in a hashed, 0600 token file with ids,
-  scopes (`read`, `call`, `admin`) and expiry; `python -m omega_prime.grokbot.tokens
-  new|list|revoke` manages them (plaintext shown once, never stored); the server picks up
-  changes without a restart, a revoked or expired token stops working immediately, and an
-  unreadable token file denies everyone (fail closed)
-- [x] **GRI-03**: Approval gateway. An admin-scoped HTTP API (`GET/POST /admin/approvals`,
-  `DELETE /admin/approvals/{tool}`) approves gated tools at runtime with a TTL, records the
-  approver principal (never the bot) and audits every change; a `call`-scope token cannot
-  reach it
-- [x] **GRI-04**: Traffic protection. Two-tier token-bucket limits (per principal and
-  global) on HTTP requests and on tool calls answer 429 / `rate_limited` with `Retry-After`;
-  repeated failed authentication from one client is throttled; a per-tool circuit breaker
-  fails fast with `circuit_open` after consecutive infrastructure failures, half-opens with
-  jitter and recovers; every limit is configurable and disabled with 0
-- [x] **GRI-05**: Observability. Prometheus text at `/metrics` (read scope or above),
-  W3C `traceparent` propagation with a request id on every response and audit record, and
-  NDJSON structured logs with redaction (`--log-format json`)
-- [x] **GRI-06**: Live verifier. The host serves its own truthful manifest at
-  `GET /manifest.json` (read scope). `python -m omega_prime.grokbot.verify --url URL` drives a
-  real MCP client against a running host over SSE and Streamable HTTP (health and readiness,
-  manifest vs `tools/list`, initialize, scoped call, gated-tool refusal, auth and origin
-  negatives) and returns JSON plus an exit code; `oneclick --self-test` starts a host, runs
-  it, checks the graceful SIGTERM exit and CI runs it
-- [x] **GRI-07**: Deployment kit. `python -m omega_prime.grokbot.deploy render --target
-  {docker,compose,systemd,k8s}` writes hardened artifacts (non-root, read-only root
-  filesystem, healthcheck, SIGTERM grace, resource limits, no inline secrets); a CI workflow
-  builds the image, scans it and emits an SBOM
+- [ ] **DESK-05**: Gates run against the work repo. `qua_gates_run` accepts a target (work
+  root or explicit repo path) and a suite selection seam; hardcoded `omega_prime/*` argv is
+  replaced by per-repo suite discovery/config; running gates on a target repo executes that
+  repo's suites and reports their real exit codes.
+- [ ] **DESK-06**: Receipts are machine-checked and approvable. Command executions are captured
+  into an auditable store; `validate_receipt` verifies cited commands and exit codes against
+  the captured executions (not model-typed text); a second approving identity exists (operator
+  approval path), so a `bot-00-omega-prime` receipt can be approved without self-approval.
+- [ ] **DESK-07**: Real service clients behind credentials. Railway, Greptile, Vercel, a wired
+  browser factory (Playwright via `GuardedBrowserFactory`) and Play Console/App Store Connect
+  clients follow the existing env-token wiring and credential-broker provider shape; each is
+  exercised live only when credentials exist, and otherwise reports honest `not_configured`.
+  Per recorded decisions (2026-10-07): substrate mediation stays; Tailscale forwarders are the
+  default network path; no Railway resource changes.
 
-## Out of Scope
+### Grok Bot clone-and-run proof (Phase 66)
 
-| Feature | Reason |
-|---------|--------|
-| OAuth authorization server for MCP | Static scoped bearer tokens are the supported contract; an AS is a separate product |
-| Multi-tenant sandbox / per-tenant stores | Omega Prime is single-seat; each Add-Bot install is its own copy. Per-principal scopes are the isolation unit |
-| WebSocket transport | MCP defines stdio and Streamable HTTP; legacy SSE is kept for existing clients |
-| Live Grok Bot cloud / xAI account verification | No credentials in the hermetic environment; the verifier proves the wire contract against our own host |
-| Merging the open Dependabot major bumps (oauthlib 4, huggingface-hub 2) | Not requested; oauthlib 4 conflicts with the tweepy pin recorded in SECURITY.md |
+- [ ] **DESK-09**: The host reports the desk truthfully. Manifest capabilities, `/healthz`
+  tool count, `verify` and the served roster reflect the desk-activated tool set;
+  `absorbed_seats` metadata is consumed by code or removed; the Grok Bot template's
+  "paused until lead_doctor is green" gate now passes on a launched host.
+- [ ] **DESK-10**: A fresh clone runs the backend through Grok Bot. The documented
+  clone → install → self-checks (`setup_check`, `catalog --check`, `assemble --check`) →
+  attach sequence is executed for real in this milestone's verification, over a real
+  transport, including a desk tool call; README/docs carry the verified checklist.
+- [ ] **DESK-11**: Three-source port evidence is current. A verification pass cites where
+  Hermes, Omp and Prime logic live and re-runs their proof points (loop probe, roster/policy
+  parity, Prime family flags) on the final tree, with the prime-agent submodule pin recorded.
 
-## Traceability
+### Milestone audit + closeout (Phase 67)
 
-| Requirement | Phase | Status |
-|-------------|-------|--------|
-| GRK-01 | 62 | Complete |
-| GRK-02 | 62 | Complete |
-| GRK-03 | 62 | Complete |
-| GRK-04 | 62 | Complete |
-| GRK-05 | 62 | Complete |
-| GRK-06 | 62 | Complete |
-| GRK-07 | 62 | Complete |
-| GRK-08 | 62 | Complete |
-| GRK-09 | 62 | Complete |
-| GRK-10 | 62 | Complete |
-| GRI-01 | 63 | Complete |
-| GRI-02 | 63 | Complete |
-| GRI-03 | 63 | Complete |
-| GRI-04 | 63 | Complete |
-| GRI-05 | 63 | Complete |
-| GRI-06 | 63 | Complete |
-| GRI-07 | 63 | Complete |
+- [ ] **DONE-01**: The v12 audit cites a passing command + exit code for every requirement.
+- [ ] **DONE-02**: ROADMAP/MILESTONES/STATE reflect v12 complete; phase dirs archived to
+  `milestones/v12-phases/`; full gate suite green on the final tree.
 
-**Coverage:** 17 requirements, 17 mapped, 0 unmapped.
+## Acceptance gates (every phase)
+
+Full pytest suite, evals runner, `assemble-prompts.sh --check`, `catalog --check`,
+`setup_check`, `ruff check` + `ruff format --check`, `mypy omega_prime/`, and (changed files)
+pyright — before a phase is verified. Real-process evidence over fake-only proofs for every
+DESK requirement (SEED-014).
