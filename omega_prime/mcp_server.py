@@ -18,13 +18,22 @@ import shutil
 import sys
 import threading
 import weakref
+from collections.abc import Callable, Mapping, Sequence
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
+import anyio
+from anyio.to_thread import run_sync as run_in_worker_thread
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from omega_prime.grokbot.interceptors import (
+    ToolCallInterceptor,
+    call_from_context,
+    run_tool_call,
+)
 from omega_prime.policy.policy import SeatPolicy
 from omega_prime.providers.destination import DestinationTransport, SafeFetch
 from omega_prime.substrate.client import DEFAULT_BASE_URL as SUBSTRATE_DEFAULT_URL
@@ -62,6 +71,8 @@ from omega_prime.tools.x import XClient, register_x_tools
 
 SERVER_NAME = "omega-prime"
 SERVER_VERSION = "6.0.0"
+
+_T = TypeVar("_T")
 
 
 def roster_names(text: str) -> list[str]:
@@ -369,28 +380,68 @@ def list_tools_handler(registry: ToolRegistry, roster: list[str] | None = None):
     return _list_tools
 
 
-def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
-    """MCP `tools/call` through `registry.dispatch`, roster-enforced."""
+class ToolGate:
+    """Runs blocking tool calls in worker threads, `limit` at a time.
+
+    Tools were written for the serial stdio host and share files and state
+    without locks, so calls are serialized by default (`limit=1`). Running them
+    off the event loop keeps health probes, keepalives and shutdown responsive
+    while a tool works, and lets tools that start their own loop (`asyncio.run`)
+    run. A cancelled caller keeps its slot until the worker thread ends: threads
+    cannot be interrupted, so a disconnect must not start a second call.
+
+    Share one gate between every server built on one registry.
+    """
+
+    def __init__(self, limit: int = 1) -> None:
+        if limit < 1:
+            raise ValueError("limit must be at least 1")
+        self.limit = limit
+        # anyio needs a running loop to build a limiter, so it is made on first use.
+        self._limiter: anyio.CapacityLimiter | None = None
+
+    async def run(self, fn: Callable[..., _T], *args: Any) -> _T:
+        if self._limiter is None:
+            self._limiter = anyio.CapacityLimiter(self.limit)
+        return await run_in_worker_thread(fn, *args, limiter=self._limiter)
+
+
+def call_tool_handler(
+    registry: ToolRegistry,
+    roster: list[str] | None = None,
+    *,
+    interceptors: Sequence[ToolCallInterceptor] = (),
+    transport: str = "stdio",
+    gate: ToolGate | None = None,
+):
+    """MCP `tools/call` through `registry.dispatch`, roster-enforced.
+
+    `interceptors` wrap every call (see `omega_prime.grokbot.interceptors`); a
+    denial is returned as an error result and the tool is not dispatched. The
+    call runs in a worker thread behind `gate` (one at a time by default).
+    """
 
     allowed = set(roster) if roster is not None else None
+    chain = tuple(interceptors)
+    tool_gate = gate if gate is not None else ToolGate()
 
     async def _call_tool(ctx: Any, params: Any) -> Any:
-        del ctx
         from mcp.types import CallToolResult
 
-        if allowed is not None and params.name not in allowed:
-            payload = json.dumps(
-                {"error": f"policy forbids {params.name}", "tool": params.name}
-            )
-        else:
-            payload = registry.dispatch(params.name, params.arguments or {})
-        try:
-            decoded = json.loads(payload)
-        except ValueError:
-            decoded = {"output": payload}
-        # A null ``error`` is a status field, not a failure (``prime_crates``
-        # reports ``"error": null`` once the extension loaded).
-        is_error = isinstance(decoded, dict) and decoded.get("error") is not None
+        name = params.name
+        arguments = params.arguments or {}
+
+        def _dispatch() -> str:
+            if allowed is not None and name not in allowed:
+                return json.dumps({"error": f"policy forbids {name}", "tool": name})
+            return registry.dispatch(name, arguments)
+
+        call = call_from_context(ctx, name, arguments, transport=transport)
+        # ``is_error`` follows the payload: a null ``error`` is a status field,
+        # not a failure (``prime_crates`` reports ``"error": null`` once the
+        # extension loaded).
+        payload, outcome = await tool_gate.run(run_tool_call, chain, call, _dispatch)
+        is_error = outcome.is_error
         return CallToolResult(
             content=[TextContent(type="text", text=payload)], is_error=is_error
         )
@@ -398,13 +449,111 @@ def call_tool_handler(registry: ToolRegistry, roster: list[str] | None = None):
     return _call_tool
 
 
-def build_server(registry: ToolRegistry, roster: list[str] | None = None) -> Server:
+def build_server(
+    registry: ToolRegistry,
+    roster: list[str] | None = None,
+    *,
+    interceptors: Sequence[ToolCallInterceptor] = (),
+    transport: str = "stdio",
+    gate: ToolGate | None = None,
+) -> Server:
     """Serve `registry` over MCP. `roster` limits listing and calling."""
     return Server(
         SERVER_NAME,
         version=SERVER_VERSION,
         on_list_tools=list_tools_handler(registry, roster),
-        on_call_tool=call_tool_handler(registry, roster),
+        on_call_tool=call_tool_handler(
+            registry,
+            roster,
+            interceptors=interceptors,
+            transport=transport,
+            gate=gate,
+        ),
+    )
+
+
+class RuntimeConfigError(ValueError):
+    """A runtime configuration problem. The message is one line, safe to print."""
+
+
+@dataclass(frozen=True)
+class Runtime:
+    """Everything both transports need, built once and failing closed."""
+
+    root: Path
+    home: Path
+    roster: list[str] | None
+    policy: SeatPolicy
+    registry: ToolRegistry
+    approval_log: ApprovalLog
+    tool_names: list[str]
+    gated_tools: list[str]
+
+
+def load_runtime(
+    root: str | Path,
+    home: str | Path | None = None,
+    *,
+    no_roster: bool = False,
+    approvals: Sequence[tuple[str, str]] = (),
+    env: Mapping[str, str] | None = None,
+) -> Runtime:
+    """Load roster, seat policy and approvals, then build the registry.
+
+    A missing or unreadable roster, an invalid seat policy, or a refused approval
+    raises `RuntimeConfigError`; nothing falls back to a more permissive setup.
+    `env=None` reads `os.environ` (never mutated).
+    """
+    root = Path(root)
+    home = Path(home) if home is not None else Path.home()
+    roster: list[str] | None = None
+    if not no_roster:
+        roster_path = (
+            root / "omega_prime" / "contracts" / "tool-rosters" / "omega-prime.yaml"
+        )
+        try:
+            roster = roster_names(roster_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            raise RuntimeConfigError(
+                f"cannot read roster {roster_path}: {exc}"
+            ) from exc
+        if not roster:
+            raise RuntimeConfigError(f"roster {roster_path} lists no tools")
+    try:
+        policy = SeatPolicy.load(
+            root / "omega_prime" / "contracts" / "policies" / "omega-prime.json"
+        )
+    except (OSError, ValueError) as exc:
+        raise RuntimeConfigError(f"cannot load seat policy: {exc}") from exc
+    log = ApprovalLog()
+    for tool, approver in approvals:
+        if not tool or not approver:
+            raise RuntimeConfigError(
+                f"bad approval {(tool, approver)!r}, want TOOL:APPROVER"
+            )
+        outcome = log.approve(tool, approver)
+        if not outcome.get("approved"):
+            raise RuntimeConfigError(
+                f"cannot pre-approve {tool}: {outcome.get('error')}"
+            )
+    registry = default_registry(
+        root,
+        home,
+        policy=policy,
+        approval_log=log,
+        env=dict(os.environ if env is None else env),
+    )
+    tool_names = [tool.name for tool in _mcp_tools(registry, roster)]
+    gated = [name for name in tool_names if registry.approval_required(name)]
+    return Runtime(
+        root=root,
+        home=home,
+        roster=roster,
+        policy=policy,
+        registry=registry,
+        approval_log=log,
+        tool_names=tool_names,
+        gated_tools=gated,
     )
 
 
