@@ -5,10 +5,11 @@
 Orchestrates environment preflight, bind-safety evaluation, manifest export, and
 launches the tool host in stdio or SSE mode.
 
-Exit codes: 0 success, 2 configuration error (bad token, unsafe bind, ...), 3 strict
-preflight failure. Secrets come from a 0600 token file, a hashed token store, the
-environment, or (deprecated) argv; a token is never written to the manifest, printed
-to stdout, or put in JSON output.
+Exit codes: 0 success, 1 self-test failure, 2 configuration error (bad token, unsafe
+bind, ...), 3 strict preflight failure. Secrets come from a 0600 token file, a hashed
+token store, the environment, or (deprecated) argv; a token is never written to the
+manifest, printed to stdout, or put in JSON output. `--self-test` proves a spawned
+host: it mints tokens, verifies both transports, and requires SIGTERM to exit 0.
 """
 
 from __future__ import annotations
@@ -17,8 +18,12 @@ import argparse
 import contextlib
 import json
 import os
+import signal
+import socket
 import subprocess
 import sys
+import tempfile
+import time
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Any, TextIO
@@ -35,8 +40,12 @@ from omega_prime.grokbot.security import (
 )
 
 EXIT_OK = 0
+EXIT_SELF_TEST = 1
 EXIT_CONFIG = 2
 EXIT_PREFLIGHT = 3
+
+_SELF_TEST_GRACE = 5.0
+_SELF_TEST_READY_TIMEOUT = 20.0
 
 DEFAULT_TOKEN_ENV = "MCP_AUTH_TOKEN"
 _WILDCARD_HOSTS = frozenset({"", "0.0.0.0", "::", "[::]"})
@@ -349,6 +358,185 @@ def run_oneclick(
         )
 
 
+def _redact_secrets(text: str, secrets: Sequence[str]) -> str:
+    cleaned = text
+    for secret in secrets:
+        if secret:
+            cleaned = cleaned.replace(secret, "[redacted]")
+    return " ".join(cleaned.split())
+
+
+def _free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
+
+
+def _wait_until_ready(
+    url: str, proc: subprocess.Popen[bytes], timeout: float
+) -> str | None:
+    """Poll `/readyz` until it is ready. None on success, else a one-line reason."""
+    import httpx2
+
+    deadline = time.monotonic() + timeout
+    with httpx2.Client(trust_env=False, timeout=1.0) as http:
+        while time.monotonic() < deadline:
+            if proc.poll() is not None:
+                return f"host exited {proc.returncode} before /readyz"
+            try:
+                response = http.get(url)
+            except httpx2.HTTPError:
+                time.sleep(0.05)
+                continue
+            if response.status_code == 200:
+                try:
+                    body = response.json()
+                except ValueError:
+                    body = None
+                if isinstance(body, dict) and body.get("ready") is True:
+                    return None
+            time.sleep(0.05)
+    if proc.poll() is not None:
+        return f"host exited {proc.returncode} before /readyz"
+    return "timed out waiting for /readyz"
+
+
+def _terminate(proc: subprocess.Popen[bytes], grace: float) -> int | None:
+    """SIGTERM, then wait `grace + 5` seconds. None when it does not exit in time."""
+    if proc.poll() is not None:
+        return proc.returncode
+    proc.send_signal(signal.SIGTERM)
+    try:
+        return proc.wait(timeout=grace + 5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.wait(timeout=5)
+        return None
+
+
+def _log_tail(path: Path, secrets: Sequence[str]) -> str:
+    try:
+        text = path.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    return _redact_secrets(text[-1500:], secrets)[:500]
+
+
+def run_self_test(root: Path) -> int:
+    """Start a loopback host, verify it, and require a clean SIGTERM.
+
+    Mints a call token into a 0600 file and an admin token into a temp store.
+    Neither token is printed. Exit 0 only when verification passes and the host
+    exits 0 after SIGTERM within the grace window.
+    """
+    from omega_prime.grokbot.tokens import create_token
+    from omega_prime.grokbot.verify import format_report, run_verification
+
+    secrets: list[str] = []
+    proc: subprocess.Popen[bytes] | None = None
+    with tempfile.TemporaryDirectory(prefix="omega-self-test-") as tmp_name:
+        tmp = Path(tmp_name)
+        log_path = tmp / "host.log"
+        try:
+            token = generate_token()
+            secrets.append(token)
+            token_file = tmp / "caller.token"
+            atomic_write_text(token_file, token + "\n")
+            store = tmp / "tokens.json"
+            admin_token, _record = create_token(
+                store, scopes=["admin"], label="self-test"
+            )
+            del _record
+            secrets.append(admin_token)
+            home = tmp / "home"
+            home.mkdir()
+            audit_log = tmp / "audit.jsonl"
+            port = _free_port()
+            env = dict(os.environ)
+            previous = env.get("PYTHONPATH")
+            env["PYTHONPATH"] = (
+                str(root) if not previous else str(root) + os.pathsep + previous
+            )
+            cmd = [
+                sys.executable,
+                "-m",
+                "omega_prime.mcp_server",
+                "--transport",
+                "sse",
+                "--host",
+                "127.0.0.1",
+                "--port",
+                str(port),
+                "--root",
+                str(root),
+                "--token-file",
+                str(token_file),
+                "--token-store",
+                str(store),
+                "--audit-log",
+                str(audit_log),
+                "--home",
+                str(home),
+                "--log-format",
+                "json",
+                "--shutdown-grace",
+                str(int(_SELF_TEST_GRACE)),
+            ]
+            with log_path.open("wb") as log_handle:
+                proc = subprocess.Popen(
+                    cmd,
+                    cwd=str(root),
+                    env=env,
+                    stdin=subprocess.DEVNULL,
+                    stdout=log_handle,
+                    stderr=subprocess.STDOUT,
+                    start_new_session=True,
+                )
+            base = f"http://127.0.0.1:{port}"
+            reason = _wait_until_ready(f"{base}/readyz", proc, _SELF_TEST_READY_TIMEOUT)
+            if reason is not None:
+                _terminate(proc, _SELF_TEST_GRACE)
+                if proc.poll() is not None:
+                    proc = None
+                print(
+                    f"{_PREFIX}: self-test: {reason}",
+                    file=sys.stderr,
+                )
+                tail = _log_tail(log_path, secrets)
+                if tail:
+                    print(tail, file=sys.stderr)
+                return EXIT_SELF_TEST
+            try:
+                report = run_verification(
+                    base,
+                    token=token,
+                    admin_token=admin_token,
+                    transports=("sse", "http"),
+                    require_auth=True,
+                )
+            except Exception as exc:
+                print(
+                    f"{_PREFIX}: self-test: {_redact_secrets(str(exc), secrets)}",
+                    file=sys.stderr,
+                )
+                return EXIT_SELF_TEST
+            shutdown = _terminate(proc, _SELF_TEST_GRACE)
+            if proc.poll() is not None:
+                proc = None
+            print(format_report(report), flush=True)
+            shown = "timeout" if shutdown is None else str(shutdown)
+            print(f"shutdown={shown}", flush=True)
+            if shutdown != 0 or not report.ok or not report.reachable:
+                return EXIT_SELF_TEST
+            return EXIT_OK
+        finally:
+            if proc is not None and proc.poll() is None:
+                proc.kill()
+                with contextlib.suppress(subprocess.TimeoutExpired):
+                    proc.wait(timeout=5)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="omega-prime-grokbot-oneclick")
     parser.add_argument("--root", type=Path, default=Path.cwd())
@@ -430,6 +618,11 @@ def main(argv: list[str] | None = None) -> int:
         help="Run preflight, bind safety and manifest export without starting server",
     )
     parser.add_argument(
+        "--self-test",
+        action="store_true",
+        help="Start a loopback host, verify it, and require a clean SIGTERM",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Print one machine-readable JSON object on stdout (text goes to stderr)",
@@ -448,6 +641,11 @@ def main(argv: list[str] | None = None) -> int:
         help="log format forwarded to the SSE host (default: text)",
     )
     args = parser.parse_args(argv)
+
+    if args.self_test:
+        if args.dry_run:
+            return _fail("--self-test conflicts with --dry-run")
+        return run_self_test(args.root.resolve())
 
     if args.token:
         _err(

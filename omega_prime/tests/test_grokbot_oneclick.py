@@ -513,6 +513,13 @@ def test_log_format_is_forwarded(monkeypatch: pytest.MonkeyPatch) -> None:
     assert calls[1]["token_store_path"] is None
 
 
+def test_self_test_conflicts_with_dry_run(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["--self-test", "--dry-run"]) == 2
+    captured = capsys.readouterr()
+    assert "dry-run" in captured.err
+    assert "omk_" not in captured.out + captured.err
+
+
 def test_stdio_does_not_forward_sse_only_launcher_flags(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
