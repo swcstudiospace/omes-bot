@@ -5,8 +5,8 @@
   "phases": [],
   "next": {
     "command": "/gsd:new-milestone",
-    "label": "Start the next milestone",
-    "reason": "v11 complete; audit passed 17/17; archive awaits confirmation"
+    "label": "Scope the next milestone",
+    "reason": "v11 archived (milestones/v11-phases); next milestone scoping: v12 Programming Desk merge (SEED-005, SEED-014)"
   },
-  "updated_at": "2026-10-09T12:30:00.000Z"
+  "updated_at": "2026-10-09T12:45:00.000Z"
 }

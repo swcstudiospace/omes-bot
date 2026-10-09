@@ -5,8 +5,8 @@ milestone_name: Grok Bot native
 current_phase: 63
 current_phase_name: Seven enterprise improvements
 status: complete
-stopped_at: "v11 complete: 2/2 phases, 14/14 plans, 17/17 requirements, audit passed. Pushed to main. Archive of phase directories awaits confirmation."
-last_updated: "2026-10-09T12:30:00.000Z"
+stopped_at: "v11 archived: 62/63 phase dirs in milestones/v11-phases/, requirements + roadmap archived, roadmap collapsed. v12 Programming Desk merge scoping started (SEED-005, SEED-014)."
+last_updated: "2026-10-09T12:45:00.000Z"
 last_activity: 2026-10-09
 last_activity_desc: Phase 63 verified on real processes and the real image, pushed to main; v11 milestone audit passed (17/17).
 state_head: d684f5e
@@ -84,10 +84,13 @@ None.
 - v11 Grok Bot native added 2026-10-09: Phase 62 (runtime completion) and Phase 63 (seven enterprise improvements); both complete.
 - Pre-existing breakage on `main` repaired: merged Dependabot majors had made `requirements-lock.txt` uninstallable;
   `JobStore._save` is now atomic (an intermittent CI failure and a crash-corruption risk).
-- Open: archive `.planning/phases/62-*` and `63-*` into `milestones/v11-phases/` and collapse the roadmap after the user confirms.
+- Archived 2026-10-09 on user confirmation ("Ensure we completely complete our
+  Milestone"): `.planning/phases/62-*` and `63-*` moved to `milestones/v11-phases/`,
+  requirements archived as `milestones/v11-REQUIREMENTS.md`, roadmap collapsed with
+  the v11 section captured in `milestones/v11-ROADMAP.md`.
 
 ## Session
 
-**Last session:** 2026-10-09T12:30:00.000Z
-**Stopped at:** v11 closeout; CI results for the final push recorded in `63-VERIFICATION.md`.
-**Resume file:** .planning/v11-MILESTONE-AUDIT.md
+**Last session:** 2026-10-09T12:45:00.000Z
+**Stopped at:** v11 archive complete; v12 "Programming Desk merge" scoping started (SEED-005, SEED-014).
+**Resume file:** .planning/ROADMAP.md

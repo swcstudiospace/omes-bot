@@ -20,8 +20,7 @@ by the live verifier inside the container, stopped with exit 0 in 1.3 s, and sca
 store had left `main` red; event-loop blocking tool calls, a token leaking into access logs and scope denials missing
 from the audit log were found and fixed.
 
-**Archive:** not moved. `.planning/v11-MILESTONE-AUDIT.md`; phase directories stay under `.planning/phases/` until
-the user confirms moving them (same rule as v10).
+**Archive:** `milestones/v11-phases/` (moved 2026-10-09 on user confirmation). `.planning/v11-MILESTONE-AUDIT.md`; requirements archived as `milestones/v11-REQUIREMENTS.md`; roadmap section archived as `milestones/v11-ROADMAP.md`.
 
 **Decisions:** Python MCP host instead of the graph's TypeScript layout; static scoped bearer tokens instead of HMAC
 webhook ingress; per-principal scopes instead of tenant sandboxes; Dependabot ignores `oauthlib` 4 and
