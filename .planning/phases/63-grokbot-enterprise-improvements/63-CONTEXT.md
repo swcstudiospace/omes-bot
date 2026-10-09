@@ -37,7 +37,10 @@ The right-hand column is the graph's own candidate it comes from.
   auth-failure throttle, auth, request rate limit.
 - Metrics labels are bounded: path groups (`/sse`, `/messages`, `/mcp`, `/healthz`, `/readyz`, `/metrics`,
   `/manifest.json`, `/admin`, `other`) and tool names only when they are in the served list (else `unknown`).
-- Interceptor order for tool calls: `InFlight`, `Scope`, `ToolRateLimit`, `CircuitBreaker`, `Metrics`, `Audit`.
+- Interceptor order for tool calls: `InFlight`, `Audit`, `Metrics`, `Scope`, `ToolRateLimit`, `CircuitBreaker`, then the
+  caller's. Observers (audit, metrics) come BEFORE every denying interceptor: `run_tool_call` stops at the first denial and
+  runs `after` only for interceptors whose `before` ran, so an observer placed after a denier never sees the denial (an
+  earlier order `InFlight, Scope, ..., Audit` silently dropped scope denials from the audit log; verified by experiment).
 - Every limit is configurable and `0` disables it.
 - Tool calls run in a worker thread behind one shared `ToolGate` (Phase 62; serial by default). Interceptors therefore
   run off the event loop: every interceptor and every structure it shares (rate limiter, breaker map, metrics
@@ -63,8 +66,8 @@ def build_streamable_http(server, *, security_settings=None, max_body_bytes=1_04
                           session_idle_timeout=1800.0, json_response=False) -> StreamableHttp
 ```
 A session is bound to the principal that created it: a request carrying an `Mcp-Session-Id` created by a
-different principal id gets 403 (use the SDK's session-owner mechanism if it can be fed from our principal;
-otherwise a thin wrapper recording `session id -> principal id` from the response header).
+different principal id gets 404, exactly as for an unknown session (which also hides that the session exists). Implemented
+by feeding our principal into the SDK's session-owner mechanism (`scope["user"]`).
 
 ### tokens.py (63-02)
 ```python
