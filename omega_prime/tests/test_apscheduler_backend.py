@@ -37,7 +37,11 @@ def test_one_shot_fires_once_and_persists(tmp_path: Path):
     job_id = store.schedule("hello", time.time() + 0.2)
     service = SchedulerService(store, _recorder(seen, "done"))
     try:
-        assert service.start() == []
+        # A busy runner can spend the 0.2s lead before start() reads the
+        # clock. The job is then overdue and start() runs it; otherwise the
+        # date trigger does. Both are one execution of the same one-shot.
+        ran_at_start = service.start()
+        assert [entry["id"] for entry in ran_at_start] in ([], [job_id])
         assert _wait_until(lambda: seen == ["hello"])
         job = next(entry for entry in store.jobs if entry["id"] == job_id)
         # The runner is called before the tick marks the job complete and saves
