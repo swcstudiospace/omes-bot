@@ -31,7 +31,7 @@ jobs:
   parity:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: read pin
         id: pin
@@ -47,7 +47,7 @@ jobs:
           EOF
 
       - name: checkout prime-agent at the pinned commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: PrimeIntellect-ai/prime-agent
           ref: ${{ steps.pin.outputs.commit }}
@@ -100,7 +100,7 @@ jobs:
   native:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: read pin
         id: pin
@@ -113,7 +113,7 @@ jobs:
           EOF
 
       - name: checkout prime-agent at the pinned commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: PrimeIntellect-ai/prime-agent
           ref: ${{ steps.pin.outputs.commit }}
