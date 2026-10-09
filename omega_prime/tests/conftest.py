@@ -8,8 +8,12 @@ before any `pyrit` import, so it lives in conftest and not in a test module.
 
 from __future__ import annotations
 
+import logging
 import os
 import tempfile
+from collections.abc import Iterator
+
+import pytest
 
 
 def _isolate_pyrit() -> None:
@@ -20,3 +24,34 @@ def _isolate_pyrit() -> None:
 
 
 _isolate_pyrit()
+
+# Loggers the host reconfigures for the whole process (`configure_logging`,
+# `install_access_log_filter`). A test that starts a host or calls those helpers
+# must not change what the next test sees: a leaked `propagate=False` makes pytest
+# attach its own capture handlers to the logger and breaks `caplog` assertions.
+_PROCESS_LOGGERS = ("omega_prime", "omega_prime.access", "uvicorn.access")
+
+
+@pytest.fixture(autouse=True)
+def _restore_process_loggers() -> Iterator[None]:
+    saved = []
+    for name in _PROCESS_LOGGERS:
+        logger = logging.getLogger(name)
+        saved.append(
+            (
+                logger,
+                list(logger.handlers),
+                list(logger.filters),
+                logger.level,
+                logger.propagate,
+            )
+        )
+    yield
+    for logger, handlers, filters, level, propagate in saved:
+        for handler in logger.handlers:
+            if handler not in handlers:
+                handler.close()
+        logger.handlers = handlers
+        logger.filters = filters
+        logger.setLevel(level)
+        logger.propagate = propagate
