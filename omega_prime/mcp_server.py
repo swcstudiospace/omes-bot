@@ -38,6 +38,10 @@ from omega_prime.grokbot.interceptors import (
     call_from_context,
     run_tool_call,
 )
+from omega_prime.integrations.desk_clients import (
+    clients_from_env,
+    guarded_browser_factory,
+)
 from omega_prime.memory.store import MemoryStore
 from omega_prime.policy.policy import SeatPolicy
 from omega_prime.providers.anthropic import AnthropicProvider
@@ -481,7 +485,13 @@ def default_registry(
     `DISCORD_BOT_TOKEN`, `ULTRATHINK_ROOT`, `OMEGA_PRIME_PACKS_JSON`,
     `OMEGA_PRIME_PACK_API_BASES_JSON`, `SUBSTRATE_URL`, `SUBSTRATE_TOKEN`,
     `SUBSTRATE_TOKEN_GROK_BOT`); missing values stay unconfigured
-    and fail safe at call time. Desk optionals (`OMEGA_PRIME_DESK_BUS_URL`,
+    and fail safe at call time. Desk service clients are built from
+    `RAILWAY_TOKEN` (optional `OMEGA_PRIME_RAILWAY_PROJECTS`),
+    `GREPTILE_API_KEY` (optional `GREPTILE_GITHUB_TOKEN`), `VERCEL_TOKEN`,
+    `PLAY_CONSOLE_TOKEN`, and `ASC_KEY_ID` + `ASC_ISSUER_ID` +
+    `ASC_PRIVATE_KEY`. A missing token leaves that context field None.
+    `GuardedBrowserFactory` is attached only when it constructs. Desk
+    optionals (`OMEGA_PRIME_DESK_BUS_URL`,
     `OMEGA_PRIME_DESK_DOCS_INDEX`, `OMEGA_PRIME_DESK_NOTIFY_URL`) wire their
     planes only when set and otherwise return explicit `not_configured`
     results (DESK-08). Delegate children need a provider env
@@ -594,16 +604,31 @@ def default_registry(
         ),
     )
     register_systems_tools(registry, SystemsClient(SystemsContext(root=root)))
+    desk = clients_from_env(env)
     transport = DestinationTransport(policy)
     safe_fetch = SafeFetch(transport)
     web_ctx = WebContext(
-        root=root, policy=policy, transport=transport, fetch=safe_fetch
+        root=root,
+        policy=policy,
+        transport=transport,
+        fetch=safe_fetch,
+        vercel=desk["vercel"],
+        browser_factory=guarded_browser_factory(transport),
     )
     register_web_tools(registry, WebClient(web_ctx))
     bind_dispatch_transport(registry, transport)
-    register_mobile_tools(registry, MobileClient(MobileContext(root=root)))
-    register_infra_tools(registry, InfraClient(InfraContext()))
-    register_quality_tools(registry, QualityClient(QualityContext(root=work)))
+    register_mobile_tools(
+        registry,
+        MobileClient(MobileContext(root=root, play=desk["play"], asc=desk["asc"])),
+    )
+    register_infra_tools(
+        registry,
+        InfraClient(InfraContext(railway=desk["railway"], projects=desk["projects"])),
+    )
+    register_quality_tools(
+        registry,
+        QualityClient(QualityContext(root=work, greptile=desk["greptile"])),
+    )
     register_packs_tools(
         registry,
         PacksClient(

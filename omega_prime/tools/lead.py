@@ -28,7 +28,7 @@ from typing import Any
 from omega_prime.credentials.redact import redact_text, redact_value
 from omega_prime.memory.hindsight import Hindsight
 from omega_prime.memory.store import MemoryStore
-from omega_prime.receipts import ReceiptError, validate_receipt
+from omega_prime.receipts import ReceiptError, load_executions, validate_receipt
 from omega_prime.tools.registry import ToolRegistry
 
 LEAD_TOOL_NAMES = (
@@ -471,7 +471,7 @@ class LeadClient:
                 "problems": ["receipt contains a credential shape (PD-4)"],
             }
         try:
-            validate_receipt(receipt)
+            validate_receipt(receipt, executions=load_executions())
         except ReceiptError as exc:
             return {
                 "ok": False,

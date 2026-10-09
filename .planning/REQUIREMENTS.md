@@ -44,15 +44,15 @@ in `milestones/v11-REQUIREMENTS.md`.
 
 ### Receipts, gates and service clients (Phase 65)
 
-- [ ] **DESK-05**: Gates run against the work repo. `qua_gates_run` accepts a target (work
+- [x] **DESK-05**: Gates run against the work repo. `qua_gates_run` accepts a target (work
   root or explicit repo path) and a suite selection seam; hardcoded `omega_prime/*` argv is
   replaced by per-repo suite discovery/config; running gates on a target repo executes that
   repo's suites and reports their real exit codes.
-- [ ] **DESK-06**: Receipts are machine-checked and approvable. Command executions are captured
+- [x] **DESK-06**: Receipts are machine-checked and approvable. Command executions are captured
   into an auditable store; `validate_receipt` verifies cited commands and exit codes against
   the captured executions (not model-typed text); a second approving identity exists (operator
   approval path), so a `bot-00-omega-prime` receipt can be approved without self-approval.
-- [ ] **DESK-07**: Real service clients behind credentials. Railway, Greptile, Vercel, a wired
+- [x] **DESK-07**: Real service clients behind credentials. Railway, Greptile, Vercel, a wired
   browser factory (Playwright via `GuardedBrowserFactory`) and Play Console/App Store Connect
   clients follow the existing env-token wiring and credential-broker provider shape; each is
   exercised live only when credentials exist, and otherwise reports honest `not_configured`.

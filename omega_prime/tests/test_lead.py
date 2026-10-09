@@ -8,6 +8,7 @@ from typing import Any
 
 from omega_prime.credentials.redact import REDACTED
 from omega_prime.memory.store import MemoryStore
+from omega_prime.receipts import append_execution
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.lead import (
     LEAD_TOOL_NAMES,
@@ -291,7 +292,9 @@ def test_memory_retain_and_recall(tmp_path: Path):
     assert "not_configured" in LeadClient(LeadContext()).memory_recall("q")["error"]
 
 
-def test_receipt_check_paths(tmp_path: Path):
+def test_receipt_check_paths(tmp_path: Path, monkeypatch: Any):
+    monkeypatch.setenv("OMEGA_PRIME_COMMAND_LOG", str(tmp_path / "command-log.jsonl"))
+    append_execution("true", 0, "", cwd=str(tmp_path))
     ctx = _ctx(tmp_path)
     client = LeadClient(ctx)
     assert client.receipt_check(_good_receipt()) == {

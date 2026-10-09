@@ -649,7 +649,7 @@ Data-plane health summary. Read-only.
 - Approval: not required
 - Required params: none
 
-Run the Omega Prime gates in the tree. Read-only.
+Run the target repo's gates and report each suite's real exit code. Read-only.
 
 ## qua_greptile_review
 
