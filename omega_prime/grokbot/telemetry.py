@@ -240,6 +240,8 @@ _STANDARD_ATTRS = frozenset(logging.LogRecord("", 0, "", 0, "", (), None).__dict
     "message",
     "asctime",
     "taskName",
+    # uvicorn adds an ANSI-coloured copy of `msg`; it is noise in structured logs.
+    "color_message",
 }
 _RESERVED_KEYS = frozenset({"ts", "level", "logger", "msg", "exc", "stack"})
 _UNSAFE = object()

@@ -781,6 +781,38 @@ def install_access_log_filter() -> StripQueryFromAccessLog:
     return installed
 
 
+def _json_log_config() -> dict[str, Any]:
+    """dictConfig: one stderr handler, JSON, for uvicorn's three loggers.
+
+    `disable_existing_loggers` stays false so the `omega_prime` handler installed
+    by `configure_logging` is left in place. The formatter is a dotted factory
+    path, not an instance, because dictConfig imports it.
+    """
+
+    def logger_cfg() -> dict[str, Any]:
+        return {"handlers": ["stderr"], "level": "INFO", "propagate": False}
+
+    return {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "json": {"()": "omega_prime.grokbot.telemetry.JsonLogFormatter"},
+        },
+        "handlers": {
+            "stderr": {
+                "formatter": "json",
+                "class": "logging.StreamHandler",
+                "stream": "ext://sys.stderr",
+            }
+        },
+        "loggers": {
+            "uvicorn": logger_cfg(),
+            "uvicorn.error": logger_cfg(),
+            "uvicorn.access": logger_cfg(),
+        },
+    }
+
+
 def serve_sse(
     root: Path | str,
     host: str = "127.0.0.1",
@@ -821,6 +853,9 @@ def serve_sse(
     the configuration is refused (see `create_sse_app`). Configures process
     logging (`log_format`) and turns uvicorn's access log off; `AccessLogMiddleware`
     is the access log, and `StripQueryFromAccessLog` stays installed behind it.
+    With `log_format="json"`, uvicorn's own loggers share one stderr
+    `JsonLogFormatter` handler and the launch banner is one log record. Text mode
+    keeps the two stdout prints and uvicorn's default logging configuration.
     """
     try:
         if not 0 <= port <= 65535:
@@ -865,21 +900,38 @@ def serve_sse(
         return 2
     runtime: Runtime = app.state.runtime
     auth = "required" if app.state.token_store.enabled else "off"
-    print(
-        f"Serving {SERVER_NAME} MCP on http://{host}:{port}/sse "
-        f"({len(runtime.tool_names)} tools, authentication {auth})"
-    )
-    print(f"Healthcheck: http://{host}:{port}/healthz")
-    config = uvicorn.Config(
-        app,
-        host=host,
-        port=port,
-        log_level="info",
-        access_log=False,
-        timeout_graceful_shutdown=max(1, int(shutdown_grace)),
-    )
+    config_kwargs: dict[str, Any] = {
+        "host": host,
+        "port": port,
+        "log_level": "info",
+        "access_log": False,
+        "timeout_graceful_shutdown": max(1, int(shutdown_grace)),
+    }
+    if log_format == "json":
+        # Omit the key in text mode. Passing None would skip uvicorn's defaults.
+        config_kwargs["log_config"] = _json_log_config()
+    else:
+        print(
+            f"Serving {SERVER_NAME} MCP on http://{host}:{port}/sse "
+            f"({len(runtime.tool_names)} tools, authentication {auth})"
+        )
+        print(f"Healthcheck: http://{host}:{port}/healthz")
+    config = uvicorn.Config(app, **config_kwargs)
     # After `Config` (which applies uvicorn's logging configuration), before serving.
     install_access_log_filter()
+    if log_format == "json":
+        # Config has installed the JSON handler; logging earlier would miss it.
+        logger.info(
+            "Serving %s MCP on http://%s:%s/sse (%d tools, authentication %s); "
+            "Healthcheck: http://%s:%s/healthz",
+            SERVER_NAME,
+            host,
+            port,
+            len(runtime.tool_names),
+            auth,
+            host,
+            port,
+        )
     server = GracefulServer(config, state=app.state, grace=shutdown_grace)
     try:
         server.run()

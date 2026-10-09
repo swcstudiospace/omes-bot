@@ -287,6 +287,20 @@ def test_explicit_request_id_extra_wins_over_context() -> None:
     assert json.loads(stream.getvalue())["request_id"] == "explicit"
 
 
+def test_json_formatter_drops_uvicorns_ansi_color_message() -> None:
+    logger, stream = _json_logger("test.telemetry.json.color")
+    logger.info(
+        "Finished server process [%d]",
+        1,
+        extra={"color_message": "Finished server process [\x1b[36m%d\x1b[0m]"},
+    )
+    line = stream.getvalue().strip()
+    entry = json.loads(line)
+    assert entry["msg"] == "Finished server process [1]"
+    assert "color_message" not in entry
+    assert "\\u001b" not in line
+
+
 # ---------------------------------------------------------------------- configure_logging
 
 

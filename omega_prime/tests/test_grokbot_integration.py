@@ -11,9 +11,16 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import io
 import json
 import logging
+import logging.config
+import os
 import re
+import signal
+import socket
+import subprocess
+import sys
 import threading
 import time
 from collections.abc import AsyncIterator, Awaitable, Iterator
@@ -27,6 +34,7 @@ from mcp.client import Client
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 from starlette.applications import Starlette
+from uvicorn.config import LOGGING_CONFIG
 
 from omega_prime.grokbot.audit import GrokBotAuditTracer
 from omega_prime.grokbot.manifest import find_repo_root
@@ -630,20 +638,193 @@ def test_serve_sse_configures_json_logs_and_disables_uvicorn_access_log(
 
     monkeypatch.setattr(uvicorn, "Config", capturing)
     monkeypatch.setattr(GracefulServer, "run", lambda self: None)
+    stdout = io.StringIO()
     try:
+        with contextlib.redirect_stdout(stdout):
+            code = serve_sse(
+                ROOT,
+                host="127.0.0.1",
+                port=9,
+                token=TOKEN,
+                home=tmp_path / "home",
+                audit=GrokBotAuditTracer(tmp_path / "audit.jsonl"),
+                env={},
+                log_format="json",
+            )
+        formatter = logging.getLogger("omega_prime").handlers[0].formatter
+        log_config = configs[0].log_config
+        error_logger = logging.getLogger("uvicorn.error")
+        assert code == 0
+        assert configs[0].access_log is False
+        assert isinstance(formatter, JsonLogFormatter)
+        assert stdout.getvalue() == ""
+        assert isinstance(log_config, dict)
+        assert log_config["disable_existing_loggers"] is False
+        assert (
+            log_config["formatters"]["json"]["()"]
+            == "omega_prime.grokbot.telemetry.JsonLogFormatter"
+        )
+        assert set(log_config["handlers"]) == {"stderr"}
+        handler = log_config["handlers"]["stderr"]
+        assert handler["formatter"] == "json"
+        assert handler["class"] == "logging.StreamHandler"
+        assert handler["stream"] == "ext://sys.stderr"
+        for name in ("uvicorn", "uvicorn.error", "uvicorn.access"):
+            assert log_config["loggers"][name]["handlers"] == ["stderr"]
+            assert log_config["loggers"][name]["propagate"] is False
+        assert error_logger.propagate is False
+        assert len(error_logger.handlers) == 1
+        assert isinstance(error_logger.handlers[0].formatter, JsonLogFormatter)
+        assert logging.getLogger("uvicorn").handlers == error_logger.handlers
+    finally:
+        configure_logging("text")
+        logging.config.dictConfig(LOGGING_CONFIG)
+
+
+def test_serve_sse_text_logs_keep_the_banner_and_uvicorn_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    configs: list[uvicorn.Config] = []
+    seen: list[dict[str, Any]] = []
+    real_config = uvicorn.Config
+
+    def capturing(*args: Any, **kwargs: Any) -> uvicorn.Config:
+        seen.append(kwargs)
+        config = real_config(*args, **kwargs)
+        configs.append(config)
+        return config
+
+    monkeypatch.setattr(uvicorn, "Config", capturing)
+    monkeypatch.setattr(GracefulServer, "run", lambda self: None)
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
         code = serve_sse(
             ROOT,
             host="127.0.0.1",
             port=9,
-            token=TOKEN,
             home=tmp_path / "home",
             audit=GrokBotAuditTracer(tmp_path / "audit.jsonl"),
             env={},
-            log_format="json",
+            log_format="text",
         )
-        formatter = logging.getLogger("omega_prime").handlers[0].formatter
-        assert code == 0
-        assert configs[0].access_log is False
-        assert isinstance(formatter, JsonLogFormatter)
+
+    assert code == 0
+    assert "log_config" not in seen[0]
+    assert configs[0].log_config is LOGGING_CONFIG
+    assert configs[0].access_log is False
+    assert re.fullmatch(
+        r"Serving omega-prime MCP on http://127\.0\.0\.1:9/sse "
+        r"\(\d+ tools, authentication off\)\n"
+        r"Healthcheck: http://127\.0\.0\.1:9/healthz\n",
+        stdout.getvalue(),
+    )
+
+
+def test_json_log_subprocess_emits_only_ndjson(tmp_path: Path) -> None:
+    """A real SSE process with --log-format json writes only NDJSON to stderr."""
+    token = "integration-json-log-token-0123456789"
+    token_file = tmp_path / "token"
+    fd = os.open(token_file, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        os.write(fd, f"{token}\n".encode())
     finally:
-        configure_logging("text")
+        os.close(fd)
+    home = tmp_path / "home"
+    home.mkdir()
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = int(sock.getsockname()[1])
+
+    env = os.environ.copy()
+    env.pop("MCP_AUTH_TOKEN", None)
+    env.pop("PYTHONWARNINGS", None)
+    proc = subprocess.Popen(
+        [
+            sys.executable,
+            "-m",
+            "omega_prime.mcp_server",
+            "--transport",
+            "sse",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            str(port),
+            "--token-file",
+            str(token_file),
+            "--audit-log",
+            str(tmp_path / "audit.jsonl"),
+            "--home",
+            str(home),
+            "--log-format",
+            "json",
+            "--shutdown-grace",
+            "3",
+        ],
+        cwd=ROOT,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+    )
+    stdout_parts: list[bytes] = []
+    stderr_parts: list[bytes] = []
+
+    def _read(pipe: Any, parts: list[bytes]) -> None:
+        parts.append(pipe.read())
+
+    out_thread = threading.Thread(target=_read, args=(proc.stdout, stdout_parts))
+    err_thread = threading.Thread(target=_read, args=(proc.stderr, stderr_parts))
+    out_thread.start()
+    err_thread.start()
+    ready = False
+    anonymous_status = 0
+    authed_status = 0
+    try:
+        deadline = time.monotonic() + 8
+        with httpx2.Client(trust_env=False, timeout=0.5) as client:
+            while time.monotonic() < deadline:
+                if proc.poll() is not None:
+                    break
+                try:
+                    response = client.get(f"http://127.0.0.1:{port}/readyz")
+                except (httpx2.HTTPError, OSError):
+                    time.sleep(0.05)
+                    continue
+                if response.status_code == 200:
+                    ready = True
+                    break
+                time.sleep(0.05)
+            if ready:
+                anonymous_status = client.get(
+                    f"http://127.0.0.1:{port}/manifest.json"
+                ).status_code
+                authed_status = client.get(
+                    f"http://127.0.0.1:{port}/manifest.json",
+                    headers={"Authorization": f"Bearer {token}"},
+                ).status_code
+        if proc.poll() is None:
+            proc.send_signal(signal.SIGTERM)
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                proc.wait(timeout=2)
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+            proc.wait(timeout=2)
+        out_thread.join(timeout=2)
+        err_thread.join(timeout=2)
+
+    stdout = b"".join(stdout_parts)
+    stderr = b"".join(stderr_parts).decode(errors="replace")
+    assert ready, stderr
+    assert anonymous_status == 401, stderr
+    assert authed_status == 200, stderr
+    assert proc.returncode == 0, stderr
+    assert stdout == b""
+    lines = [line for line in stderr.splitlines() if line.strip()]
+    assert lines, stderr
+    for line in lines:
+        json.loads(line)
+        assert token not in line
