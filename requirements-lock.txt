@@ -32,7 +32,7 @@ colorama==0.4.6
 confusable-homoglyphs==3.3.1
 confusables==1.2.0
 cryptography==50.0.2
-datasets==5.0.1
+datasets==5.1.0
 dill==0.4.1
 discord.py==2.7.1
 ecoji==0.1.1
