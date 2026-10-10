@@ -32,4 +32,6 @@ This seed will surface during `/gsd:new-milestone` when the milestone scope matc
 
 ## Notes
 
+v13 (2026-10-09) shipped the turn-path half: a user message that is only `/omega-...` runs `omega_command` and does not call the model. MCP prompts and resources are not served. This seed stays dormant until that half exists.
+
 Captured from the user's orchestration request in this session. The user's integration decisions are recorded in `/root/.omp/agent/sessions/-src-repos-Omes-Bot/2026-10-07T08-07-02-266Z_01a11566-d17a-71fc-9303-d0456a5234f3/local/omega-integration-decisions.json`. Research is source-only, not runtime proof.

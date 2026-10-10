@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (C) 2026 Spectrum Web Co
-"""Tests for the crash-safe file helpers used by the Grok Bot runtime."""
+"""Tests for the crash-safe file helpers in ``omega_prime.tooling.fs``."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from omega_prime.grokbot._io import (
+from omega_prime.tooling.fs import (
     atomic_write_json,
     atomic_write_text,
     ensure_private_dir,

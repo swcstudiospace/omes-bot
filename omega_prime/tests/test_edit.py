@@ -6,6 +6,7 @@ import difflib
 import json
 from pathlib import Path
 
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.coding import register_coding_tools
 from omega_prime.tools.offer import offered_schemas
 from omega_prime.tools.registry import ToolRegistry
@@ -160,29 +161,12 @@ def test_edit_file_applies_a_second_hunk_that_needs_repair(tmp_path: Path):
     assert target.read_bytes() == desired.encode("utf-8")
 
 
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
-
-
 def test_roster_offers_edit_file(tmp_path: Path):
     root = tmp_path / "ws"
     root.mkdir()
     registry = _registry(root)
     offered = offered_schemas(
-        registry, _roster_names(ROSTER.read_text(encoding="utf-8"))
+        registry, roster_names(ROSTER.read_text(encoding="utf-8"))
     )
     names = [item["function"]["name"] for item in offered]
 

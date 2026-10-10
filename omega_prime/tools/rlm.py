@@ -82,6 +82,8 @@ def register_rlm_tools(
         **extra: Any,
     ) -> dict:
         reject_extra(extra, what="rlm_spawn")
+        if getattr(parent, "rlm_unconfigured", False):
+            return {"error": "not_configured: provider"}
         request = SpawnRequest.from_dict(
             {
                 "prompt": prompt,
@@ -134,6 +136,8 @@ def register_rlm_tools(
         # ``cwd`` is not declared: a per-session directory is unsupported, so a
         # model-supplied ``cwd`` reaches ``reject_extra`` as an unknown field.
         reject_extra(extra, what="rlm_create_session")
+        if getattr(parent, "rlm_unconfigured", False):
+            return {"error": "not_configured: provider"}
         request = CreateSessionRequest.from_dict(
             {
                 "prompt": prompt,

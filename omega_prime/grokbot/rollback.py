@@ -68,7 +68,6 @@ try:
 except ImportError:  # pragma: no cover - non-POSIX platforms
     _fcntl = None
 
-from omega_prime.grokbot._io import PRIVATE_FILE_MODE, ensure_private_dir
 from omega_prime.grokbot.audit import GrokBotAuditTracer
 from omega_prime.grokbot.upgrade import (
     DIGESTS_FILENAME,
@@ -79,6 +78,7 @@ from omega_prime.grokbot.upgrade import (
     apply_guard,
     snapshot,
 )
+from omega_prime.tooling.fs import PRIVATE_FILE_MODE, ensure_private_dir
 
 logger = logging.getLogger(__name__)
 
@@ -252,7 +252,7 @@ def _atomic_restore(dest: Path, data: bytes, *, mode: int = PRIVATE_FILE_MODE) -
 
     The temp copy is chmodded to ``mode`` before the rename, then the
     parent directory is fsynced so the rename itself survives a crash
-    (mirroring ``_io.atomic_write_text``; a dir-flush failure is
+    (mirroring ``omega_prime.tooling.fs.atomic_write_text``; a dir-flush failure is
     suppressed because not every filesystem supports it).
     """
     ensure_private_dir(dest.parent)

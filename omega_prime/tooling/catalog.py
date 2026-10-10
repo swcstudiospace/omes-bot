@@ -18,8 +18,10 @@ from omega_prime.mcp_server import default_registry, roster_names
 from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
 from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
 from omega_prime.tools.coding import CODING_TOOL_NAMES
+from omega_prime.tools.cron_admin import CRON_ADMIN_TOOL_NAMES
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.discord import DISCORD_TOOL_NAMES
+from omega_prime.tools.durable_surface import DURABLE_TOOL_NAMES
 from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
@@ -27,7 +29,9 @@ from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
+from omega_prime.tools.learning_surface import LEARNING_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
+from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
 from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
@@ -44,6 +48,7 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Coding", CODING_TOOL_NAMES),
     ("Growth", GROWTH_TOOL_NAMES),
     ("Delegate", DELEG_TOOL_NAMES),
+    ("Omega command", OMEGA_COMMAND_TOOL_NAMES),
     ("Platform", PLATFORM_TOOL_NAMES),
     ("IDE", IDE_TOOL_NAMES),
     ("X", X_TOOL_NAMES),
@@ -58,6 +63,9 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("App packs", PACKS_TOOL_NAMES),
     ("Ultrathink", ULT_TOOL_NAMES),
     ("Substrate", SUBSTRATE_TOOL_NAMES),
+    ("Cron", CRON_ADMIN_TOOL_NAMES),
+    ("Learning", LEARNING_TOOL_NAMES),
+    ("Durable", DURABLE_TOOL_NAMES),
     ("RLM", RLM_TOOL_NAMES),
     ("Harness", HARNESS_TOOL_NAMES),
     ("Goals", GOAL_TOOL_NAMES),
@@ -82,14 +90,14 @@ def full_inventory_registry(root: Path, home: Path):
     live-parent families, so asking it for absent tools would invent
     default-false/empty metadata (WARN-03). The catalog instead registers the
     actual family definitions: real ``register_*`` calls against the real
-    root, a throwaway session registry for messaging, and unbound RLM and
-    delegate parents. Handlers are never dispatched here, so no capability
-    operation executes during generation.
+    root, a throwaway session registry for messaging, an unbound RLM parent —
+    and ``delegate_task`` comes from the default registry itself, which
+    registers it on the in-process desk parent (DESK-03). Handlers are never
+    dispatched here, so no capability operation executes during generation.
     """
     from omega_prime.agent.messaging import SessionRegistry
     from omega_prime.tools.agent_message import register_messaging_tools
     from omega_prime.tools.autonomous import register_autonomous_tools
-    from omega_prime.tools.delegate import register_delegate_tools
     from omega_prime.tools.goals import register_goal_tools
     from omega_prime.tools.harness import register_harness_tools
     from omega_prime.tools.heartbeat import register_heartbeat_tools
@@ -104,7 +112,6 @@ def full_inventory_registry(root: Path, home: Path):
     register_messaging_tools(registry, "catalog", session_registry=SessionRegistry())
     register_rlm_tools(registry, None)
     register_prime_kernel_tools(registry, root)
-    register_delegate_tools(registry, None)
     return registry
 
 

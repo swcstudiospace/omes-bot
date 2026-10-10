@@ -101,12 +101,15 @@ native agent loop or session engine into the conversation loop.
   not goal completion. Tools: `autonomous_start`, `autonomous_status`,
   `autonomous_stop`.
 - **Agent messaging** (`prime.messaging.enabled`): in-process named-session
-  messaging, when a live session registry is supplied. Tools:
-  `agent_message_send`, `agent_observe`.
-- **RLM recursion** (`prime.rlm.enabled`): child-agent handles and progress notes,
-  when a live RLM host is supplied. `OmegaPrimeAgent(..., session_dir=...)`
-  supplies the durable directory the agent offers as an RLM parent; without it
-  the agent cannot be a parent, and no working-directory default is used. See
+  messaging. The default host registers `agent_message_send` and
+  `agent_observe` on session `bot-00-omega-prime` when the flag is on. An
+  embedder may pass its own session registry to `register_messaging_tools`.
+- **RLM recursion** (`prime.rlm.enabled`): the seven `rlm_*` tools. The default
+  host registers them on the desk parent when the flag is on. Without a
+  child-model provider, `rlm_spawn` and `rlm_create_session` return
+  `not_configured: provider`. `OmegaPrimeAgent(..., session_dir=...)` supplies
+  the durable directory an embedded agent offers as an RLM parent; without it
+  that agent cannot be a parent, and no working-directory default is used. See
   [connectors.md](connectors.md#rlm-persistence-and-channels) for the parent
   contract and the tool catalog for the tools.
 - **Continual harness** (`prime.harness.enabled`): evidence-backed supplemental
@@ -199,12 +202,13 @@ authoritative. Writes require the existing registry approval checks.
 
 The flag is consumed per family by the site that registers the family. The
 default MCP registry (`omega_prime.mcp_server.default_registry`) registers
-`harness`, `goals`, `heartbeat`, `autonomous`, and `kernel` when their flags are
-on. `rlm` needs a live parent agent and `messaging` needs a session name, so
-no production site registers them from `omega-prime.json`: the flag only
-decides whether the assembler offers their tool entries, and an embedder must
-call `register_rlm_tools` / `register_messaging_tools` with its own parent or
-session. `delegate_task` is likewise skipped by the default registry.
+`harness`, `goals`, `heartbeat`, `autonomous`, `kernel`, `rlm`, and
+`messaging` when their flags are on. `rlm` uses the desk parent (session
+directory under the desk store). `messaging` uses the seat session
+`bot-00-omega-prime`. An embedder can still call `register_rlm_tools` or
+`register_messaging_tools` with its own parent or session. `delegate_task`
+is served. Without a provider env it returns `not_configured: provider`.
+Prime families stay off by default.
 
 `heartbeat_set` only persists a job (`cron/jobs.json` under the root). A job
 fires only in a process that bound the named live session (an

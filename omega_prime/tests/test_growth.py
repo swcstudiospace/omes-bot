@@ -22,6 +22,7 @@ from omega_prime.providers.fake import FakeTransport
 from omega_prime.session.search import SessionStore, session_search
 from omega_prime.skills_runtime.manager import skill_manage, skill_view
 from omega_prime.substrate.client import SubstrateClient
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.agent_message import (
     MESSAGING_TOOL_NAMES,
     register_messaging_tools,
@@ -31,11 +32,19 @@ from omega_prime.tools.autonomous import (
     register_autonomous_tools,
 )
 from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
+from omega_prime.tools.cron_admin import (
+    CRON_ADMIN_TOOL_NAMES,
+    register_cron_admin_tools,
+)
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES, register_delegate_tools
 from omega_prime.tools.discord import (
     DISCORD_TOOL_NAMES,
     DiscordClient,
     register_discord_tools,
+)
+from omega_prime.tools.durable_surface import (
+    DURABLE_TOOL_NAMES,
+    register_durable_surface_tools,
 )
 from omega_prime.tools.goals import GOAL_TOOL_NAMES, register_goal_tools
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES, register_growth_tools
@@ -54,6 +63,10 @@ from omega_prime.tools.lead import (
     LeadContext,
     register_lead_tools,
 )
+from omega_prime.tools.learning_surface import (
+    LEARNING_TOOL_NAMES,
+    register_learning_surface_tools,
+)
 from omega_prime.tools.mobile import (
     MOBILE_TOOL_NAMES,
     MobileClient,
@@ -61,6 +74,10 @@ from omega_prime.tools.mobile import (
     register_mobile_tools,
 )
 from omega_prime.tools.offer import offered_schemas
+from omega_prime.tools.omega_command import (
+    OMEGA_COMMAND_TOOL_NAMES,
+    register_omega_command_tools,
+)
 from omega_prime.tools.packs import (
     PACKS_TOOL_NAMES,
     PacksClient,
@@ -112,23 +129,6 @@ from omega_prime.tools.x import X_TOOL_NAMES, XClient, register_x_tools
 ROOT = Path(__file__).resolve().parents[2]
 ROSTER = ROOT / "omega_prime" / "contracts" / "tool-rosters" / "omega-prime.yaml"
 EARNED_DESCRIPTION = "Use when the user asks to save this procedure."
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
 
 
 def _load(raw: str) -> dict:
@@ -593,6 +593,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     )
     assert registered == list(GROWTH_TOOL_NAMES)
     register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
+    register_omega_command_tools(registry, {})
     register_platform_tools(registry, home=tmp_path)
     register_ide_tools(registry, tmp_path)
     register_x_tools(registry, XClient(FakeTransport(), token="fake"))
@@ -611,6 +612,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     register_packs_tools(registry, PacksClient(PacksContext()))
     register_ultrathink_tools(registry, UltrathinkClient(UltrathinkContext()))
     register_substrate_tools(registry, SubstrateClient())
+    register_cron_admin_tools(registry, tmp_path)
+    register_learning_surface_tools(registry, tmp_path)
+    register_durable_surface_tools(registry, tmp_path)
     register_rlm_tools(
         registry,
         OmegaPrimeAgent(
@@ -632,11 +636,12 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         {"type": "object", "properties": {}, "required": []},
         lambda: {"ok": True},
     )
-    roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
+    roster = roster_names(ROSTER.read_text(encoding="utf-8"))
     assert roster == list(
         CODING_TOOL_NAMES
         + GROWTH_TOOL_NAMES
         + DELEG_TOOL_NAMES
+        + OMEGA_COMMAND_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES
@@ -651,6 +656,9 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         + PACKS_TOOL_NAMES
         + ULT_TOOL_NAMES
         + SUBSTRATE_TOOL_NAMES
+        + CRON_ADMIN_TOOL_NAMES
+        + LEARNING_TOOL_NAMES
+        + DURABLE_TOOL_NAMES
         + RLM_TOOL_NAMES
         + HARNESS_TOOL_NAMES
         + GOAL_TOOL_NAMES

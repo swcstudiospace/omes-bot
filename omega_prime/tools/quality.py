@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from typing import Any
 
 from omega_prime.credentials.redact import redact_text
-from omega_prime.receipts import ReceiptError, validate_receipt
+from omega_prime.receipts import ReceiptError, load_executions, validate_receipt
 from omega_prime.tools.registry import ToolRegistry
 
 QUALITY_TOOL_NAMES = (
@@ -62,7 +62,7 @@ def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
 
 
 def _default_run(
-    argv: list[str], timeout: int = 120, cwd: str | None = None
+    argv: list[str], timeout: float = 120, cwd: str | None = None
 ) -> dict[str, Any]:
     try:
         run = subprocess.run(
@@ -71,6 +71,74 @@ def _default_run(
     except (OSError, subprocess.TimeoutExpired) as exc:
         return {"exit_code": 127, "stdout": "", "stderr": str(exc)}
     return {"exit_code": run.returncode, "stdout": run.stdout, "stderr": run.stderr}
+
+
+def _coerce_suites(suites: Any) -> list[tuple[str, list[str], int | float]]:
+    """Normalize ``[{name, argv, timeout}]`` into runner tuples."""
+    if not isinstance(suites, list) or not suites:
+        raise ValueError("suites must be a non-empty list of {name, argv, timeout}")
+    selected: list[tuple[str, list[str], int | float]] = []
+    for index, item in enumerate(suites):
+        if not isinstance(item, dict):
+            raise ValueError(f"suites[{index}] must be an object")
+        name = item.get("name")
+        argv = item.get("argv")
+        timeout = item.get("timeout", 120)
+        if not isinstance(name, str) or not name.strip():
+            raise ValueError(f"suites[{index}] needs a name")
+        if (
+            not isinstance(argv, list)
+            or not argv
+            or any(not isinstance(part, str) for part in argv)
+        ):
+            raise ValueError(f"suites[{index}] needs an argv of strings")
+        if (
+            isinstance(timeout, bool)
+            or not isinstance(timeout, int | float)
+            or timeout <= 0
+        ):
+            raise ValueError(f"suites[{index}] timeout must be a positive number")
+        selected.append((name, list(argv), timeout))
+    return selected
+
+
+def _omega_suites() -> list[tuple[str, list[str], int | float]]:
+    """The three Omega Prime commands today's tree already runs."""
+    return [
+        ("suite", ["python3", "-m", "pytest", "omega_prime/tests", "-q"], 600),
+        (
+            "evals",
+            [
+                "python3",
+                "-m",
+                "omega_prime.evals.runner",
+                "omega_prime/evals/cases",
+            ],
+            300,
+        ),
+        (
+            "assemble",
+            ["bash", "omega_prime/scripts/assemble-prompts.sh", "--check"],
+            120,
+        ),
+    ]
+
+
+def _discover_suites(
+    root: str, suites: list | None
+) -> list[tuple[str, list[str], int | float]]:
+    """Pick suites: argument, desk file, Omega tree, then a pytest repo."""
+    if suites is not None:
+        return _coerce_suites(suites)
+    base = Path(root)
+    declared = base / "omega-desk-gates.json"
+    if declared.is_file():
+        return _coerce_suites(json.loads(declared.read_text(encoding="utf-8")))
+    if (base / "omega_prime" / "tests").exists():
+        return _omega_suites()
+    if (base / "pyproject.toml").is_file() or (base / "tests").exists():
+        return [("pytest", ["python3", "-m", "pytest", "-q"], 600)]
+    raise ValueError("no suites configured for this repo")
 
 
 def _git_vcs(root: str):
@@ -145,28 +213,15 @@ class QualityClient:
     def __init__(self, ctx: QualityContext) -> None:
         self.ctx = ctx
 
-    def gates_run(self) -> dict[str, Any]:
-        """Run the Omega Prime gates (suite + evals + assemble) in the tree."""
+    def gates_run(
+        self, repo: str | None = None, suites: list | None = None
+    ) -> dict[str, Any]:
+        """Run the target repo's suites and report each runner's exit code."""
         run = self.ctx.run or _default_run
-        root = str(self.ctx.root)
-        suites = {
-            "suite": (["python3", "-m", "pytest", "omega_prime/tests", "-q"], 600),
-            "evals": (
-                [
-                    "python3",
-                    "-m",
-                    "omega_prime.evals.runner",
-                    "omega_prime/evals/cases",
-                ],
-                300,
-            ),
-            "assemble": (
-                ["bash", "omega_prime/scripts/assemble-prompts.sh", "--check"],
-                120,
-            ),
-        }
-        gates = {}
-        for name, (argv, timeout) in suites.items():
+        root = str(self.ctx.root if repo is None else repo)
+        selected = _discover_suites(root, suites)
+        gates: dict[str, Any] = {}
+        for name, argv, timeout in selected:
             try:
                 result = (
                     run(argv, timeout, root) if _takes_cwd(run) else run(argv, timeout)
@@ -234,9 +289,9 @@ class QualityClient:
         }
 
     def receipt_approve(
-        self, receipt_path: str, note: str | None = None
+        self, receipt_path: str, note: str | None = None, approver: str | None = None
     ) -> dict[str, Any]:
-        """Validate, stamp, and write one receipt. Self-approval refused. No push."""
+        """Validate against the command log, stamp, and write one receipt. No push."""
         if not _repo_relative(receipt_path):
             return _error("invalid_args", "receipt_path must be repo-relative")
         target = Path(self.ctx.root) / receipt_path
@@ -248,17 +303,29 @@ class QualityClient:
             return _error("invalid_receipt", "receipt is not valid JSON")
         if not receipt.get("bot"):
             return _error("invalid_receipt", "receipt names no authoring bot")
-        if receipt.get("bot") == self.ctx.bot_id:
+        if approver is not None and not isinstance(approver, str):
+            return _error("invalid_args", "approver must be a string")
+        identity = approver.strip() if isinstance(approver, str) else ""
+        if not identity:
+            if receipt.get("bot") == self.ctx.bot_id:
+                return _error(
+                    "self_approval",
+                    "QUALITY cannot approve a QUALITY receipt",
+                )
+            stamp = self.ctx.bot_id
+        elif identity == receipt.get("bot") or identity == self.ctx.bot_id:
             return _error("self_approval", "QUALITY cannot approve a QUALITY receipt")
+        else:
+            stamp = identity
         try:
-            validate_receipt(receipt)
+            validate_receipt(receipt, executions=load_executions())
         except ReceiptError as exc:
             return _error(
                 "gate_failed",
                 "the receipt does not pass before stamping",
                 problems=str(exc).splitlines(),
             )
-        receipt["approved_by"] = self.ctx.bot_id
+        receipt["approved_by"] = stamp
         receipt["approved_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         if note:
             receipt["approval_note"] = redact_text(note)
@@ -266,7 +333,7 @@ class QualityClient:
         return {
             "ok": True,
             "receipt_path": receipt_path,
-            "approved_by": self.ctx.bot_id,
+            "approved_by": stamp,
             "pushed": False,
             "reason": "Omega Prime never pushes; the operator commits this stamp",
         }
@@ -520,7 +587,9 @@ def register_quality_tools(registry: ToolRegistry, client: QualityClient) -> lis
             return {"error": str(exc)}
 
     handlers: dict[str, Callable[..., Any]] = {
-        "qua_gates_run": lambda: _wrap(client.gates_run),
+        "qua_gates_run": lambda repo=None, suites=None: _wrap(
+            client.gates_run, repo=repo, suites=suites
+        ),
         "qua_greptile_review": lambda action, pr_number=None, review_id=None, repo=None: (
             _wrap(
                 client.greptile_review,
@@ -530,8 +599,8 @@ def register_quality_tools(registry: ToolRegistry, client: QualityClient) -> lis
                 repo=repo,
             )
         ),
-        "qua_receipt_approve": lambda receipt_path, note=None: _wrap(
-            client.receipt_approve, receipt_path, note=note
+        "qua_receipt_approve": lambda receipt_path, note=None, approver=None: _wrap(
+            client.receipt_approve, receipt_path, note=note, approver=approver
         ),
         "qua_waiver_record": lambda pr_number, comment_ids, reason, branch="main": (
             _wrap(client.waiver_record, pr_number, comment_ids, reason, branch=branch)
@@ -577,8 +646,28 @@ def _string(description: str) -> dict:
 
 _SCHEMAS: dict[str, tuple[str, dict]] = {
     "qua_gates_run": (
-        "Run the Omega Prime gates in the tree. Read-only.",
-        _object({}, []),
+        "Run the target repo's gates and report each suite's real exit code. Read-only.",
+        _object(
+            {
+                "repo": _string(
+                    "Repository root to test. Defaults to the quality work root."
+                ),
+                "suites": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "argv": {"type": "array", "items": {"type": "string"}},
+                            "timeout": {"type": "number"},
+                        },
+                        "required": ["name", "argv"],
+                    },
+                    "description": "Suites to run. Each item is {name, argv, timeout}.",
+                },
+            },
+            [],
+        ),
     ),
     "qua_greptile_review": (
         "Trigger, get, or list Greptile review comments. Requires approval.",
@@ -598,6 +687,10 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
             {
                 "receipt_path": _string("Repo-relative path."),
                 "note": _string("Approval note."),
+                "approver": _string(
+                    "Operator identity that stamps the receipt. "
+                    "The authoring bot and this seat's bot id are refused."
+                ),
             },
             ["receipt_path"],
         ),

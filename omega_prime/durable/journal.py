@@ -9,6 +9,7 @@ ones. Each call opens its own connection and commits.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import sqlite3
 from pathlib import Path
@@ -103,8 +104,93 @@ class TurnJournal:
             connection.close()
         return [row[0] for row in found]
 
+    def status(self) -> dict[str, Any]:
+        """Cheap counts: open runs, row count, and the last run id."""
+        connection = self._connect()
+        try:
+            runs = connection.execute(
+                "SELECT run_id, status FROM runs ORDER BY run_id"
+            ).fetchall()
+            found = connection.execute("SELECT COUNT(*) FROM rows").fetchone()
+        finally:
+            connection.close()
+        count = int(found[0]) if found is not None else 0
+        return {
+            "present": True,
+            "runs": len(runs),
+            "open_runs": sum(1 for row in runs if row[1] == "open"),
+            "entry_count": count,
+            "last_run_id": runs[-1][0] if runs else None,
+        }
+
     def _connect(self) -> sqlite3.Connection:
         return sqlite3.connect(str(self.path))
 
 
-__all__ = ["TurnJournal"]
+class GuardedJournal:
+    """A journal whose failures are reported and then ignored.
+
+    The turn continues. ``sink`` receives ``type``, ``family``, and
+    ``error`` keyword arguments; a sink that itself raises is ignored.
+    """
+
+    def __init__(self, inner: TurnJournal, sink: Any = None) -> None:
+        self._inner = inner
+        self.path = inner.path
+        self._sink = sink
+
+    def begin_run(self, run_id: str) -> None:
+        self._call("begin_run", run_id)
+
+    def append(self, run_id: str, row: dict) -> None:
+        self._call("append", run_id, row)
+
+    def finish_run(self, run_id: str, status: str, final_response: str = "") -> None:
+        self._call("finish_run", run_id, status, final_response)
+
+    def transcript(self, run_id: str) -> list[dict[str, Any]]:
+        rows = self._call("transcript", run_id)
+        return rows if isinstance(rows, list) else []
+
+    def open_runs(self) -> list[str]:
+        runs = self._call("open_runs")
+        return runs if isinstance(runs, list) else []
+
+    def status(self) -> dict[str, Any]:
+        found = self._call("status")
+        return found if isinstance(found, dict) else {"present": False}
+
+    def _call(self, method: str, *args: Any) -> Any:
+        try:
+            return getattr(self._inner, method)(*args)
+        except Exception as exc:
+            sink = self._sink
+            if sink is not None:
+                with contextlib.suppress(Exception):
+                    sink(
+                        type="prime_degraded",
+                        family="durable",
+                        error=f"{type(exc).__name__}: {exc}",
+                    )
+            return None
+
+
+def attach_journal(agent: Any, journal: TurnJournal | None) -> None:
+    """Point ``agent.journal`` at a guarded copy of ``journal``.
+
+    Failures emit ``prime_degraded`` on ``agent`` and the turn continues.
+    """
+    if journal is None:
+        return
+    from omega_prime.agent.harness import emit
+
+    def sink(**fields: Any) -> None:
+        event_type = fields.pop("type", "prime_degraded")
+        if not isinstance(event_type, str):
+            event_type = "prime_degraded"
+        emit(agent, event_type, **fields)
+
+    agent.journal = GuardedJournal(journal, sink)
+
+
+__all__ = ["GuardedJournal", "TurnJournal", "attach_journal"]

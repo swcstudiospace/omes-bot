@@ -42,7 +42,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from omega_prime.grokbot._io import PRIVATE_FILE_MODE, ensure_private_dir
+from omega_prime.tooling.fs import PRIVATE_FILE_MODE, ensure_private_dir
 
 _fcntl: ModuleType | None
 try:

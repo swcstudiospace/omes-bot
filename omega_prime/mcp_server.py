@@ -17,6 +17,7 @@ import os
 import shutil
 import sys
 import threading
+import time
 import weakref
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -29,24 +30,61 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
-from omega_prime.grokbot._io import read_secret_file
+from omega_prime.commands.context import (
+    NESTED_DISPATCH_DEPTH,
+    nested_depth,
+    nested_depth_frame,
+    nested_dispatch_scope,
+)
+from omega_prime.credentials.broker import CredentialBroker
+from omega_prime.cron.desk_driver import DeskDriver
 from omega_prime.grokbot.interceptors import (
+    ToolCall,
     ToolCallInterceptor,
     call_from_context,
     run_tool_call,
 )
+from omega_prime.integrations.desk_clients import (
+    clients_from_env,
+    guarded_browser_factory,
+)
+from omega_prime.memory.store import MemoryStore
 from omega_prime.policy.policy import SeatPolicy
+from omega_prime.providers.anthropic import AnthropicProvider
+from omega_prime.providers.base import ProviderModel
 from omega_prime.providers.destination import DestinationTransport, SafeFetch
-from omega_prime.substrate.client import DEFAULT_BASE_URL as SUBSTRATE_DEFAULT_URL
-from omega_prime.substrate.client import SubstrateClient
+from omega_prime.providers.gemini import GeminiProvider
+from omega_prime.providers.grok import GrokProvider
+from omega_prime.providers.http import HttpTransport
+from omega_prime.providers.ollama import OllamaProvider
+from omega_prime.providers.openai import OpenAIProvider
+from omega_prime.routines.desk_lead import desk_intake_path
+from omega_prime.substrate.client import (
+    DEFAULT_BASE_URL as SUBSTRATE_DEFAULT_URL,
+)
+from omega_prime.substrate.client import (
+    SubstrateClient,
+    SubstrateError,
+)
+from omega_prime.tooling.fs import read_secret_file
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.coding import register_coding_tools
+from omega_prime.tools.delegate import register_delegate_tools
 from omega_prime.tools.discord import DiscordClient, register_discord_tools
 from omega_prime.tools.growth import register_growth_tools
 from omega_prime.tools.ide import register_ide_tools
 from omega_prime.tools.infra import InfraClient, InfraContext, register_infra_tools
-from omega_prime.tools.lead import LeadClient, LeadContext, register_lead_tools
+from omega_prime.tools.lead import (
+    EventStore,
+    IntakeStore,
+    LeadClient,
+    LeadContext,
+    RosterStore,
+    register_lead_tools,
+)
 from omega_prime.tools.mobile import MobileClient, MobileContext, register_mobile_tools
+from omega_prime.tools.omega_command import register_omega_command_tools
 from omega_prime.tools.packs import PacksClient, PacksContext, register_packs_tools
 from omega_prime.tools.platform import register_platform_tools
 from omega_prime.tools.quality import (
@@ -55,7 +93,12 @@ from omega_prime.tools.quality import (
     register_quality_tools,
 )
 from omega_prime.tools.registry import ToolRegistry
-from omega_prime.tools.substrate_tools import register_substrate_tools
+from omega_prime.tools.substrate_tools import (
+    docs_search as _shape_substrate_docs,
+)
+from omega_prime.tools.substrate_tools import (
+    register_substrate_tools,
+)
 from omega_prime.tools.systems import (
     SystemsClient,
     SystemsContext,
@@ -74,24 +117,6 @@ SERVER_NAME = "omega-prime"
 SERVER_VERSION = "6.0.0"
 
 _T = TypeVar("_T")
-
-
-def roster_names(text: str) -> list[str]:
-    """Tool names under the `tools:` key of the roster YAML."""
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith(("#", " ")):
-            break
-    return names
 
 
 class _UrllibXTransport:
@@ -136,6 +161,339 @@ def _json_env(env: dict, name: str) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+# -- Desk runtime wiring (DESK-01/02/03/08) ---------------------------------
+#
+# The desk seams are real objects built here, not test fakes: one shared
+# `MemoryStore`, JSON/NDJSON stores under `OMEGA_PRIME_STATE_DIR`, the real
+# `SubstrateClient`, and an in-process delegate parent. Optional planes
+# (bus, docs index, notify webhook) come from env and degrade loudly.
+
+WORK_ROOT_ENV = "OMEGA_PRIME_WORK_ROOT"
+DESK_BUS_URL_ENV = "OMEGA_PRIME_DESK_BUS_URL"
+DESK_DOCS_INDEX_ENV = "OMEGA_PRIME_DESK_DOCS_INDEX"
+DESK_NOTIFY_URL_ENV = "OMEGA_PRIME_DESK_NOTIFY_URL"
+DESK_CHILD_PROVIDER_ENV = "OMEGA_PRIME_DESK_CHILD_PROVIDER"
+DESK_CHILD_MODEL_ENV = "OMEGA_PRIME_DESK_CHILD_MODEL"
+
+
+def resolve_work_root(
+    root: str | Path,
+    env: Mapping[str, str],
+    work_root: str | Path | None = None,
+) -> Path:
+    """DESK-02: the directory the desk works on.
+
+    Explicit argument wins, then `OMEGA_PRIME_WORK_ROOT`, then the install
+    `root` (today's behavior). Roster/policy/contract/prompt/ownership
+    lookups never follow this: they stay on the install root.
+    """
+    if work_root is not None:
+        return Path(work_root)
+    from_env = env.get(WORK_ROOT_ENV, "")
+    if isinstance(from_env, str) and from_env.strip():
+        return Path(from_env.strip())
+    return Path(root)
+
+
+def _desk_store_path(work_root: Path, state_dir: str | None, name: str) -> Path:
+    """One desk store file: under the state dir when set, else the work root."""
+    if state_dir:
+        return Path(state_dir) / name
+    return work_root / "omega_prime" / "state" / name
+
+
+class _DeskParent:
+    """In-process delegate parent (DESK-03).
+
+    Satisfies `omega_prime.agent.delegate`'s parent contract: `child_model`
+    runs child turns through the same provider/env wiring the conversation
+    loop uses (`_desk_child_model`), and `tools` maps every registered tool
+    name to a registry dispatcher, so children act behind the same policy and
+    approval gate as the host. `tools` is computed from the live registry on
+    each access, so the parent can exist before the last families register.
+    """
+
+    def __init__(self, registry: ToolRegistry, model: Any) -> None:
+        self._registry = registry
+        self.child_model = model
+        self.delegate_depth = 0
+        self.max_depth = 2
+        self.max_children = 1
+        self.journal: Any = None
+
+    @property
+    def tools(self) -> dict[str, Any]:
+        return {
+            item["function"]["name"]: _desk_dispatch(
+                self._registry, item["function"]["name"]
+            )
+            for item in self._registry.schemas()
+        }
+
+
+def _desk_dispatch(registry: ToolRegistry, name: str) -> Any:
+    def dispatch(**arguments: Any) -> str:
+        return registry.dispatch(name, arguments)
+
+    return dispatch
+
+
+class _RlmParent(_DeskParent):
+    """`_DeskParent` plus the RLM parent contract's session identity.
+
+    Not a second implementation of child running: the child model and the
+    live-registry tool map come from `_DeskParent`, so RLM children run
+    through the same seams and behind the same policy and approval gate as
+    `delegate_task` children. `require_parent`'s extra fields name the
+    durable session: `session_dir` is where child session documents persist
+    (the desk store convention), and `session_name` is the owning bot
+    identity a restarted host recovers its own children by.
+    """
+
+    def __init__(self, registry: ToolRegistry, model: Any, session_dir: Path) -> None:
+        super().__init__(registry, model)
+        self.session_dir = session_dir
+        self.session_name = "bot-00-omega-prime"
+        self.rlm_unconfigured = False
+
+
+def _rlm_child_runner(parent: Any) -> Any:
+    """One RLM child prompt through the delegate child runner.
+
+
+    `delegate_task` builds the child agent from the parent's own `child_model`
+    and `tools` seams and returns its final response wrapped in JSON; the
+    runner unwraps it to the response text `RlmHost` expects. The desk child
+    model is the configured one, so a spawn's optional `model`/`thinking`
+    selectors are accepted and not honored.
+    """
+    from omega_prime.agent.delegate import delegate_task
+
+    def run_child(
+        prompt: str, *, model: str | None = None, thinking: str | None = None
+    ) -> str:
+        del model, thinking
+        out = json.loads(delegate_task(parent, prompt))
+        if not isinstance(out.get("summary"), str):
+            raise RuntimeError(out.get("error", "delegate child produced no summary"))
+        return out["summary"]
+
+    return run_child
+
+
+_DESK_CHILD_PROVIDERS: tuple[tuple[str, Any], ...] = (
+    ("grok", GrokProvider()),
+    ("anthropic", AnthropicProvider()),
+    ("openai", OpenAIProvider()),
+    ("gemini", GeminiProvider()),
+)
+
+
+def _desk_child_model(env: dict, policy: Any) -> Any:
+    """The delegate child model, or None when no provider env is configured.
+
+    Same provider/env wiring as the conversation loop: one provider adapter
+    over `HttpTransport`, the key resolved through the seat policy's
+    credential broker when a policy exists, else straight from the env.
+    `OMEGA_PRIME_DESK_CHILD_PROVIDER` names the adapter (`grok`,
+    `anthropic`, `openai`, `gemini`, `ollama` — the last is the only way to
+    pick keyless ollama); otherwise the first provider whose key variable is
+    set wins. `OMEGA_PRIME_DESK_CHILD_MODEL` names the model id; without it
+    there is no child model and delegation stays honestly unconfigured.
+    """
+    model_name = (env.get(DESK_CHILD_MODEL_ENV) or "").strip()
+    wanted = (env.get(DESK_CHILD_PROVIDER_ENV) or "").strip().lower()
+    provider: Any = None
+    if wanted:
+        provider = next(
+            (
+                candidate
+                for name, candidate in (
+                    *_DESK_CHILD_PROVIDERS,
+                    ("ollama", OllamaProvider()),
+                )
+                if name == wanted
+            ),
+            None,
+        )
+        if provider is None:
+            raise ValueError(
+                f"unknown {DESK_CHILD_PROVIDER_ENV} {wanted!r}: "
+                "want grok, anthropic, openai, gemini, or ollama"
+            )
+    else:
+        provider = next(
+            (
+                candidate
+                for _, candidate in _DESK_CHILD_PROVIDERS
+                if any(env.get(name) for name in candidate.env_vars)
+            ),
+            None,
+        )
+    if provider is None or not model_name:
+        return None
+    transport = HttpTransport(policy=policy) if policy is not None else HttpTransport()
+    if policy is not None:
+        return ProviderModel(
+            provider, model_name, transport, broker=CredentialBroker(policy, env)
+        )
+    key = next((env[name] for name in provider.env_vars if env.get(name)), "")
+    return ProviderModel(provider, model_name, transport, api_key=key)
+
+
+class _DeskSubstrate:
+    """Adapt the real `SubstrateClient` onto the lead pack's injected seam.
+
+    The seam (`omega_prime.tools.lead.LeadContext.substrate`) is
+    duck-typed: `emit(event_dict)` for `lead_event_emit` and
+    `call_tool(name, payload, timeout=...)` for the graph tools, both
+    returning dicts that carry `body`/`content` on success and
+    `error`/`reason` on failure. This adapter forwards onto the real client
+    (`emit(kind, summary, **fields)`, MCP `tools/call`) so desk events and
+    graph claims hit the actual substrate plane.
+    """
+
+    def __init__(self, client: SubstrateClient) -> None:
+        self._client = client
+
+    def emit(self, event: Any) -> dict:
+        kind = event.get("kind") if isinstance(event, dict) else None
+        summary = f"lead {kind}" if isinstance(kind, str) and kind else "lead note"
+        fields = {
+            key: value
+            for key, value in (event.items() if isinstance(event, dict) else ())
+            if key != "kind" and value is not None
+        }
+        result = self._client.emit("note", summary, **fields)
+        if isinstance(result, dict) and result.get("stored") is False:
+            return {
+                "error": "upstream_error",
+                "reason": str(result.get("error") or "event not accepted"),
+            }
+        return {"body": result}
+
+    def call_tool(self, name: str, payload: dict, timeout: float = 10) -> dict:
+        # The client's own transport timeout governs the round trip; the seam
+        # carries one so injected fakes can honor it.
+        _ = timeout
+        try:
+            return {"content": self._client._call_tool(name, payload)}
+        except SubstrateError as exc:
+            return {"error": "upstream_error", "reason": str(exc)}
+
+
+class _DeskDocsIndex:
+    """`lead_docs_search` over the substrate docs plane (DESK-08)."""
+
+    def __init__(self, client: SubstrateClient) -> None:
+        self._client = client
+
+    def __call__(self, query: str, limit: int, repo: str | None) -> list:
+        _ = repo
+        result = _shape_substrate_docs(self._client, query)
+        chunks = result.get("chunks") if isinstance(result, dict) else None
+        if not isinstance(chunks, list):
+            reason = (
+                str(result.get("error"))
+                if isinstance(result, dict) and result.get("error")
+                else "docs index returned a malformed response"
+            )
+            raise RuntimeError(f"docs index failed: {reason}")
+        return chunks[:limit]
+
+
+class _DeskNotifier:
+    """`lead_intake_ack` notify callback: POST the body to one webhook."""
+
+    def __init__(self, url: str) -> None:
+        self._url = url
+
+    def __call__(self, link: str, body: str) -> bool:
+        import urllib.request
+
+        payload = json.dumps({"target": link, "body": body}).encode("utf-8")
+        request = urllib.request.Request(
+            self._url,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=15) as response:
+                return 200 <= response.status < 300
+        except OSError:
+            return False
+
+
+class _DeskBusClient:
+    """Agent-bus client over urllib (ports desk-gateway `upstreams.AgentBus`).
+
+    `start_job` POSTs `/v1/jobs`; `wait_job` polls `GET /v1/jobs/{id}` until a
+    terminal status or the deadline. Failures return the seam's error shape —
+    no local fallback queue, the desk degrades loudly (DESK-08).
+    """
+
+    _TERMINAL = ("completed", "failed", "error")
+
+    def __init__(self, base_url: str, timeout: float = 10.0) -> None:
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+
+    def start_job(
+        self,
+        runtime: str,
+        goal: str,
+        provider: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> dict:
+        body: dict[str, Any] = {"runtime": runtime, "goal": goal}
+        if provider:
+            body["provider"] = provider
+        if idempotency_key:
+            body["idempotency_key"] = idempotency_key
+        return self._request("POST", "/v1/jobs", body)
+
+    def wait_job(self, job_id: str, timeout_sec: int, poll_sec: int) -> dict:
+        deadline = time.monotonic() + timeout_sec
+        while True:
+            last = self._request("GET", f"/v1/jobs/{job_id}")
+            body = last.get("body") if last.get("ok") else None
+            status = body.get("status") if isinstance(body, dict) else None
+            if last.get("error") or status in self._TERMINAL:
+                return last
+            if time.monotonic() >= deadline:
+                return {**last, "timed_out": True}
+            time.sleep(max(int(poll_sec), 0) or 1)
+
+    def _request(self, method: str, path: str, body: dict | None = None) -> dict:
+        import urllib.request
+
+        data = json.dumps(body).encode("utf-8") if body is not None else None
+        request = urllib.request.Request(
+            self._base_url + path,
+            data=data,
+            headers={"Content-Type": "application/json"} if data else {},
+            method=method,
+        )
+        try:
+            with urllib.request.urlopen(request, timeout=self._timeout) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            return {
+                "ok": False,
+                "error": "upstream_error",
+                "reason": f"agent bus unreachable: {exc}",
+            }
+        if not isinstance(payload, dict):
+            return {
+                "ok": False,
+                "error": "upstream_error",
+                "reason": "agent bus returned no JSON object",
+            }
+        payload.setdefault("ok", True)
+        return payload
+
+
 def default_registry(
     root: str | Path,
     home: str | Path,
@@ -143,22 +501,44 @@ def default_registry(
     policy: Any = None,
     approval_log: Any = None,
     env: dict | None = None,
+    work_root: str | Path | None = None,
 ) -> ToolRegistry:
-    """Wire every family. Delegate needs a live agent: skipped.
+    """Wire every family, including `delegate_task` on an in-process parent.
 
     `policy` gates dispatch names and file writes; without it the
-    registry keeps historical behavior. Coding tools root at
-    `root/omega_prime` so the shipped read-only paths match. Connector credentials come
+    registry keeps historical behavior. The desk works on `work_root`
+    (`--work-root` / `OMEGA_PRIME_WORK_ROOT`, default the install `root`):
+    coding tools root at `root/omega_prime` exactly when the work root is the
+    install root, else at the work root itself, and the IDE/LSP/DAP jail and
+    `QualityContext.root` follow the work root. Roster, policy, contract,
+    prompt, and ownership lookups stay on the install root (DESK-02).
+
+    The lead pack gets real seams (DESK-01): one shared `MemoryStore`, the
+    intake/roster/event stores under `OMEGA_PRIME_STATE_DIR` (default the
+    work root's `omega_prime/state`), and the substrate client. Connector credentials come
     from `env` (`X_API_TOKEN`, `TELEGRAM_BOT_TOKEN`,
     `DISCORD_BOT_TOKEN`, `ULTRATHINK_ROOT`, `OMEGA_PRIME_PACKS_JSON`,
     `OMEGA_PRIME_PACK_API_BASES_JSON`, `SUBSTRATE_URL`, `SUBSTRATE_TOKEN`,
     `SUBSTRATE_TOKEN_GROK_BOT`); missing values stay unconfigured
-    and fail safe at call time.
+    and fail safe at call time. Desk service clients are built from
+    `RAILWAY_TOKEN` (optional `OMEGA_PRIME_RAILWAY_PROJECTS`),
+    `GREPTILE_API_KEY` (optional `GREPTILE_GITHUB_TOKEN`), `VERCEL_TOKEN`,
+    `PLAY_CONSOLE_TOKEN`, and `ASC_KEY_ID` + `ASC_ISSUER_ID` +
+    `ASC_PRIVATE_KEY`. A missing token leaves that context field None.
+    `GuardedBrowserFactory` is attached only when it constructs. Desk
+    optionals (`OMEGA_PRIME_DESK_BUS_URL`,
+    `OMEGA_PRIME_DESK_DOCS_INDEX`, `OMEGA_PRIME_DESK_NOTIFY_URL`) wire their
+    planes only when set and otherwise return explicit `not_configured`
+    results (DESK-08). Delegate children need a provider env
+    (`OMEGA_PRIME_DESK_CHILD_MODEL` plus a provider key, or
+    `OMEGA_PRIME_DESK_CHILD_PROVIDER`); without one `delegate_task` is still
+    served but returns `not_configured: provider`.
     """
     env = dict(env or {})
     registry = ToolRegistry(approval_log=approval_log, policy=policy)
     root = Path(root)
     home = Path(home)
+    work = resolve_work_root(root, env, work_root)
     legacy_root = root / "omes"
     target_root = root / "omega_prime"
     if legacy_root.is_dir():
@@ -173,24 +553,51 @@ def default_registry(
                         shutil.copy2(src, dst)
                 except Exception:
                     pass
-    register_coding_tools(registry, root / "omega_prime", policy=policy)
-    # `OMEGA_PRIME_STATE_DIR` moves the two growth stores out of the (possibly
-    # read-only) source tree; skills stay under the root.
+    # DESK-02: a distinct work root is itself the coding workspace; the
+    # default keeps the shipped `root/omega_prime` jail.
+    coding_root = work if work != root else root / "omega_prime"
+    register_coding_tools(registry, coding_root, policy=policy)
+    # `OMEGA_PRIME_STATE_DIR` moves the growth stores and the desk stores out
+    # of the (possibly read-only) source tree; skills stay under the root.
     state_dir = env.get("OMEGA_PRIME_STATE_DIR")
-    if isinstance(state_dir, str) and state_dir:
-        memory_dir = Path(state_dir) / "memory"
-        session_db = Path(state_dir) / "sessions.db"
+    state_value = state_dir if isinstance(state_dir, str) and state_dir else ""
+    if state_value:
+        memory_dir = Path(state_value) / "memory"
+        session_db = Path(state_value) / "sessions.db"
     else:
         memory_dir = root / "omega_prime" / "memory"
         session_db = root / "omega_prime" / "sessions.db"
+    # DESK-01: one MemoryStore instance shared by the growth tools and the
+    # lead pack, so `lead_memory_recall` sees what the growth tools retain.
+    memory_store = MemoryStore(memory_dir)
     register_growth_tools(
         registry,
         skills_root=root / "omega_prime" / "skills",
         memory_dir=memory_dir,
         session_db=session_db,
+        memory_store=memory_store,
     )
+    # DESK-03: delegate_task is served here (roster order: after growth), on
+    # an in-process parent shim. Without a provider env the parent stays None
+    # and the tool answers `not_configured: provider` instead of fabricating
+    # a child. The shim's `tools` map reads the live registry, so children
+    # see every family registered below.
+    parent = None
+    child_model = _desk_child_model(env, policy)
+    if child_model is not None:
+        parent = _DeskParent(registry, child_model)
+        try:
+            from omega_prime.durable.journal import TurnJournal
+
+            parent.journal = TurnJournal(
+                _desk_store_path(work, state_value, "turns.sqlite")
+            )
+        except Exception:
+            parent.journal = None
+    register_delegate_tools(registry, parent)
+    register_omega_command_tools(registry, env)
     register_platform_tools(registry, home=home)
-    register_ide_tools(registry, root)
+    register_ide_tools(registry, root, jail=None if work == root else work)
     x_token = env.get("X_API_TOKEN", "")
     register_x_tools(
         registry,
@@ -203,18 +610,69 @@ def default_registry(
         registry,
         DiscordClient(make_client=None, token=env.get("DISCORD_BOT_TOKEN", "")),
     )
-    register_lead_tools(registry, LeadClient(LeadContext(root=root)))
+    substrate_client = SubstrateClient(
+        env.get("SUBSTRATE_URL", "") or SUBSTRATE_DEFAULT_URL,
+        token=env.get("SUBSTRATE_TOKEN", "")
+        or env.get("SUBSTRATE_TOKEN_GROK_BOT", "")
+        or None,
+    )
+    docs_url = (env.get(DESK_DOCS_INDEX_ENV) or "").strip()
+    notify_url = (env.get(DESK_NOTIFY_URL_ENV) or "").strip()
+    bus_url = (env.get(DESK_BUS_URL_ENV) or "").strip()
+    register_lead_tools(
+        registry,
+        LeadClient(
+            LeadContext(
+                root=root,
+                registry=registry,
+                memory=memory_store,
+                intake=IntakeStore(
+                    desk_intake_path(work, state_dir=state_value or None)
+                ),
+                roster=RosterStore(_desk_store_path(work, state_value, "packs.json")),
+                events=EventStore(_desk_store_path(work, state_value, "events.ndjson")),
+                substrate=_DeskSubstrate(substrate_client),
+                docs_index=_DeskDocsIndex(
+                    SubstrateClient(
+                        docs_url,
+                        token=env.get("SUBSTRATE_TOKEN", "")
+                        or env.get("SUBSTRATE_TOKEN_GROK_BOT", "")
+                        or None,
+                    )
+                )
+                if docs_url
+                else None,
+                notify=_DeskNotifier(notify_url) if notify_url else None,
+                bus=_DeskBusClient(bus_url) if bus_url else None,
+            )
+        ),
+    )
     register_systems_tools(registry, SystemsClient(SystemsContext(root=root)))
+    desk = clients_from_env(env)
     transport = DestinationTransport(policy)
     safe_fetch = SafeFetch(transport)
     web_ctx = WebContext(
-        root=root, policy=policy, transport=transport, fetch=safe_fetch
+        root=root,
+        policy=policy,
+        transport=transport,
+        fetch=safe_fetch,
+        vercel=desk["vercel"],
+        browser_factory=guarded_browser_factory(transport),
     )
     register_web_tools(registry, WebClient(web_ctx))
     bind_dispatch_transport(registry, transport)
-    register_mobile_tools(registry, MobileClient(MobileContext(root=root)))
-    register_infra_tools(registry, InfraClient(InfraContext()))
-    register_quality_tools(registry, QualityClient(QualityContext(root=root)))
+    register_mobile_tools(
+        registry,
+        MobileClient(MobileContext(root=root, play=desk["play"], asc=desk["asc"])),
+    )
+    register_infra_tools(
+        registry,
+        InfraClient(InfraContext(railway=desk["railway"], projects=desk["projects"])),
+    )
+    register_quality_tools(
+        registry,
+        QualityClient(QualityContext(root=work, greptile=desk["greptile"])),
+    )
     register_packs_tools(
         registry,
         PacksClient(
@@ -228,23 +686,21 @@ def default_registry(
         registry,
         UltrathinkClient(UltrathinkContext(root=env.get("ULTRATHINK_ROOT", ""))),
     )
-    register_substrate_tools(
-        registry,
-        SubstrateClient(
-            env.get("SUBSTRATE_URL", "") or SUBSTRATE_DEFAULT_URL,
-            token=env.get("SUBSTRATE_TOKEN", "")
-            or env.get("SUBSTRATE_TOKEN_GROK_BOT", "")
-            or None,
-        ),
-    )
+    register_substrate_tools(registry, substrate_client)
+    from omega_prime.tools.cron_admin import register_cron_admin_tools
+    from omega_prime.tools.durable_surface import register_durable_surface_tools
+    from omega_prime.tools.learning_surface import register_learning_surface_tools
+
+    register_cron_admin_tools(registry, root)
+    register_learning_surface_tools(registry, root / "omega_prime")
+    register_durable_surface_tools(registry, root)
     # Prime capability families are config-gated (default off): a disabled
     # family is not registered and is absent from the offered roster (LOOP-05).
-    # RLM needs a live parent agent, so registration happens where the agent's
-    # registry is built (the delegate_task precedent: skipped here). The
-    # harness family is self-contained (needs only `root`), so it registers
-    # here when its flag is on. Goals, heartbeat, and autonomous are likewise
-    # self-contained. Messaging needs a session name, so it registers where the
-    # agent's registry is built (the delegate_task precedent: skipped here).
+    # RLM registers on the desk parent when its flag is on. Without a child
+    # model the tools stay served and spawn/create answer
+    # ``not_configured: provider``. Messaging registers on the seat session
+    # name when its flag is on. Harness, goals, heartbeat, autonomous, and
+    # kernel are self-contained and register here when their flags are on.
     from omega_prime.config import family_config, load_config, prime_enabled
     from omega_prime.tools.autonomous import register_autonomous_tools
     from omega_prime.tools.goals import register_goal_tools
@@ -266,6 +722,35 @@ def default_registry(
         from omega_prime.tools.prime_runtime import register_prime_kernel_tools
 
         register_prime_kernel_tools(registry, root)
+    if prime_enabled(config, "rlm"):
+        from omega_prime.tools.rlm import register_rlm_tools
+
+        session_dir = _desk_store_path(work, state_value, "rlm")
+        session_dir.mkdir(parents=True, exist_ok=True)
+        rlm_parent = _RlmParent(registry, child_model, session_dir)
+        rlm_parent.rlm_unconfigured = child_model is None
+        register_rlm_tools(
+            registry,
+            rlm_parent,
+            run_child=None if child_model is None else _rlm_child_runner(rlm_parent),
+        )
+    if prime_enabled(config, "messaging"):
+        from omega_prime.tools.agent_message import register_messaging_tools
+
+        register_messaging_tools(registry, "bot-00-omega-prime")
+    # DESK-04: the production desk-pass driver ticks due ``desk_lead_pass``
+    # jobs against the shared JobStore on a background thread, serialized.
+    # It holds the runtime's parent shim — None without a provider env never
+    # crashes the server: every pass then writes explicit blocked receipts.
+    # Starting is idempotent; the driver shares the heartbeat store path
+    # convention (`root/cron/jobs.json`) so the desk pass and the plain cron
+    # tick see one schedule file. Built last so a catch-up tick meets the
+    # fully registered tool surface.
+    driver = DeskDriver(root, parent=parent, work_root=work)
+    registry.runtime_bindings["desk_driver"] = driver
+    # Started by the live server (stdio main / serve_sse), not here: building
+    # a registry is also how doctor, setup_check, the catalog and tests
+    # inspect the tool surface, and those must not spawn a ticking thread.
     return registry
 
 
@@ -441,10 +926,38 @@ def call_tool_handler(
         name = params.name
         arguments = params.arguments or {}
 
+        def _reenter(tool: str, args: dict) -> str:
+            if nested_depth() >= NESTED_DISPATCH_DEPTH:
+                return json.dumps(
+                    {
+                        "error": "nested_dispatch_depth",
+                        "reason": "inner dispatch exceeded depth 2",
+                        "tool": tool,
+                    }
+                )
+            with nested_depth_frame():
+                if allowed is not None and tool not in allowed:
+                    return json.dumps({"error": f"policy forbids {tool}", "tool": tool})
+                inner = ToolCall(
+                    name=tool,
+                    arguments=dict(args) if isinstance(args, dict) else {},
+                    principal=call.principal,
+                    transport=call.transport,
+                    request_id=call.request_id,
+                )
+
+                def _terminal() -> str:
+                    payload = args if isinstance(args, dict) else {}
+                    return registry.dispatch(tool, payload)
+
+                body, _outcome = run_tool_call(chain, inner, _terminal)
+                return body
+
         def _dispatch() -> str:
             if allowed is not None and name not in allowed:
                 return json.dumps({"error": f"policy forbids {name}", "tool": name})
-            return registry.dispatch(name, arguments)
+            with nested_dispatch_scope(_reenter):
+                return registry.dispatch(name, arguments)
 
         call = call_from_context(ctx, name, arguments, transport=transport)
         # ``is_error`` follows the payload: a null ``error`` is a status field,
@@ -498,6 +1011,25 @@ class Runtime:
     approval_log: ApprovalLog
     tool_names: list[str]
     gated_tools: list[str]
+    # DESK-02/03 contract: the directory the desk works on and the in-process
+    # delegate parent (None without a provider env — delegate_task then
+    # answers `not_configured: provider`).
+    work_root: Path
+    parent: Any
+
+
+def _desk_driver_of(runtime: object) -> DeskDriver | None:
+    """The live server's desk driver, or None when this runtime has none.
+
+    Test fakes stand in a bare registry; building a registry must not be the
+    only way to discover that, and a missing binding is not an error.
+    """
+    registry = getattr(runtime, "registry", None)
+    bindings = getattr(registry, "runtime_bindings", None)
+    if not isinstance(bindings, dict):
+        return None
+    driver = bindings.get("desk_driver")
+    return driver if isinstance(driver, DeskDriver) else None
 
 
 def load_runtime(
@@ -507,6 +1039,7 @@ def load_runtime(
     no_roster: bool = False,
     approvals: Sequence[tuple[str, str]] = (),
     env: Mapping[str, str] | None = None,
+    work_root: str | Path | None = None,
 ) -> Runtime:
     """Load roster, seat policy and approvals, then build the registry.
 
@@ -552,6 +1085,7 @@ def load_runtime(
         policy=policy,
         approval_log=log,
         env=dict(os.environ if env is None else env),
+        work_root=work_root,
     )
     tool_names = [tool.name for tool in _mcp_tools(registry, roster)]
     gated = [name for name in tool_names if registry.approval_required(name)]
@@ -564,6 +1098,10 @@ def load_runtime(
         approval_log=log,
         tool_names=tool_names,
         gated_tools=gated,
+        work_root=resolve_work_root(
+            root, dict(os.environ if env is None else env), work_root
+        ),
+        parent=registry.runtime_bindings.get("delegate_parent"),
     )
 
 
@@ -576,6 +1114,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="omega-prime-mcp-server")
     parser.add_argument("--root", type=Path, default=Path.cwd())
     parser.add_argument("--home", type=Path, default=Path.home())
+    parser.add_argument(
+        "--work-root",
+        type=Path,
+        default=None,
+        metavar="PATH",
+        help=(
+            "directory the desk works on: coding/IDE/quality roots follow it "
+            "while roster/policy stay on --root "
+            "(default: OMEGA_PRIME_WORK_ROOT, else --root)"
+        ),
+    )
     parser.add_argument(
         "--no-roster",
         action="store_true",
@@ -817,6 +1366,7 @@ def main(argv: list[str] | None = None) -> int:
             token=token,
             home=args.home,
             no_roster=args.no_roster,
+            work_root=args.work_root,
             public_url=args.public_url,
             allowed_hosts=tuple(args.allow_host),
             allowed_origins=tuple(args.allow_origin),
@@ -842,11 +1392,22 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         runtime = load_runtime(
-            root, args.home, no_roster=args.no_roster, approvals=approvals
+            root,
+            args.home,
+            no_roster=args.no_roster,
+            approvals=approvals,
+            work_root=args.work_root,
         )
     except ValueError as exc:
         return _fail(exc)
-    asyncio.run(_serve(build_server(runtime.registry, runtime.roster)))
+    driver = _desk_driver_of(runtime)
+    if driver is not None:
+        driver.start()
+    try:
+        asyncio.run(_serve(build_server(runtime.registry, runtime.roster)))
+    finally:
+        if driver is not None:
+            driver.stop()
     return 0
 
 

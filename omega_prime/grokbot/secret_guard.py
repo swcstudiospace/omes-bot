@@ -29,11 +29,7 @@ import stat
 from pathlib import Path
 
 from omega_prime.grokbot.audit import redact_sensitive
-
-try:
-    from omega_prime.grokbot._io import PRIVATE_FILE_MODE
-except ImportError:  # pragma: no cover - _io always ships with grokbot
-    PRIVATE_FILE_MODE = 0o600
+from omega_prime.tooling.fs import PRIVATE_FILE_MODE
 
 __all__ = [
     "SecretLeakError",
@@ -79,7 +75,7 @@ class SecretLeakError(ValueError):
 def enforce_token_file_mode(path: str | os.PathLike[str]) -> Path:
     """Require ``path`` to be a regular file with mode exactly ``0o600``.
 
-    This is the strict form of :func:`omega_prime.grokbot._io.read_secret_file`
+    This is the strict form of :func:`omega_prime.tooling.fs.read_secret_file`
     semantics: any file accepted here (regular, no group/other bits) is also
     accepted there, while lax-but-group-closed modes such as ``0o400`` are
     rejected so checked-in fixtures cannot drift from the deploy convention.

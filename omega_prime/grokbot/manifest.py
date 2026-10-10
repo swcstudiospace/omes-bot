@@ -25,13 +25,13 @@ from urllib.parse import urlsplit, urlunsplit
 
 from omega_prime import __version__ as PACKAGE_VERSION
 from omega_prime.config import PRIME_FAMILIES, load_config, prime_enabled
-from omega_prime.grokbot._io import atomic_write_text
 from omega_prime.mcp_server import (
     SERVER_VERSION,
     Runtime,
     RuntimeConfigError,
     load_runtime,
 )
+from omega_prime.tooling.fs import atomic_write_text
 
 MANIFEST_VERSION = "1.0.0"
 DEFAULT_URL = "http://127.0.0.1:8000/sse"

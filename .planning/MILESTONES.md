@@ -1,5 +1,46 @@
 # Milestones
 
+
+## v14 — Boundary alignment (2026-10-10)
+
+**Status:** Complete. 4/4 phases, 10/10 requirements Done. Audit passed with no exceptions. Closeout type: verified for v14 requirements. Pre-existing dormant seeds and the archived v9 UAT were not acknowledged.
+
+**Core value delivered:** The agent loop and harness are the center. The Grok Bot boundary serves the ported logic. `agent/` and `tools/` do not import `grokbot`. Nested `omega_command` calls re-enter the host roster and interceptor chain. `rlm` and `messaging` register when their flags are on. Cron admin, autolearn, advisor, and `durable_status` are served. GoalStore stays on the goals family.
+
+**Verification:** Final tree: pytest 1992 passed. `python -m mypy omega_prime` exit 0 (327 files). `ruff check` and `ruff format --check` exit 0 (366 files). Evals 26 passed. `setup_check` serves 117 roster tools. All seven Prime flags: served set equals the roster, 154 names. `catalog --check` and `assemble --check` exit 0.
+
+**Limits:** no live Grok account or live model call. Prime families stay off. `durable_status` reads the cron journal, not the desk-parent journal. `VALIDATION.md` and `SECURITY.md` were not generated for phases 71–74. This closeout does not commit or tag. The work is uncommitted on `v14-boundary-alignment`.
+
+**Archive:** `milestones/v14-phases/`. `.planning/v14-MILESTONE-AUDIT.md`. Requirements `milestones/v14-REQUIREMENTS.md`. Roadmap `milestones/v14-ROADMAP.md`.
+
+**Not acknowledged (still visible):** dormant seeds and phase 48 UAT (archived v9). Acknowledging them would hide future work. They are not v14 gaps.
+
+## v13 — Grok Bot specialisation (2026-10-09)
+
+**Status:** Complete. 3/3 phases, 10/10 requirements Done. Audit passed with no exceptions. Closeout type: verified for v13 requirements. Pre-existing dormant seeds and the archived v9 UAT were not acknowledged.
+
+**Core value delivered:** Grok Bot calls Omega Prime on purpose. A user message that is only `/omega-*` runs `omega_command` and does not call the model. Workflows `onboard`, `python-clean`, `connectors`, and `desk` dispatch registry tools in a fixed order. The template names routines `onboard`, `python-clean`, and `connectors`. First run seeds one memory and lists missing connector env names without taking a secret in chat.
+
+**Verification:** Final tree: pytest 1957 passed. `mypy omega_prime` exit 0 (317 files). `ruff check` and `ruff format --check` exit 0 (356 files). Evals 26 passed. `setup_check` serves 110 roster tools. `catalog --check` and `assemble --check` exit 0.
+
+**Limits:** no live Grok account, live model call, or live connector call. Prime families stay off. SEED-010's MCP prompts and resources are not built. `VALIDATION.md` and `SECURITY.md` were not generated for phases 68–70.
+
+**Archive:** `milestones/v13-phases/`. `.planning/v13-MILESTONE-AUDIT.md`. Requirements `milestones/v13-REQUIREMENTS.md`. Roadmap `milestones/v13-ROADMAP.md`.
+
+**Not acknowledged (still visible):** 12 dormant seeds (SEED-001..004, 006..013) and phase 48 UAT (archived v9, 4 pending scenarios). Acknowledging them would hide future work. They are not v13 gaps.
+
+## v12 — Programming Desk merge (2026-10-09)
+
+**Status:** Complete. 4/4 phases, 13/13 requirements Done. Audit passed with no exceptions.
+
+**Core value delivered:** One Omega Prime (`bot-00-omega-prime`) runs the seven-seat Programming Desk. Desk contexts are live, a work root is separate from the install root, `delegate_task` is served, the lead pass runs from the live server, receipts are checked against captured commands, gates can target the work repo, and service clients exist behind env tokens. Source pin: `programming-desk` @ `9de3aa3`.
+
+**Verification:** Final tree: pytest 1942 passed. Phase 66 had first failed one catalog check; the catalog was refreshed before closeout. `mypy omega_prime` exit 0 (312 files). `ruff check` and `ruff format --check` exit 0. Evals 26 passed in Phase 65. `oneclick --dry-run` exit 0. `oneclick --self-test` 22 pass / 0 fail, 109 tools. A loopback SSE session called `lead_roster_status` (seven absorbed seats) and `delegate_task` (`not_configured: provider`).
+
+**Limits:** no live Railway, Greptile, Vercel, Play, or App Store call (no credentials). No live model call for `delegate_task`.
+
+**Archive:** `milestones/v12-phases/`. `.planning/v12-MILESTONE-AUDIT.md`. Requirements `milestones/v12-REQUIREMENTS.md`. Roadmap `milestones/v12-ROADMAP.md`.
+
 ## v11 — Grok Bot native (2026-10-09)
 
 **Status:** Complete. 2/2 phases, 14/14 plans, 17/17 requirements Done. Audit passed with no exceptions.
@@ -20,8 +61,7 @@ by the live verifier inside the container, stopped with exit 0 in 1.3 s, and sca
 store had left `main` red; event-loop blocking tool calls, a token leaking into access logs and scope denials missing
 from the audit log were found and fixed.
 
-**Archive:** not moved. `.planning/v11-MILESTONE-AUDIT.md`; phase directories stay under `.planning/phases/` until
-the user confirms moving them (same rule as v10).
+**Archive:** `milestones/v11-phases/` (moved 2026-10-09 on user confirmation). `.planning/v11-MILESTONE-AUDIT.md`; requirements archived as `milestones/v11-REQUIREMENTS.md`; roadmap section archived as `milestones/v11-ROADMAP.md`.
 
 **Decisions:** Python MCP host instead of the graph's TypeScript layout; static scoped bearer tokens instead of HMAC
 webhook ingress; per-principal scopes instead of tenant sandboxes; Dependabot ignores `oauthlib` 4 and

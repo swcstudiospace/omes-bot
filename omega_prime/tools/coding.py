@@ -10,6 +10,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from omega_prime.receipts import append_execution
 from omega_prime.tools.clarify import ClarifyLog, clarify
 from omega_prime.tools.file_ops import FileWorkspace
 from omega_prime.tools.registry import ToolRegistry
@@ -70,7 +71,20 @@ def register_coding_tools(
         cwd: str | None = None,
         timeout: float = DEFAULT_TIMEOUT_SECONDS,
     ) -> dict:
-        return run_terminal(root_path, argv, cwd=cwd, timeout=timeout)
+        result = run_terminal(root_path, argv, cwd=cwd, timeout=timeout)
+        exit_code = result.get("exit_code")
+        error = result.get("error")
+        if (
+            isinstance(exit_code, int)
+            and not isinstance(exit_code, bool)
+            and (error is None or str(error).startswith("timed out"))
+            and isinstance(argv, list)
+            and all(isinstance(part, str) for part in argv)
+        ):
+            output = f"{result.get('stdout') or ''}{result.get('stderr') or ''}"
+            work = root_path if cwd is None else Path(root_path) / cwd
+            append_execution(" ".join(argv), exit_code, output[-2000:], cwd=str(work))
+        return result
 
     def todo_write_tool(todos: list) -> dict:
         return todo_write(store, todos)

@@ -1,11 +1,13 @@
 ---
 id: SEED-005
-status: dormant
+status: resolved
 planted: 2026-10-07
 planted_during: v9 SOTA-upgrade phase 46/48 gap closure
 trigger_when: when planning the Omega milestone (v10) after v9 closure and the verified prior-branch push
 scope: Large
 ---
+
+Resolved by v12 (phases 64-67, audit passed 2026-10-09).
 
 # SEED-005: Programming Desk logic as the native 1-Bot Programmer runtime
 

@@ -40,11 +40,6 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
-from omega_prime.grokbot._io import (
-    PRIVATE_FILE_MODE,
-    atomic_write_json,
-    ensure_private_dir,
-)
 from omega_prime.grokbot.security import (
     SCOPE_CALL,
     SCOPE_READ,
@@ -54,6 +49,11 @@ from omega_prime.grokbot.security import (
     TokenStore,
     generate_token,
     hash_token,
+)
+from omega_prime.tooling.fs import (
+    PRIVATE_FILE_MODE,
+    atomic_write_json,
+    ensure_private_dir,
 )
 
 _fcntl: ModuleType | None

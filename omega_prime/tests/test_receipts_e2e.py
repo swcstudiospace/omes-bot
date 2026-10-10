@@ -13,7 +13,7 @@ import sys
 
 import pytest
 
-from omega_prime.receipts import ReceiptError, validate_receipt
+from omega_prime.receipts import ReceiptError, append_execution, validate_receipt
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.quality import QualityClient, QualityContext
 
@@ -77,8 +77,15 @@ def test_receipt_cites_real_commands_and_exit_codes(tmp_path):
         validate_receipt(dangling)
 
 
-def test_destructive_receipt_needs_another_approver_and_stamp(tmp_path):
+def test_destructive_receipt_needs_another_approver_and_stamp(tmp_path, monkeypatch):
+    monkeypatch.setenv("OMEGA_PRIME_COMMAND_LOG", str(tmp_path / "command-log.jsonl"))
     passing = _run([sys.executable, "-c", "print('staged')"])
+    append_execution(
+        passing["cmd"],
+        passing["exit_code"],
+        passing["output_tail"],
+        cwd=str(tmp_path),
+    )
     log = ApprovalLog()
     assert log.approve("infra_railway_redeploy", "ada").get("approved") is True
     assert (

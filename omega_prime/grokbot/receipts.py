@@ -6,7 +6,7 @@ A receipt records one launcher run so a later run (or an operator) can tell
 what was exported or served without ever touching a secret:
 
 * ``write_receipt(path, record)`` atomically replaces ``path`` with the JSON
-  encoding of ``record`` (via :func:`omega_prime.grokbot._io.atomic_write_text`,
+  encoding of ``record`` (via :func:`omega_prime.tooling.fs.atomic_write_text`,
   mode ``0600``). Use it after a manifest was actually exported or a host was
   served; never on the ``--dry-run`` path.
 * ``read_receipt(path)`` returns the stored mapping, or ``None`` when ``path``
@@ -33,8 +33,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from omega_prime.grokbot._io import PRIVATE_FILE_MODE, atomic_write_text
 from omega_prime.grokbot.manifest import manifest_digest
+from omega_prime.tooling.fs import PRIVATE_FILE_MODE, atomic_write_text
 
 logger = logging.getLogger(__name__)
 

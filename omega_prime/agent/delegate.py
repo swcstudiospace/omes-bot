@@ -98,6 +98,11 @@ def _run_child(parent: Any, goal: str, max_depth: int, max_children: int) -> str
     else:
         child_tools.pop("delegate_task", None)
     child = Agent(model=parent.child_model, tools=child_tools)
+    from omega_prime.durable.journal import TurnJournal, attach_journal
+
+    parent_journal = getattr(parent, "journal", None)
+    if isinstance(parent_journal, TurnJournal):
+        attach_journal(child, parent_journal)
     child.delegate_depth = child_depth
     child.max_depth = max_depth
     child.max_children = max_children

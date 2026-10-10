@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from omega_prime.receipts import append_execution
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.quality import (
     QUALITY_TOOL_NAMES,
@@ -47,6 +48,7 @@ class FakeGreptile:
 
 
 def _ctx(tmp_path, **overrides):
+    (tmp_path / "omega_prime" / "tests").mkdir(parents=True, exist_ok=True)
     base: dict[str, Any] = dict(
         root=str(tmp_path),
         run=FakeRunner(),
@@ -101,7 +103,9 @@ def test_greptile_actions(tmp_path):
     assert "not_configured" in bad["error"]
 
 
-def test_receipt_approve_stamps(tmp_path):
+def test_receipt_approve_stamps(tmp_path, monkeypatch):
+    monkeypatch.setenv("OMEGA_PRIME_COMMAND_LOG", str(tmp_path / "command-log.jsonl"))
+    append_execution("pytest", 0, "", cwd=str(tmp_path))
     target = tmp_path / "plan.json"
     target.write_text(json.dumps(_receipt()), encoding="utf-8")
     client = QualityClient(_ctx(tmp_path))

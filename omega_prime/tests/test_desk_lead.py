@@ -1,8 +1,34 @@
-"""Phase 26-02: lead pass routine over the intake queue."""
+"""Phase 26-02: lead pass routine over the intake queue.
+
+Phase 64 (DESK-04) adds the production wiring tests: the dispatch closure
+through a fake parent shim, the explicit no-parent blocked receipt, and the
+``desk_lead_pass`` cron job kind (serialization + no lock across the fake
+model call, mirroring the heartbeat test patterns).
+"""
 
 from __future__ import annotations
 
-from omega_prime.routines.desk_lead import run_lead_pass
+import json
+
+import pytest
+
+from omega_prime.agent.conversation_loop import Agent
+from omega_prime.agent.model import ScriptedModel
+from omega_prime.cron.scheduler import (
+    DESK_LEAD_KIND,
+    JobStore,
+    list_desk_lead_passes,
+    run_desk_lead_passes,
+    run_due_jobs,
+    schedule_desk_lead_pass,
+    tick_desk_lead_passes,
+)
+from omega_prime.receipts import validate_receipt
+from omega_prime.routines.desk_lead import (
+    desk_intake_path,
+    make_dispatch,
+    run_lead_pass,
+)
 from omega_prime.tools.lead import IntakeStore
 from omega_prime.tools.todo import TodoStore, todo_read
 
@@ -71,3 +97,210 @@ def test_missing_and_invalid_receipts_block(tmp_path):
     assert outcome["receipts"] == []
     assert len(outcome["invalid"]) == 1
     assert intake.counts() == {"open": 2}
+
+
+# -- Phase 64 DESK-04: production dispatch closure --------------------------
+
+
+def _fake_parent(summary: str = "changed the readme; verified with a read") -> Agent:
+    """A fake runtime.parent shim: real child turns on a scripted model."""
+    parent = Agent(model=ScriptedModel([]), tools={})
+    parent.child_model = ScriptedModel([{"role": "assistant", "content": summary}])
+    return parent
+
+
+def test_end_to_end_intake_claim_dispatch_receipt_ack(tmp_path):
+    intake = IntakeStore(tmp_path / "state" / "intake.json")
+    record = intake.submit("add a banner to the readme")
+    parent = _fake_parent()
+    outcome = run_lead_pass(intake, make_dispatch(parent, tmp_path))
+    ticket = outcome["tickets"][0]
+    assert ticket["status"] == "done"
+    assert outcome["invalid"] == []
+    receipt = outcome["receipts"][0]["receipt"]
+    validate_receipt(receipt)  # the receipt holds
+    assert receipt["task_id"] == ticket["ticket_id"]
+    assert receipt["bot"] == "bot-00-omega-prime"
+    assert receipt["commands"][0]["exit_code"] == 0
+    assert receipt["claims"][0]["evidence_command_index"] == 0
+    # The ask reached the child turn.
+    child_model = parent.child_model
+    assert child_model is not None
+    assert any(record["ask"] in json.dumps(messages) for messages in child_model.seen)
+    done = intake.get(record["intake_id"])
+    assert done is not None
+    assert done["status"] == "done"
+    assert done["by"] == "bot-00-omega-prime"
+    assert done["message"] == f"{ticket['ticket_id']} done"
+    assert intake.counts() == {"done": 1}
+
+
+def test_no_parent_produces_explicit_blocked_receipt(tmp_path):
+    intake = IntakeStore(tmp_path / "intake.json")
+    record = intake.submit("fix login")
+    outcome = run_lead_pass(intake, make_dispatch(None, tmp_path))
+    ticket = outcome["tickets"][0]
+    assert ticket["status"] == "blocked"
+    assert "no parent agent shim" in ticket["reason"]
+    blocked_receipt = ticket["receipt"]
+    assert isinstance(blocked_receipt, dict)
+    # An honest failure receipt holds its own shape.
+    validate_receipt(blocked_receipt)
+    assert blocked_receipt["commands"][0]["exit_code"] == 1
+    assert blocked_receipt["claims"][0]["expects_failure"] is True
+    assert outcome["receipts"] == []  # never read as done
+    reopened = intake.get(record["intake_id"])
+    assert reopened is not None
+    assert reopened["status"] == "open"
+    assert intake.counts() == {"open": 1}
+
+
+def test_failed_child_is_blocked_not_done(tmp_path):
+    intake = IntakeStore(tmp_path / "intake.json")
+    record = intake.submit("fix login")
+    # A shim whose child model is missing: delegate refuses explicitly.
+    parent = Agent(model=ScriptedModel([]), tools={})
+    parent.child_model = None
+    outcome = run_lead_pass(intake, make_dispatch(parent, tmp_path))
+    ticket = outcome["tickets"][0]
+    assert ticket["status"] == "blocked"
+    assert "child agent failed" in ticket["reason"]
+    validate_receipt(ticket["receipt"])
+    assert ticket["receipt"]["commands"][0]["exit_code"] == 1
+    assert outcome["receipts"] == []
+    reopened = intake.get(record["intake_id"])
+    assert reopened is not None
+    assert reopened["status"] == "open"
+
+
+def test_desk_intake_path_prefers_the_state_dir(monkeypatch, tmp_path):
+    monkeypatch.delenv("OMEGA_PRIME_STATE_DIR", raising=False)
+    assert (
+        desk_intake_path(tmp_path) == tmp_path / "omega_prime" / "state" / "intake.json"
+    )
+    monkeypatch.setenv("OMEGA_PRIME_STATE_DIR", str(tmp_path / "state"))
+    assert desk_intake_path(tmp_path) == tmp_path / "state" / "intake.json"
+    assert (
+        desk_intake_path(tmp_path, state_dir=tmp_path / "other")
+        == tmp_path / "other" / "intake.json"
+    )
+
+
+# -- Phase 64 DESK-04: the desk_lead_pass cron job kind ---------------------
+
+
+def _store(tmp_path):
+    return JobStore(tmp_path / "cron" / "jobs.json")
+
+
+def test_schedule_and_list_desk_pass(tmp_path):
+    store = _store(tmp_path)
+    job_id = schedule_desk_lead_pass(
+        store,
+        due_at=1000,
+        interval_seconds=60,
+        intake_path=tmp_path / "intake.json",
+        limit=2,
+    )
+    jobs = list_desk_lead_passes(store)
+    assert len(jobs) == 1
+    assert jobs[0]["id"] == job_id
+    assert jobs[0]["kind"] == DESK_LEAD_KIND
+    assert jobs[0]["intake_path"] == str(tmp_path / "intake.json")
+    assert jobs[0]["limit"] == 2
+    # Persisted.
+    assert len(list_desk_lead_passes(_store(tmp_path))) == 1
+    with pytest.raises(ValueError, match="interval_seconds"):
+        schedule_desk_lead_pass(store, due_at=0, interval_seconds=0)
+    with pytest.raises(ValueError, match="limit"):
+        schedule_desk_lead_pass(store, due_at=0, interval_seconds=60, limit=0)
+
+
+def test_desk_pass_tick_serializes_and_holds_no_lock_during_run(tmp_path):
+    store = _store(tmp_path)
+    first = schedule_desk_lead_pass(store, due_at=1000, interval_seconds=60)
+    second = schedule_desk_lead_pass(store, due_at=1000, interval_seconds=60)
+    observed = []
+
+    def runner(job):
+        # While the fake model call runs, the claim is already on disk and
+        # the store file is readable: no lock is held across the call.
+        on_disk = json.loads(store.path.read_text(encoding="utf-8"))["jobs"]
+        row = next(j for j in on_disk if j["id"] == job["id"])
+        observed.append((job["id"], row["claimed_at"], row["last_ran_at"]))
+        return {"tickets": []}
+
+    ran = tick_desk_lead_passes(store, 1000, runner)
+    assert [job["id"] for job in ran] == [first, second]
+    assert [row[0] for row in observed] == [first, second]
+    # The claim was persisted before the runner started, and the job had not
+    # run yet (the run record lands only after the runner returns).
+    assert observed[0][1] == 1000
+    assert observed[0][2] is None
+    assert observed[1][1] == 1000
+    # A same-instant re-tick never double-runs a pass.
+    assert tick_desk_lead_passes(store, 1000, runner) == []
+    assert len(observed) == 2
+
+
+def test_scheduler_runs_the_desk_pass_end_to_end(tmp_path):
+    store = _store(tmp_path)
+    intake_path = tmp_path / "state" / "intake.json"
+    intake = IntakeStore(intake_path)
+    record = intake.submit("add a banner to the readme")
+    job_id = schedule_desk_lead_pass(
+        store, due_at=1000, interval_seconds=60, intake_path=intake_path
+    )
+    ran = run_desk_lead_passes(store, 1000, _fake_parent(), tmp_path)
+    assert [job["id"] for job in ran] == [job_id]
+    result = ran[0]["last_result"]
+    assert result["tickets"][0]["status"] == "done"
+    validate_receipt(result["receipts"][0]["receipt"])
+    # The runner built its own IntakeStore from the same file (a separate
+    # reader, as in production), so the outcome is read back through the
+    # file — this test's in-memory snapshot never saw the pass's writes.
+    after = IntakeStore(intake_path)
+    done = after.get(record["intake_id"])
+    assert done is not None
+    assert done["status"] == "done"
+    # The interval reschedules; nothing is due again at the same instant.
+    assert ran[0]["due_at"] == 1060
+    assert run_desk_lead_passes(store, 1000, _fake_parent(), tmp_path) == []
+
+
+def test_no_parent_scheduler_pass_blocks_explicitly_not_no_dispatcher(tmp_path):
+    """Production never produces dispatch=None's "no dispatcher" outcome."""
+    store = _store(tmp_path)
+    intake_path = desk_intake_path(tmp_path)
+    intake = IntakeStore(intake_path)
+    intake.submit("fix login")
+    schedule_desk_lead_pass(
+        store, due_at=1000, interval_seconds=60, intake_path=intake_path
+    )
+    ran = run_desk_lead_passes(store, 1000, parent=None, work_root=tmp_path)
+    result = ran[0]["last_result"]
+    ticket = result["tickets"][0]
+    assert ticket["status"] == "blocked"
+    assert "no parent agent shim" in ticket["reason"]
+    assert "no dispatcher" not in json.dumps(result)
+    validate_receipt(ticket["receipt"])
+
+
+def test_run_due_jobs_leaves_desk_jobs_to_the_desk_tick(tmp_path):
+    store = _store(tmp_path)
+    model = ScriptedModel([{"role": "assistant", "content": "should-not-run"}])
+    desk_id = schedule_desk_lead_pass(
+        store,
+        due_at=1000,
+        interval_seconds=60,
+        intake_path=tmp_path / "intake.json",
+    )
+    plain_id = store.schedule("plain", 1000)
+    ran = run_due_jobs(store, 1000, model, {})
+    assert [job["id"] for job in ran] == [plain_id]
+    assert model.call_count == 1
+    desk_job = next(job for job in store.jobs if job["id"] == desk_id)
+    assert desk_job.get("last_ran_at") is None  # untouched by the model tick
+    # The desk driver still owns it.
+    desk_ran = tick_desk_lead_passes(store, 1000, lambda job: {})
+    assert [job["id"] for job in desk_ran] == [desk_id]

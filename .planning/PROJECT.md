@@ -26,10 +26,21 @@ v9 milestone: SOTA upgrade — the same one-agent product brought to state-of-th
 
 v10 milestone: Prime merge — the third agent joins. Prime Agent (`prime-agent/`, PrimeIntellect, MIT, pinned `967eb13f`) contributes its differentiating logic — RLM subagent recursion (`rlm.spawn`/`collect`), the continual harness (`/refine` with snapshots and rollback), goals/heartbeats/autonomous mode, and agent-to-agent messaging — behavior-ported into the one Python agent per the v1–v9 precedent. The Rust workspace stays as an ignored read-only checkout and CI-built parity oracle. The repo relicenses to AGPL-3.0 (Spectrum Web Co 2026) and hardens to enterprise open-source standards. User decisions (2026-10-08): behavior-port architecture (no PyO3 boundary exists upstream; one-Python-process rule stands), capability-merge loop design, AGPL-3.0 relicense, degrade-with-warning for Prime capability failures.
 
-## Last Milestone: v11 Grok Bot native (shipped 2026-10-09)
+## Current Milestone
 
-**Status:** Shipped. Audit passed 17/17 with no exceptions (`.planning/v11-MILESTONE-AUDIT.md`). No next milestone is
-scoped. Archiving the phase directories awaits the user's confirmation.
+None. v14 shipped 2026-10-10. The next milestone is not scoped.
+
+## Last Milestone: v14 Boundary alignment (shipped 2026-10-10)
+
+**Status:** Shipped. Audit passed 10/10 with no exceptions (`.planning/v14-MILESTONE-AUDIT.md`). Phase directories are in `milestones/v14-phases/`. The tree is uncommitted on `v14-boundary-alignment`.
+
+**Goal:** The agent loop and harness core are the center. The Grok Bot boundary makes every ported logic usable (slash commands, nested dispatch, `rlm`, `messaging`, cron, learning, durable), and the core imports nothing from the boundary.
+
+v13 Grok Bot specialisation closed 2026-10-09: audit passed 10/10 (`.planning/v13-MILESTONE-AUDIT.md`). v12 Programming Desk merge closed 2026-10-09: audit passed 13/13 (`.planning/v12-MILESTONE-AUDIT.md`).
+
+## Prior: v11 Grok Bot native (shipped 2026-10-09)
+
+**Status:** Shipped. Audit passed 17/17 with no exceptions (`.planning/v11-MILESTONE-AUDIT.md`). Phase directories are in `milestones/v11-phases/`.
 
 **Goal:** Make the one-command Grok Bot attachment production-grade and enterprise-ready.
 Phase 62 finishes the shipped `omega_prime/grokbot/` runtime (fail-closed remote auth,
@@ -65,12 +76,15 @@ user-approved exceptions for LOOP-07 and REPO-04), `prime-agent` registered as a
 - ✓ SOTA engineering: egress hardening, lint and types, lockfile, provider protocols, hermetic evals — v9
 - ✓ Prime merge: loop wiring, typed boundary, durable RLM, `prime-agent` git submodule; audit passed 32/32 (2 user-approved exceptions) — v10
 - ✓ Grok Bot native host: fail-closed remote auth and startup, truthful health and manifest, tamper-evident audit, Streamable HTTP, scoped revocable tokens, approval gateway, rate limits and circuit breaker, metrics and NDJSON logs, live verifier, hardened deployment kit; audit passed 17/17 — v11
+- ✓ Programming Desk merge: configured desk, work root, served `delegate_task`, lead pass, receipts, target gates, service clients behind env tokens; audit passed 13/13 — v12
+- ✓ Grok Bot specialisation: `/omega-*` via `omega_command`, fixed workflows, named routines, one seeded memory, connector requests that never copy a token; audit passed 10/10 — v13
+- ✓ Boundary alignment: slash engine in core, nested host gates, `rlm` and `messaging` served behind flags, cron/learning/durable surfaces; audit passed 10/10 — v14
 - Prime behavior-port baseline and Rust parity-oracle CI are inherited archival evidence. Phase 61 loop wiring, typed boundary (all seven Prime families), durable RLM, config-derived prompt and the pre-v10 transcript comparison are exercised and independently reviewed (full suite 980 passed).
 - AGPL repository and current native bridge license/build coverage — verified locally. Cargo Dependabot is a user-approved exception (2026-10-09): the Cargo path dependencies live in the ignored read-only prime-agent checkout; cargo-deny and pip-audit run.
 
 ### Active
 
-- None open. v11 shipped 2026-10-09; moving the phase directories into `milestones/v11-phases/` awaits the user's confirmation.
+- None open. v14 shipped 2026-10-10. Dormant seeds remain visible and were not acknowledged.
 
 ### Out of Scope
 
@@ -100,8 +114,9 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 
 ## Environment Facts
 
-- Planning root and code repo: `/root/src/repos/omega-prime`; current branch
-  `v6-grok-ship`. v10 Prime merge shipped 2026-10-08. Never commit the
+- Planning root and code repo: `/root/src/repos/omega-prime`; working branch
+  on 2026-10-10 is `v14-boundary-alignment` (HEAD `4c2ba56`, v14 work
+  uncommitted). v10 Prime merge shipped 2026-10-08. Never commit the
   `prime-agent/` checkout itself (ignored upstream, like `hermes-agent/` and
   `oh-my-pi/`). Do not push, merge, or tag without an explicit user request.
 - GSD CLI: `node /root/.hermes/gsd-core/bin/gsd-tools.cjs`, run from this repo.
@@ -154,6 +169,7 @@ Pinned reads (see `VENDOR.md`): Hermes `1a4508e2aff2db5f50409893a2115be777bd5643
 | v10 degrades with warning on Prime capability failure | Prime families are default-off flags; Prime-disabled behavior matches pre-v10 exactly (2026-10-08) | ✓ Good |
 | v10 ignores PYSEC-2026-4114 instead of forcing oauthlib 4 | tweepy 4.17 pins `oauthlib<4`; the advisory is an authorization-server PKCE timing oracle this process does not host (2026-10-08) | ✓ Good |
 | v11 hardens the Python MCP host and adds seven improvements instead of a new bridge | The ultrathink graph assumed a TypeScript gateway; this repo's Grok Bot surface is the MCP tool host in `omega_prime/grokbot/`. Static scoped bearer tokens replace HMAC webhooks; per-principal scopes replace tenant sandboxes (2026-10-09) | — Pending |
+| v14 keeps the slash engine in core and serves every flagged family from the default host | Core must not import the boundary. `rlm` reuses the desk parent. `messaging` uses the seat session. Plane tools are always on. Families stay default-off (2026-10-10) | ✓ Good |
 
 ## Evolution
 
@@ -173,4 +189,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-10-08 after exact32-ID integration audit reopened10 literal criteria; bounded existing-port repairs continue before Cargo/DONE decisions*
+*Last updated: 2026-10-10 after v14 Boundary alignment audit passed 10/10*

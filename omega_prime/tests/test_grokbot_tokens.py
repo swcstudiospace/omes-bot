@@ -16,7 +16,6 @@ from starlette.responses import JSONResponse
 from starlette.routing import Route
 from starlette.testclient import TestClient
 
-from omega_prime.grokbot._io import atomic_write_json
 from omega_prime.grokbot.security import (
     AuthMiddleware,
     Principal,
@@ -34,6 +33,7 @@ from omega_prime.grokbot.tokens import (
     main,
     revoke_token,
 )
+from omega_prime.tooling.fs import atomic_write_json
 
 START = 1_800_000_000.0
 DAY = 86400.0

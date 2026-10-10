@@ -6,6 +6,7 @@ import json
 import sys
 from pathlib import Path
 
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.ide import IDE_TOOL_NAMES, register_ide_tools
 from omega_prime.tools.offer import offered_schemas
 from omega_prime.tools.registry import ToolRegistry
@@ -262,27 +263,10 @@ def test_roster_offers_both_ide_names(tmp_path: Path):
     root = tmp_path / "ws"
     root.mkdir()
     registry = _registry(root)
-    roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
+    roster = roster_names(ROSTER.read_text(encoding="utf-8"))
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]
 
     assert list(IDE_TOOL_NAMES) == ["lsp_diagnostics", "dap_stop"]
     for name in IDE_TOOL_NAMES:
         assert name in names
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names

@@ -34,18 +34,18 @@ from urllib.parse import urlsplit
 from omega_prime.grokbot import doctor as _doctor
 from omega_prime.grokbot import receipts as _receipts
 from omega_prime.grokbot import rerun as _rerun
-from omega_prime.grokbot._io import (
-    PRIVATE_FILE_MODE,
-    atomic_write_text,
-    ensure_private_dir,
-    read_secret_file,
-)
 from omega_prime.grokbot.manifest import generate_manifest
 from omega_prime.grokbot.security import (
     SecurityConfigError,
     TokenStore,
     check_bind_safety,
     generate_token,
+)
+from omega_prime.tooling.fs import (
+    PRIVATE_FILE_MODE,
+    atomic_write_text,
+    ensure_private_dir,
+    read_secret_file,
 )
 
 EXIT_OK = 0
@@ -106,7 +106,7 @@ def _launch_lock_base(export_manifest: Path | None, port: int) -> Path:
 
 @contextlib.contextmanager
 def _hold_launch_lock(base: Path) -> Iterator[None]:
-    """Hold an exclusive ``flock`` on ``<base>.lock`` (``_io`` sidecar use).
+    """Hold an exclusive ``flock`` on ``<base>.lock`` (``fs`` sidecar use).
 
     A foreign-owned or otherwise unusable lock file never blocks a launch:
     warn on stderr and proceed without the lock (fail-open for availability;
@@ -321,6 +321,7 @@ def run_oneclick(
     log_format: str = "text",
     force: bool = False,
     resume: bool = False,
+    work_root: Path | None = None,
 ) -> int:
     """Execute the 1-click workflow."""
     sse = transport == "sse"
@@ -332,7 +333,7 @@ def run_oneclick(
     # ---
     # --- Double-submit guard: check_rerun through manifest export runs under
     # --- an exclusive flock on a per-launch lock file (a `<receipt>.lock`
-    # --- sidecar, the `_io` flock convention), so two concurrent launches for
+    # --- sidecar, the `fs` flock convention), so two concurrent launches for
     # --- the same manifest cannot both pass the guard and export. The lock is
     # --- released before serve dispatch below.
     _guard: Any = contextlib.nullcontext()
@@ -586,6 +587,7 @@ def run_oneclick(
                 audit=audit,
                 token_store_path=token_store_path,
                 log_format=log_format,
+                work_root=work_root,
             )
         except (KeyboardInterrupt, Exception):
             _finish("interrupted", 130)
@@ -886,6 +888,13 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Continue into serve even when a previous host is already running",
     )
+    parser.add_argument(
+        "--work-root",
+        type=Path,
+        default=None,
+        help="Repo the desk tools act on (forwarded to the SSE host; "
+        "default: OMEGA_PRIME_WORK_ROOT, else the install root)",
+    )
     args = parser.parse_args(argv)
 
     if args.self_test:
@@ -922,6 +931,7 @@ def main(argv: list[str] | None = None) -> int:
         log_format=args.log_format,
         force=args.force,
         resume=args.resume,
+        work_root=args.work_root.resolve() if args.work_root is not None else None,
     )
 
 

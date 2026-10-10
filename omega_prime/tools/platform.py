@@ -6,10 +6,12 @@ over ``browser`` and do not open a socket when it is missing.
 
 from __future__ import annotations
 
+import sys
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from omega_prime.receipts import append_execution
 from omega_prime.tools.browser import BrowserSession
 from omega_prime.tools.execute import execute_code as run_execute_code
 from omega_prime.tools.mcp_client import mcp_call as run_mcp_call
@@ -33,7 +35,23 @@ def register_platform_tools(
     """Register the four platform tools. The model does not send ``home``."""
 
     def execute_code(code: str, timeout: float = 5) -> dict[str, Any]:
-        return run_execute_code(code, home=home, timeout=timeout)
+        result = run_execute_code(code, home=home, timeout=timeout)
+        exit_code = result.get("exit_code")
+        error = result.get("error")
+        if (
+            isinstance(code, str)
+            and isinstance(exit_code, int)
+            and not isinstance(exit_code, bool)
+            and (error is None or str(error).startswith("timed out"))
+        ):
+            output = f"{result.get('stdout') or ''}{result.get('stderr') or ''}"
+            append_execution(
+                " ".join((sys.executable, "-c", code)),
+                exit_code,
+                output[-2000:],
+                cwd=str(home),
+            )
+        return result
 
     def mcp_call(
         command: Any,

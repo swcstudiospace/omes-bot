@@ -27,9 +27,20 @@ IDE_TOOL_NAMES = (
 )
 
 
-def register_ide_tools(registry: ToolRegistry, root: str | Path) -> list[str]:
-    """Register both IDE tools. ``root`` jails every path the model sends."""
-    workspace = FileWorkspace(root)
+def register_ide_tools(
+    registry: ToolRegistry,
+    root: str | Path,
+    *,
+    jail: str | Path | None = None,
+) -> list[str]:
+    """Register both IDE tools. ``root`` jails every path the model sends.
+
+    ``jail`` moves the workspace — the jailed paths and the cwd/session root
+    the LSP and DAP servers spawn with — to a work root distinct from the
+    install ``root`` (DESK-02). It defaults to ``root``, keeping the
+    historical behavior.
+    """
+    workspace = FileWorkspace(jail if jail is not None else root)
     root_path = workspace.root
 
     def lsp_diagnostics(

@@ -332,6 +332,7 @@ def create_sse_app(
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES,
     shutdown_grace: float = 20.0,
     env: dict[str, str] | None = None,
+    work_root: Path | str | None = None,
     interceptors: Sequence[ToolCallInterceptor] = (),
     token_store_path: Path | str | None = None,
     rate_limit: int = 600,
@@ -393,7 +394,12 @@ def create_sse_app(
     origins = _unique(origins)
 
     runtime: Runtime = load_runtime(
-        root, home, no_roster=no_roster, approvals=approvals, env=env
+        root,
+        home,
+        no_roster=no_roster,
+        approvals=approvals,
+        env=env,
+        work_root=work_root,
     )
     # The registry already holds this log. Swap the clock on the same object so
     # TTL checks inside tool dispatch see the injected clock.
@@ -831,6 +837,7 @@ def serve_sse(
     max_body_bytes: int = DEFAULT_MAX_BODY_BYTES,
     shutdown_grace: float = 20.0,
     env: dict[str, str] | None = None,
+    work_root: Path | str | None = None,
     interceptors: Sequence[ToolCallInterceptor] = (),
     token_store_path: Path | str | None = None,
     rate_limit: int = 600,
@@ -879,6 +886,7 @@ def serve_sse(
             max_body_bytes=max_body_bytes,
             shutdown_grace=shutdown_grace,
             env=env,
+            work_root=work_root,
             interceptors=interceptors,
             token_store_path=token_store_path,
             rate_limit=rate_limit,
@@ -933,11 +941,22 @@ def serve_sse(
             port,
         )
     server = GracefulServer(config, state=app.state, grace=shutdown_grace)
+    driver = (
+        runtime.registry.runtime_bindings.get("desk_driver")
+        if hasattr(runtime.registry, "runtime_bindings")
+        else None
+    )
+    if driver is not None:
+        driver.start()
     try:
-        server.run()
-    except SystemExit as exc:
-        return exc.code if isinstance(exc.code, int) else 1
-    return 0
+        try:
+            server.run()
+        except SystemExit as exc:
+            return exc.code if isinstance(exc.code, int) else 1
+        return 0
+    finally:
+        if driver is not None:
+            driver.stop()
 
 
 create_mcp_sse_app = create_sse_app

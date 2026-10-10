@@ -77,10 +77,9 @@ def check_registry(root: Path) -> tuple[bool, str]:
     listed = asyncio.run(list_tools_handler(registry, roster)(None, None))
     served = [tool.name for tool in listed.tools]
     missing = [name for name in roster if name not in served]
-    # delegate_task and the RLM family need a live parent agent (session/host),
-    # so default_registry intentionally does not serve them (same precedent).
-    # The harness family is config-gated (default off), so it is likewise
-    # absent from the default registry unless prime.harness.enabled is set.
+    # Prime families are config-gated (default off), including rlm and
+    # messaging. With a flag on, default_registry serves that family. This
+    # check still treats a disabled family as an expected absence.
     from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
     from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
     from omega_prime.tools.goals import GOAL_TOOL_NAMES
@@ -98,9 +97,7 @@ def check_registry(root: Path) -> tuple[bool, str]:
         | set(MESSAGING_TOOL_NAMES)
         | set(KERNEL_TOOL_NAMES)
     )
-    missing = [
-        name for name in missing if name != "delegate_task" and name not in gated
-    ]
+    missing = [name for name in missing if name not in gated]
     if missing:
         return False, f"registry does not serve: {', '.join(missing)}"
     return True, f"registry serves {len(served)} roster tools"

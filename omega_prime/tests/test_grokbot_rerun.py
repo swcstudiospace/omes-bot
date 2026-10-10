@@ -13,10 +13,10 @@ from typing import Any
 import pytest
 
 from omega_prime.grokbot import oneclick, receipts, rerun
-from omega_prime.grokbot._io import atomic_write_text
 from omega_prime.grokbot.manifest import find_repo_root
 from omega_prime.grokbot.oneclick import run_oneclick
 from omega_prime.grokbot.security import generate_token
+from omega_prime.tooling.fs import atomic_write_text
 
 SECRET = "rerun-guard-secret-0123456789-abcdef"
 

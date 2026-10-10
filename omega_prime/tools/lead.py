@@ -28,7 +28,7 @@ from typing import Any
 from omega_prime.credentials.redact import redact_text, redact_value
 from omega_prime.memory.hindsight import Hindsight
 from omega_prime.memory.store import MemoryStore
-from omega_prime.receipts import ReceiptError, validate_receipt
+from omega_prime.receipts import ReceiptError, load_executions, validate_receipt
 from omega_prime.tools.registry import ToolRegistry
 
 LEAD_TOOL_NAMES = (
@@ -65,6 +65,39 @@ GRAPH_ACTIONS = {
 
 def _error(code: str, reason: str, **extra: Any) -> dict[str, Any]:
     return {"error": f"{code}: {reason}", **extra}
+
+
+_DEFAULT_ROSTER = Path("omega_prime/grokbot/rosters/default.json")
+
+
+def _absorbed_seats(root: Path) -> list[dict[str, Any]]:
+    """Seats folded into bot-00-omega-prime. Missing file → empty list."""
+    path = root / _DEFAULT_ROSTER
+    if not path.is_file():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, dict):
+        return []
+    seats = data.get("absorbed_seats")
+    if not isinstance(seats, dict):
+        return []
+    absorbed_into = data.get("bot_id") or "bot-00-omega-prime"
+    rows: list[dict[str, Any]] = []
+    for name, entry in seats.items():
+        record = entry if isinstance(entry, dict) else {}
+        rows.append(
+            {
+                "seat": name,
+                "pack": record.get("pack"),
+                "source_bot_id": record.get("bot_id"),
+                "absorbed_pack_of": absorbed_into,
+                "registered_gateway_seat": False,
+            }
+        )
+    return rows
 
 
 class IntakeStore:
@@ -471,7 +504,7 @@ class LeadClient:
                 "problems": ["receipt contains a credential shape (PD-4)"],
             }
         try:
-            validate_receipt(receipt)
+            validate_receipt(receipt, executions=load_executions())
         except ReceiptError as exc:
             return {
                 "ok": False,
@@ -558,7 +591,12 @@ class LeadClient:
         }
 
     def roster_status(self) -> dict[str, Any]:
-        """Registered packs, tool counts, intake queue, completeness."""
+        """Registered packs, tool counts, intake queue, completeness.
+
+        Absorbed desk seats come from ``grokbot/rosters/default.json`` when
+        that file is under the install root. They are packs folded into
+        ``bot-00-omega-prime``, not separately registered gateway seats.
+        """
         packs = []
         records = self.ctx.roster.packs if self.ctx.roster else {}
         doctor = self.ctx.roster.doctor_results() if self.ctx.roster else {}
@@ -573,7 +611,12 @@ class LeadClient:
                 }
             )
         intake = self.ctx.intake.counts() if self.ctx.intake else {}
-        return {"packs": packs, "intake_queue": intake, "complete": bool(packs)}
+        return {
+            "packs": packs,
+            "intake_queue": intake,
+            "complete": bool(packs),
+            "absorbed_seats": _absorbed_seats(Path(self.ctx.root)),
+        }
 
     # -- writes (approval-gated at registration) -------------------------
 
@@ -1275,7 +1318,7 @@ _SCHEMAS: dict[str, tuple[str, dict]] = {
         ),
     ),
     "lead_roster_status": (
-        "Registered packs, tool counts, intake queue. Read-only.",
+        "Registered packs, absorbed desk seats, intake queue. Read-only.",
         _object({}, []),
     ),
 }

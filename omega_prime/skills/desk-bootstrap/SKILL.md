@@ -10,12 +10,13 @@ gates: [G-7]
 ## Omega Prime adaptation
 
 Omega Prime is one bot, not seven seats: there is no Desk Gateway to
-connect and no LEAD to wait for. First run = Grok Bot install
-from the Omega Prime template, then `grokbot/SETUP.md` (secrets, optional
-tool host, smoke prompt). The `lead_*` tools (`lead_doctor`,
-`lead_roster_status`, `lead_ownership_resolve`) replace the
-`desk_doctor` calls below; read the rest of this skill as the
-procedure those tools implement.
+connect and no LEAD to wait for. First run is `/omega-onboard` through
+the `omega_command` tool, then `grokbot/SETUP.md` (secrets stay in host
+env, optional tool host, smoke prompt). Do not ask the operator to paste
+a token into chat. The `/desk bootstrap` procedure below is the old
+seven-seat gateway flow, not this bot's first run. The `lead_*` tools
+(`lead_doctor`, `lead_roster_status`, `lead_ownership_resolve`) replace
+the `desk_doctor` calls in that old flow.
 
 ## When this applies (L1)
 

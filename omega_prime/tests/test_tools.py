@@ -7,12 +7,15 @@ import json
 import socket
 from pathlib import Path
 
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
 from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
 from omega_prime.tools.clarify import ClarifyLog, clarify
 from omega_prime.tools.coding import CODING_TOOL_NAMES, register_coding_tools
+from omega_prime.tools.cron_admin import CRON_ADMIN_TOOL_NAMES
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.discord import DISCORD_TOOL_NAMES
+from omega_prime.tools.durable_surface import DURABLE_TOOL_NAMES
 from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
@@ -20,8 +23,10 @@ from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
+from omega_prime.tools.learning_surface import LEARNING_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
 from omega_prime.tools.offer import offered_schemas
+from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
 from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
@@ -37,23 +42,6 @@ from omega_prime.tools.x import X_TOOL_NAMES
 
 OMEGA_PRIME = Path(__file__).resolve().parents[1]
 ROSTER = OMEGA_PRIME / "contracts" / "tool-rosters" / "omega-prime.yaml"
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
 
 
 def _registry(root: Path, web=None, vision=None) -> ToolRegistry:
@@ -426,10 +414,11 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
     schema_names = [item["function"]["name"] for item in registry.schemas()]
     assert registered == list(CODING_TOOL_NAMES)
     assert schema_names == list(CODING_TOOL_NAMES)
-    assert _roster_names(ROSTER.read_text(encoding="utf-8")) == list(
+    assert roster_names(ROSTER.read_text(encoding="utf-8")) == list(
         CODING_TOOL_NAMES
         + GROWTH_TOOL_NAMES
         + DELEG_TOOL_NAMES
+        + OMEGA_COMMAND_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES
@@ -444,6 +433,9 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         + PACKS_TOOL_NAMES
         + ULT_TOOL_NAMES
         + SUBSTRATE_TOOL_NAMES
+        + CRON_ADMIN_TOOL_NAMES
+        + LEARNING_TOOL_NAMES
+        + DURABLE_TOOL_NAMES
         + RLM_TOOL_NAMES
         + HARNESS_TOOL_NAMES
         + GOAL_TOOL_NAMES

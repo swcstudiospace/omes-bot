@@ -1,11 +1,13 @@
 ---
 id: SEED-014
-status: dormant
+status: resolved
 planted: 2026-10-07
 planted_during: v9 SOTA-upgrade phase 46/48 gap closure
 trigger_when: when planning the Omega milestone (v10) after v9 closure and the verified prior-branch push
 scope: Medium
 ---
+
+Desk portion resolved by v12 verification (2026-10-09). Live third-party APIs remain uncalled where credentials are absent; that limit is in v12-MILESTONE-AUDIT.md.
 
 # SEED-014: Real end-to-end verification evidence for every integration
 

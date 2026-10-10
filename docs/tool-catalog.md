@@ -139,6 +139,14 @@ Find stored session messages whose content contains the query as a literal subst
 
 Delegate one goal, or a batch of goals, to a child agent. The result is the child's final response. background returns a handle and the child runs when that handle is joined.
 
+## omega_command
+
+- Family: Omega command
+- Approval: not required
+- Required params: command
+
+Run one Omega Prime slash command. Pass the user's /omega-... text. Use this instead of the underlying tools when the user typed a slash command or asked for onboard, connectors, a Python check, desk status, doctor, roster, recall, retain, gates, or delegate. /omega-help lists every command.
+
 ## execute_code
 
 - Family: Platform
@@ -385,7 +393,7 @@ Wait for one bus job. Read-only.
 - Approval: not required
 - Required params: none
 
-Registered packs, tool counts, intake queue. Read-only.
+Registered packs, absorbed desk seats, intake queue. Read-only.
 
 ## sys_index_query
 
@@ -649,7 +657,7 @@ Data-plane health summary. Read-only.
 - Approval: not required
 - Required params: none
 
-Run the Omega Prime gates in the tree. Read-only.
+Run the target repo's gates and report each suite's real exit code. Read-only.
 
 ## qua_greptile_review
 
@@ -874,6 +882,62 @@ Mark a node completed and drop its claim. Requires approval.
 - Required params: graph_id, node_id, token
 
 Refresh the lease TTL for an active claim using the token from the claim result.
+
+## cron_jobs_list
+
+- Family: Cron
+- Approval: not required
+- Required params: none
+
+List every job in the scheduler's store (root/cron/jobs.json): id, kind, prompt, schedule and interval fields, next due, completion.
+
+## cron_job_create
+
+- Family: Cron
+- Approval: required
+- Required params: prompt
+
+Create one scheduled job in the scheduler's own store. Kinds are what the scheduler's drivers actually run: 'prompt' (run by the model-driven tick; one-shot without interval_seconds), 'desk_lead_pass' (recurring desk pass; needs positive interval_seconds, optional intake_path and limit) and 'session_heartbeat' (recurring; needs session and positive interval_seconds).
+
+## cron_job_remove
+
+- Family: Cron
+- Approval: required
+- Required params: job_id
+
+Remove one scheduled job by id from the scheduler's store.
+
+## autolearn_turn
+
+- Family: Learning
+- Approval: required
+- Required params: tool_calls, name, content
+
+Consider one finished turn for lesson capture: with enough tool calls, write the lesson as a skill (created, or edited when it already exists). Answers learned false with a reason when the turn was insubstantial.
+
+## advisor_note
+
+- Family: Learning
+- Approval: not required
+- Required params: note
+
+Build one advisor note together with its rendered advisory block.
+
+## advisor_render
+
+- Family: Learning
+- Approval: not required
+- Required params: notes
+
+Render several advisor notes as escaped advisory lines.
+
+## durable_status
+
+- Family: Durable
+- Approval: not required
+- Required params: none
+
+Report the cron turn journal and workflow checkpoint count.
 
 ## rlm_spawn
 
