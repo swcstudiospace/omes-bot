@@ -1,5 +1,19 @@
 # Milestones
 
+## v13 — Grok Bot specialisation (2026-10-09)
+
+**Status:** Complete. 3/3 phases, 10/10 requirements Done. Audit passed with no exceptions. Closeout type: verified for v13 requirements. Pre-existing dormant seeds and the archived v9 UAT were not acknowledged.
+
+**Core value delivered:** Grok Bot calls Omega Prime on purpose. A user message that is only `/omega-*` runs `omega_command` and does not call the model. Workflows `onboard`, `python-clean`, `connectors`, and `desk` dispatch registry tools in a fixed order. The template names routines `onboard`, `python-clean`, and `connectors`. First run seeds one memory and lists missing connector env names without taking a secret in chat.
+
+**Verification:** Final tree: pytest 1957 passed. `mypy omega_prime` exit 0 (317 files). `ruff check` and `ruff format --check` exit 0 (356 files). Evals 26 passed. `setup_check` serves 110 roster tools. `catalog --check` and `assemble --check` exit 0.
+
+**Limits:** no live Grok account, live model call, or live connector call. Prime families stay off. SEED-010's MCP prompts and resources are not built. `VALIDATION.md` and `SECURITY.md` were not generated for phases 68–70.
+
+**Archive:** `milestones/v13-phases/`. `.planning/v13-MILESTONE-AUDIT.md`. Requirements `milestones/v13-REQUIREMENTS.md`. Roadmap `milestones/v13-ROADMAP.md`.
+
+**Not acknowledged (still visible):** 12 dormant seeds (SEED-001..004, 006..013) and phase 48 UAT (archived v9, 4 pending scenarios). Acknowledging them would hide future work. They are not v13 gaps.
+
 ## v12 — Programming Desk merge (2026-10-09)
 
 **Status:** Complete. 4/4 phases, 13/13 requirements Done. Audit passed with no exceptions.

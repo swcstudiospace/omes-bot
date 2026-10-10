@@ -14,9 +14,12 @@
 - ✅ **v10 Prime merge** — Phases 53-61 (shipped 2026-10-09; audit passed)
 - ✅ **v11 Grok Bot native** — Phases 62-63 (shipped 2026-10-09; audit passed)
 - ✅ **v12 Programming Desk merge** — Phases 64-67 (shipped 2026-10-09; audit passed)
+- ✅ **v13 Grok Bot specialisation** — Phases 68-70 (shipped 2026-10-09; audit passed)
 
-Archives: `milestones/v1-ROADMAP.md` through `milestones/v12-ROADMAP.md`
+Archives: `milestones/v1-ROADMAP.md` through `milestones/v13-ROADMAP.md`
 with phase directories under `milestones/v1-phases/` through
-`milestones/v12-phases/`.
+`milestones/v13-phases/`.
 
-No milestone is in progress.
+## No active milestone
+
+v13 shipped 2026-10-09. Slash commands, workflows, routines, one seeded memory, and connector requests are on the served host (`omega_command`, 110 tools by default). The next milestone is not scoped.

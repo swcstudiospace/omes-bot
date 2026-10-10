@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-milestone: v12
-milestone_name: Programming Desk merge
+milestone: v13
+milestone_name: Grok Bot specialisation
 current_phase: none
 current_phase_name: none
 status: complete
-stopped_at: "v12 audit passed. 13/13 requirements. No milestone in progress."
-last_updated: "2026-10-09T23:40:00.000Z"
+stopped_at: "v13 complete: 3/3 phases, 10/10 requirements, audit passed. Archived to milestones/v13-phases/. No commit and no tag (commit_docs and git.create_tag are false)."
+last_updated: "2026-10-09T23:20:00.000Z"
 last_activity: 2026-10-09
-last_activity_desc: v12 Programming Desk merge archived.
+last_activity_desc: v13 audit passed. Slash commands served as omega_command. Default host serves 110 tools.
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 3
+  completed_phases: 3
+  total_plans: 3
+  completed_plans: 3
   percent: 100
 ---
 
@@ -24,30 +24,25 @@ progress:
 See: .planning/PROJECT.md
 
 **Core value:** One Omega Prime agent runs Hermes, Omp, and Prime in one Python process, and one command attaches it to Grok Bot as a hardened tool host.
-**Current focus:** none. v12 Programming Desk merge is complete.
+**Current focus:** None. v13 is complete. No next milestone is scoped.
 
 ## Current Position
 
 Phase: none
-Status: v12 complete 2026-10-09 (audit passed, 13/13)
-Last activity: 2026-10-09 - v12 archive
+Status: v13 audit passed 10/10 (`.planning/v13-MILESTONE-AUDIT.md`)
+Last activity: 2026-10-09 — phase directories archived to `milestones/v13-phases/`
 
-Phase completion: 4 of 4.
+Phase completion: 3 of 3.
 
 ## Accumulated Context
 
-### Decisions (v12, 2026-10-09)
+### Decisions (v13, 2026-10-09)
 
-- Behavior-port the programming desk under one bot. No second gateway.
-- Work root is separate from the install root. Default keeps the old coding jail.
-- `delegate_task` is served. No provider env returns `not_configured: provider`.
-- The desk driver starts from the live server, not from registry construction.
-- Service clients are urllib callers behind env tokens. Missing tokens stay `not_configured`.
-- Receipts match captured commands. The approver is an operator, not the authoring bot.
+- One new served tool, `omega_command`, is how Grok invokes a slash command. The Python agent uses the same dispatcher when the whole user message is `/omega-...`.
+- Workflows are fixed step lists. They dispatch registry tools. They do not invent success.
+- Connector onboarding reports missing env names. It never reads a secret into the reply.
+- `/omega-python` is ruff and compileall. Full suites stay on `/omega-gates`.
+- Prime families stay off by default.
+- Dormant seeds and the archived v9 UAT were not acknowledged. They stay visible. They are not v13 gaps.
 
-### Limits
-
-- No live Railway, Greptile, Vercel, Play, or App Store call in this environment.
-- No live model call for `delegate_task`.
-
-**Resume file:** .planning/v12-MILESTONE-AUDIT.md
+**Resume file:** .planning/v13-MILESTONE-AUDIT.md

@@ -1,33 +1,28 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v12 - Programming Desk merge",
+  "milestone": "v13 - Grok Bot specialisation (complete)",
   "phases": [
     {
-      "id": 64,
-      "name": "Desk runtime activation",
+      "id": 68,
+      "name": "Slash commands and workflows",
       "status": "complete"
     },
     {
-      "id": 65,
-      "name": "Receipts, gates and service clients",
+      "id": 69,
+      "name": "Grok surface",
       "status": "complete"
     },
     {
-      "id": 66,
-      "name": "Grok Bot clone-and-run proof",
-      "status": "complete"
-    },
-    {
-      "id": 67,
+      "id": 70,
       "name": "Milestone audit + closeout",
       "status": "complete"
     }
   ],
   "next": {
     "command": "/gsd:new-milestone",
-    "label": "Start the next milestone",
-    "reason": "v12 audit passed; nothing in progress"
+    "label": "Scope the next milestone",
+    "reason": "v13 archived; no next milestone is scoped"
   },
-  "updated_at": "2026-10-09T23:40:00.000Z"
+  "updated_at": "2026-10-09T23:20:00.000Z"
 }

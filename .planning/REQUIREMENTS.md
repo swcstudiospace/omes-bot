@@ -1,8 +1,14 @@
-# Requirements: Omega Prime
+# Requirements
 
-v12 (Programming Desk merge) is complete: 13/13 requirements, audit passed.
-The v12 requirements are archived in `milestones/v12-REQUIREMENTS.md`.
-Earlier milestones are archived as `milestones/v1-REQUIREMENTS.md` through
-`milestones/v11-REQUIREMENTS.md`.
+No active milestone.
 
-No milestone is in progress.
+v13 Grok Bot specialisation shipped 2026-10-09 and is archived:
+
+- `milestones/v13-REQUIREMENTS.md`
+- `milestones/v13-ROADMAP.md`
+- `milestones/v13-phases/`
+- `v13-MILESTONE-AUDIT.md`
+
+Dormant seeds under `seeds/` were not acknowledged at this close, so they stay visible. They are not open v13 requirements.
+
+Run `/gsd:new-milestone` to scope the next milestone.
