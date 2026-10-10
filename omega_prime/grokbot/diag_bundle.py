@@ -34,11 +34,11 @@ from pathlib import Path
 from typing import Any
 
 from omega_prime import __version__ as PACKAGE_VERSION
-from omega_prime.grokbot._io import atomic_write_json, ensure_private_dir
 from omega_prime.grokbot.audit import GrokBotAuditTracer, default_audit_path
 from omega_prime.grokbot.doctor import DiagnosticCheck, summarize_checks
 from omega_prime.grokbot.secret_guard import assert_no_secrets
 from omega_prime.grokbot.supervisor import _default_state_file
+from omega_prime.tooling.fs import atomic_write_json, ensure_private_dir
 
 __all__ = [
     "AUDIT_TAIL_LIMIT",

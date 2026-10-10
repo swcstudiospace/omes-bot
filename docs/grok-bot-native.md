@@ -11,7 +11,7 @@ running host. Container, compose, systemd, and Kubernetes installs are
 bot is [Driving the bot](driving-the-bot.md). Sandbox notes stay on
 [Tool host](tool-host.md).
 
-The default roster serves the intersection `setup_check` reports (110 today).
+The default roster serves the intersection `setup_check` reports (117 today).
 `delegate_task` is served; without a provider env it returns
 `not_configured: provider`. Prime families stay off until
 `omega-prime.json` turns them on.

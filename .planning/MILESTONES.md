@@ -1,5 +1,20 @@
 # Milestones
 
+
+## v14 — Boundary alignment (2026-10-10)
+
+**Status:** Complete. 4/4 phases, 10/10 requirements Done. Audit passed with no exceptions. Closeout type: verified for v14 requirements. Pre-existing dormant seeds and the archived v9 UAT were not acknowledged.
+
+**Core value delivered:** The agent loop and harness are the center. The Grok Bot boundary serves the ported logic. `agent/` and `tools/` do not import `grokbot`. Nested `omega_command` calls re-enter the host roster and interceptor chain. `rlm` and `messaging` register when their flags are on. Cron admin, autolearn, advisor, and `durable_status` are served. GoalStore stays on the goals family.
+
+**Verification:** Final tree: pytest 1992 passed. `python -m mypy omega_prime` exit 0 (327 files). `ruff check` and `ruff format --check` exit 0 (366 files). Evals 26 passed. `setup_check` serves 117 roster tools. All seven Prime flags: served set equals the roster, 154 names. `catalog --check` and `assemble --check` exit 0.
+
+**Limits:** no live Grok account or live model call. Prime families stay off. `durable_status` reads the cron journal, not the desk-parent journal. `VALIDATION.md` and `SECURITY.md` were not generated for phases 71–74. This closeout does not commit or tag. The work is uncommitted on `v14-boundary-alignment`.
+
+**Archive:** `milestones/v14-phases/`. `.planning/v14-MILESTONE-AUDIT.md`. Requirements `milestones/v14-REQUIREMENTS.md`. Roadmap `milestones/v14-ROADMAP.md`.
+
+**Not acknowledged (still visible):** dormant seeds and phase 48 UAT (archived v9). Acknowledging them would hide future work. They are not v14 gaps.
+
 ## v13 — Grok Bot specialisation (2026-10-09)
 
 **Status:** Complete. 3/3 phases, 10/10 requirements Done. Audit passed with no exceptions. Closeout type: verified for v13 requirements. Pre-existing dormant seeds and the archived v9 UAT were not acknowledged.

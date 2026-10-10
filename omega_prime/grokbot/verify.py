@@ -33,8 +33,8 @@ from mcp.client import Client
 from mcp.client.sse import sse_client
 from mcp.client.streamable_http import streamable_http_client
 
-from omega_prime.grokbot._io import read_secret_file
 from omega_prime.grokbot.telemetry import parse_traceparent
+from omega_prime.tooling.fs import read_secret_file
 
 _READ_TOOL = "todo_read"
 _UNKNOWN_TOOL = "verify_unknown_tool"

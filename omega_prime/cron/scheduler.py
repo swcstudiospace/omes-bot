@@ -315,7 +315,21 @@ def run_due_jobs(
     """
 
     def runner(prompt: str) -> str:
+        from omega_prime.agent.harness import emit
+        from omega_prime.durable.journal import TurnJournal, attach_journal
+
         agent = Agent(model=model, tools=tools)
+        try:
+            journal = TurnJournal(store.path.parent / "turns.sqlite")
+        except Exception as exc:
+            emit(
+                agent,
+                "prime_degraded",
+                family="durable",
+                error=f"{type(exc).__name__}: {exc}",
+            )
+            journal = None
+        attach_journal(agent, journal)
         result = run_conversation(agent, prompt)
         response = result.get("final_response") if isinstance(result, dict) else ""
         return response if isinstance(response, str) else ""

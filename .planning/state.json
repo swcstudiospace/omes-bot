@@ -1,28 +1,13 @@
 {
   "contract": "1.0.0",
   "flavor": "core",
-  "milestone": "v13 - Grok Bot specialisation (complete)",
+  "milestone": "v14 - Boundary alignment",
   "phases": [
-    {
-      "id": 68,
-      "name": "Slash commands and workflows",
-      "status": "complete"
-    },
-    {
-      "id": 69,
-      "name": "Grok surface",
-      "status": "complete"
-    },
-    {
-      "id": 70,
-      "name": "Milestone audit + closeout",
-      "status": "complete"
-    }
+    { "id": 71, "name": "Core/boundary inversion repair", "status": "complete" },
+    { "id": 72, "name": "Family reachability", "status": "complete" },
+    { "id": 73, "name": "Plane surfaces", "status": "complete" },
+    { "id": 74, "name": "Milestone audit + closeout", "status": "complete" }
   ],
-  "next": {
-    "command": "/gsd:new-milestone",
-    "label": "Scope the next milestone",
-    "reason": "v13 archived; no next milestone is scoped"
-  },
-  "updated_at": "2026-10-09T23:20:00.000Z"
+  "next": { "command": "", "label": "Milestone complete", "reason": "v14 audit passed 10/10; no next milestone scoped" },
+  "updated_at": "2026-10-10T01:40:00.000Z"
 }

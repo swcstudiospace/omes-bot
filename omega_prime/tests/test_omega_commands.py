@@ -7,8 +7,8 @@ from __future__ import annotations
 import json
 import sys
 
-from omega_prime.grokbot.commands import execute_command, parse_omega_command
-from omega_prime.grokbot.workflows import seed_memory
+from omega_prime.commands import execute_command, parse_omega_command
+from omega_prime.commands.workflows import seed_memory
 from omega_prime.tools.omega_command import register_omega_command_tools
 from omega_prime.tools.registry import ToolRegistry
 

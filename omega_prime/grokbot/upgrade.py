@@ -25,7 +25,7 @@ entries unique even when sources share a basename, and `sources.json` maps
 every stored copy back to the absolute path it came from.
 
 Digest table schema (`digests.json`): a JSON object written via
-`_io.atomic_write_json` (sorted keys, trailing newline). Every key is the
+`omega_prime.tooling.fs.atomic_write_json` (sorted keys, trailing newline). Every key is the
 POSIX-style path of a stored copy relative to the snapshot root
 (`files/NNNN-<basename>`); every value is the lowercase hex SHA-256 of that
 stored copy's bytes. The table covers stored copies only and never lists
@@ -101,7 +101,7 @@ import tempfile
 from collections.abc import Iterable
 from pathlib import Path
 
-from omega_prime.grokbot._io import (
+from omega_prime.tooling.fs import (
     PRIVATE_DIR_MODE,
     PRIVATE_FILE_MODE,
     atomic_write_json,

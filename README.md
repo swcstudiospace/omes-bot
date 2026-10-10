@@ -107,7 +107,7 @@ on loopback with a generated token (`--transport sse --generate-token`).
 `OMEGA_PRIME_STATE_DIR` is where desk state is stored. Railway, Greptile,
 Vercel, Play, and ASC stay `not_configured` until their tokens are set.
 The served tool count is the roster intersection `setup_check` reports
-(110 today). Prime families stay off by default. `delegate_task` is served;
+(117 today). Prime families stay off by default. `delegate_task` is served;
 without a provider env it returns `not_configured: provider`.
 
 To call the real tools from outside the bot:
@@ -141,16 +141,15 @@ identity or a fully green unmodified historical suite. Opt in per family via
 }
 ```
 
-The default MCP server registers `harness`, `goals`, `heartbeat`, `autonomous`,
-and `kernel` when their flags are on. `rlm` and `messaging` need a live parent
-agent or session, so `omega-prime.json` does not add their tools to the MCP
-server: for those two the flag only decides whether the assembler offers their
-tool entries, and an embedder registers them with its own parent
-(`register_rlm_tools`, which requires the explicit `session_dir`,
-`session_name`, `delegate_depth`, `max_depth`, and `max_children` contract) or
-session (`register_messaging_tools`). A heartbeat job is persisted by
-`heartbeat_set` but fires only in a process that bound the named live session
-and started the heartbeat runtime.
+The default MCP server registers every Prime family when its flag is on:
+`harness`, `goals`, `heartbeat`, `autonomous`, `kernel`, `rlm`, and
+`messaging`. `rlm` is served on the desk parent. Without a child-model
+provider, `rlm_spawn` and `rlm_create_session` return
+`not_configured: provider`. `messaging` is served on the seat session
+`bot-00-omega-prime`. An embedder can still call `register_rlm_tools` or
+`register_messaging_tools` with its own parent or session. A heartbeat job
+is persisted by `heartbeat_set` but fires only in a process that bound the
+named live session and started the heartbeat runtime.
 
 A disabled family is absent from the live registry and canonical assembled tool
 list. Assembly reads no ambient user flags: embedding callers pass effective

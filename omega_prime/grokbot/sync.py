@@ -21,7 +21,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from omega_prime.grokbot._io import atomic_write_text
 from omega_prime.grokbot.manifest import (
     find_repo_root,
     generate_grokbot_manifest,
@@ -29,6 +28,7 @@ from omega_prime.grokbot.manifest import (
     prime_family_flags,
 )
 from omega_prime.mcp_server import RuntimeConfigError
+from omega_prime.tooling.fs import atomic_write_text
 
 # Compared sections, as (report name, path inside the manifest).
 SECTIONS: tuple[tuple[str, tuple[str, ...]], ...] = (

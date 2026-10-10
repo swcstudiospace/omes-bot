@@ -17,8 +17,8 @@ tool families with roster entries, policy entries, and skills —
 inside the one agent: lead (16), systems (6), web (6), mobile
 (13), infra (7), quality (8), app packs (9). Messaging, IDE,
 platform, growth, coding, delegation, substrate, and ultrathink
-bridge tools complete the roster — 147 tools with the seven gated Prime
-families (RLM, harness, goals, heartbeat, autonomous, messaging, kernel), 110 without.
+bridge tools complete the roster — 154 tools with the seven gated Prime
+families (RLM, harness, goals, heartbeat, autonomous, messaging, kernel), 117 without.
 
 ## Contracts over code
 

@@ -166,6 +166,13 @@
     <tool name="substrate_graph_release"/>
     <tool name="substrate_graph_complete"/>
     <tool name="substrate_graph_heartbeat"/>
+    <tool name="cron_jobs_list"/>
+    <tool name="cron_job_create"/>
+    <tool name="cron_job_remove"/>
+    <tool name="autolearn_turn"/>
+    <tool name="advisor_note"/>
+    <tool name="advisor_render"/>
+    <tool name="durable_status"/>
     <tool name="rlm_spawn"/>
     <tool name="rlm_collect"/>
     <tool name="rlm_list_subagents"/>

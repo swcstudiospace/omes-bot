@@ -30,10 +30,16 @@ from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import TextContent, Tool
 
+from omega_prime.commands.context import (
+    NESTED_DISPATCH_DEPTH,
+    nested_depth,
+    nested_depth_frame,
+    nested_dispatch_scope,
+)
 from omega_prime.credentials.broker import CredentialBroker
 from omega_prime.cron.desk_driver import DeskDriver
-from omega_prime.grokbot._io import read_secret_file
 from omega_prime.grokbot.interceptors import (
+    ToolCall,
     ToolCallInterceptor,
     call_from_context,
     run_tool_call,
@@ -60,6 +66,8 @@ from omega_prime.substrate.client import (
     SubstrateClient,
     SubstrateError,
 )
+from omega_prime.tooling.fs import read_secret_file
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.coding import register_coding_tools
 from omega_prime.tools.delegate import register_delegate_tools
@@ -109,24 +117,6 @@ SERVER_NAME = "omega-prime"
 SERVER_VERSION = "6.0.0"
 
 _T = TypeVar("_T")
-
-
-def roster_names(text: str) -> list[str]:
-    """Tool names under the `tools:` key of the roster YAML."""
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith(("#", " ")):
-            break
-    return names
 
 
 class _UrllibXTransport:
@@ -229,6 +219,7 @@ class _DeskParent:
         self.delegate_depth = 0
         self.max_depth = 2
         self.max_children = 1
+        self.journal: Any = None
 
     @property
     def tools(self) -> dict[str, Any]:
@@ -245,6 +236,49 @@ def _desk_dispatch(registry: ToolRegistry, name: str) -> Any:
         return registry.dispatch(name, arguments)
 
     return dispatch
+
+
+class _RlmParent(_DeskParent):
+    """`_DeskParent` plus the RLM parent contract's session identity.
+
+    Not a second implementation of child running: the child model and the
+    live-registry tool map come from `_DeskParent`, so RLM children run
+    through the same seams and behind the same policy and approval gate as
+    `delegate_task` children. `require_parent`'s extra fields name the
+    durable session: `session_dir` is where child session documents persist
+    (the desk store convention), and `session_name` is the owning bot
+    identity a restarted host recovers its own children by.
+    """
+
+    def __init__(self, registry: ToolRegistry, model: Any, session_dir: Path) -> None:
+        super().__init__(registry, model)
+        self.session_dir = session_dir
+        self.session_name = "bot-00-omega-prime"
+        self.rlm_unconfigured = False
+
+
+def _rlm_child_runner(parent: Any) -> Any:
+    """One RLM child prompt through the delegate child runner.
+
+
+    `delegate_task` builds the child agent from the parent's own `child_model`
+    and `tools` seams and returns its final response wrapped in JSON; the
+    runner unwraps it to the response text `RlmHost` expects. The desk child
+    model is the configured one, so a spawn's optional `model`/`thinking`
+    selectors are accepted and not honored.
+    """
+    from omega_prime.agent.delegate import delegate_task
+
+    def run_child(
+        prompt: str, *, model: str | None = None, thinking: str | None = None
+    ) -> str:
+        del model, thinking
+        out = json.loads(delegate_task(parent, prompt))
+        if not isinstance(out.get("summary"), str):
+            raise RuntimeError(out.get("error", "delegate child produced no summary"))
+        return out["summary"]
+
+    return run_child
 
 
 _DESK_CHILD_PROVIDERS: tuple[tuple[str, Any], ...] = (
@@ -552,6 +586,14 @@ def default_registry(
     child_model = _desk_child_model(env, policy)
     if child_model is not None:
         parent = _DeskParent(registry, child_model)
+        try:
+            from omega_prime.durable.journal import TurnJournal
+
+            parent.journal = TurnJournal(
+                _desk_store_path(work, state_value, "turns.sqlite")
+            )
+        except Exception:
+            parent.journal = None
     register_delegate_tools(registry, parent)
     register_omega_command_tools(registry, env)
     register_platform_tools(registry, home=home)
@@ -645,14 +687,20 @@ def default_registry(
         UltrathinkClient(UltrathinkContext(root=env.get("ULTRATHINK_ROOT", ""))),
     )
     register_substrate_tools(registry, substrate_client)
+    from omega_prime.tools.cron_admin import register_cron_admin_tools
+    from omega_prime.tools.durable_surface import register_durable_surface_tools
+    from omega_prime.tools.learning_surface import register_learning_surface_tools
+
+    register_cron_admin_tools(registry, root)
+    register_learning_surface_tools(registry, root / "omega_prime")
+    register_durable_surface_tools(registry, root)
     # Prime capability families are config-gated (default off): a disabled
     # family is not registered and is absent from the offered roster (LOOP-05).
-    # RLM needs a live parent agent, so registration happens where the agent's
-    # registry is built (skipped here). The harness family is self-contained
-    # (needs only `root`), so it registers here when its flag is on. Goals,
-    # heartbeat, and autonomous are likewise self-contained. Messaging needs a
-    # session name, so it registers where the agent's registry is built
-    # (skipped here).
+    # RLM registers on the desk parent when its flag is on. Without a child
+    # model the tools stay served and spawn/create answer
+    # ``not_configured: provider``. Messaging registers on the seat session
+    # name when its flag is on. Harness, goals, heartbeat, autonomous, and
+    # kernel are self-contained and register here when their flags are on.
     from omega_prime.config import family_config, load_config, prime_enabled
     from omega_prime.tools.autonomous import register_autonomous_tools
     from omega_prime.tools.goals import register_goal_tools
@@ -674,6 +722,22 @@ def default_registry(
         from omega_prime.tools.prime_runtime import register_prime_kernel_tools
 
         register_prime_kernel_tools(registry, root)
+    if prime_enabled(config, "rlm"):
+        from omega_prime.tools.rlm import register_rlm_tools
+
+        session_dir = _desk_store_path(work, state_value, "rlm")
+        session_dir.mkdir(parents=True, exist_ok=True)
+        rlm_parent = _RlmParent(registry, child_model, session_dir)
+        rlm_parent.rlm_unconfigured = child_model is None
+        register_rlm_tools(
+            registry,
+            rlm_parent,
+            run_child=None if child_model is None else _rlm_child_runner(rlm_parent),
+        )
+    if prime_enabled(config, "messaging"):
+        from omega_prime.tools.agent_message import register_messaging_tools
+
+        register_messaging_tools(registry, "bot-00-omega-prime")
     # DESK-04: the production desk-pass driver ticks due ``desk_lead_pass``
     # jobs against the shared JobStore on a background thread, serialized.
     # It holds the runtime's parent shim — None without a provider env never
@@ -862,10 +926,38 @@ def call_tool_handler(
         name = params.name
         arguments = params.arguments or {}
 
+        def _reenter(tool: str, args: dict) -> str:
+            if nested_depth() >= NESTED_DISPATCH_DEPTH:
+                return json.dumps(
+                    {
+                        "error": "nested_dispatch_depth",
+                        "reason": "inner dispatch exceeded depth 2",
+                        "tool": tool,
+                    }
+                )
+            with nested_depth_frame():
+                if allowed is not None and tool not in allowed:
+                    return json.dumps({"error": f"policy forbids {tool}", "tool": tool})
+                inner = ToolCall(
+                    name=tool,
+                    arguments=dict(args) if isinstance(args, dict) else {},
+                    principal=call.principal,
+                    transport=call.transport,
+                    request_id=call.request_id,
+                )
+
+                def _terminal() -> str:
+                    payload = args if isinstance(args, dict) else {}
+                    return registry.dispatch(tool, payload)
+
+                body, _outcome = run_tool_call(chain, inner, _terminal)
+                return body
+
         def _dispatch() -> str:
             if allowed is not None and name not in allowed:
                 return json.dumps({"error": f"policy forbids {name}", "tool": name})
-            return registry.dispatch(name, arguments)
+            with nested_dispatch_scope(_reenter):
+                return registry.dispatch(name, arguments)
 
         call = call_from_context(ctx, name, arguments, transport=transport)
         # ``is_error`` follows the payload: a null ``error`` is a status field,

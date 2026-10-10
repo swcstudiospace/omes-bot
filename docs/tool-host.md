@@ -14,12 +14,14 @@ and units: [Deploying the tool host](deploy.md).
 
 `--root` is the repo checkout (default: cwd). Without
 `--no-roster` the server exposes the shipped roster's default set — the
-intersection `setup_check` reports (110 today). Prime families stay off by
+intersection `setup_check` reports (117 today). Prime families stay off by
 default. `delegate_task` is served; without a provider env it returns
-`not_configured: provider`. The Prime families that need no live parent
-(harness, goals, heartbeat, autonomous, kernel) join when their
-`omega-prime.json` flags are on; RLM and messaging need a live parent or
-session, so the MCP server never registers them.
+`not_configured: provider`. All seven Prime families (harness, goals,
+heartbeat, autonomous, kernel, rlm, messaging) join when their
+`omega-prime.json` flags are on. `rlm` is served on the desk parent and,
+without a child-model provider, `rlm_spawn` and `rlm_create_session` return
+`not_configured: provider`. `messaging` is served on the seat session
+`bot-00-omega-prime`.
 
 Remote endpoints, all on the same process:
 

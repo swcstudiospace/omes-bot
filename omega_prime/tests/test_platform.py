@@ -11,6 +11,7 @@ from typing import Any
 
 import pytest
 
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.approvals import ApprovalLog
 from omega_prime.tools.browser import BrowserSession
 from omega_prime.tools.coding import CODING_TOOL_NAMES
@@ -26,23 +27,6 @@ OMEGA_PRIME = Path(__file__).resolve().parents[1]
 ROSTER = OMEGA_PRIME / "contracts" / "tool-rosters" / "omega-prime.yaml"
 
 _SCHEMA = {"type": "object", "properties": {}, "required": []}
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
 
 
 def _load(raw: str) -> dict:
@@ -453,7 +437,7 @@ def test_offered_schemas_include_platform_names_and_omit_an_extra_tool(tmp_path:
     registry.register(
         "not_on_roster", "Registered but not offered.", _SCHEMA, lambda: {"ok": True}
     )
-    roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
+    roster = roster_names(ROSTER.read_text(encoding="utf-8"))
     start = (
         len(CODING_TOOL_NAMES)
         + len(GROWTH_TOOL_NAMES)

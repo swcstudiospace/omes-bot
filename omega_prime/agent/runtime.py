@@ -15,7 +15,7 @@ from omega_prime.agent.harness import emit
 from omega_prime.agent.model import Model
 from omega_prime.agent.prime_hooks import prime_hooks_from_bindings
 from omega_prime.agent.session_lease import SessionLease
-from omega_prime.grokbot.commands import parse_omega_command
+from omega_prime.commands import parse_omega_command
 from omega_prime.tools.offer import offered_schemas
 from omega_prime.tools.registry import ToolRegistry
 

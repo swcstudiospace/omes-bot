@@ -18,8 +18,10 @@ from omega_prime.mcp_server import default_registry, roster_names
 from omega_prime.tools.agent_message import MESSAGING_TOOL_NAMES
 from omega_prime.tools.autonomous import AUTONOMOUS_TOOL_NAMES
 from omega_prime.tools.coding import CODING_TOOL_NAMES
+from omega_prime.tools.cron_admin import CRON_ADMIN_TOOL_NAMES
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.discord import DISCORD_TOOL_NAMES
+from omega_prime.tools.durable_surface import DURABLE_TOOL_NAMES
 from omega_prime.tools.goals import GOAL_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
 from omega_prime.tools.harness import HARNESS_TOOL_NAMES
@@ -27,6 +29,7 @@ from omega_prime.tools.heartbeat import HEARTBEAT_TOOL_NAMES
 from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
+from omega_prime.tools.learning_surface import LEARNING_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
 from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
@@ -60,6 +63,9 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("App packs", PACKS_TOOL_NAMES),
     ("Ultrathink", ULT_TOOL_NAMES),
     ("Substrate", SUBSTRATE_TOOL_NAMES),
+    ("Cron", CRON_ADMIN_TOOL_NAMES),
+    ("Learning", LEARNING_TOOL_NAMES),
+    ("Durable", DURABLE_TOOL_NAMES),
     ("RLM", RLM_TOOL_NAMES),
     ("Harness", HARNESS_TOOL_NAMES),
     ("Goals", GOAL_TOOL_NAMES),

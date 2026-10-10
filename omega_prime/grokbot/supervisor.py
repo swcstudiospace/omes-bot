@@ -37,7 +37,7 @@ from types import FrameType
 from typing import Any
 from urllib.parse import urlparse
 
-from omega_prime.grokbot._io import atomic_write_json
+from omega_prime.tooling.fs import atomic_write_json
 
 logger = logging.getLogger(__name__)
 

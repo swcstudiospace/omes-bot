@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 
-from omega_prime.grokbot.commands import execute_command
+from omega_prime.commands import execute_command
 from omega_prime.tools.registry import ToolRegistry
 
 OMEGA_COMMAND_TOOL_NAMES = ("omega_command",)

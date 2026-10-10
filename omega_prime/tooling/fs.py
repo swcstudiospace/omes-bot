@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Copyright (C) 2026 Spectrum Web Co
-"""Crash-safe file helpers shared by the Grok Bot runtime modules.
+"""Crash-safe file helpers.
 
 Every writer here replaces a file atomically (write a sibling temp file, fsync,
 `os.replace`) so a crash or a concurrent reader never sees a half-written state

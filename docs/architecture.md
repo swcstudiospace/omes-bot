@@ -1,8 +1,8 @@
 # Architecture
 
 How Omega Prime is put together: one process, one loop, one registry, and the
-planes around them. Counts below are exact at release time (147 tools on the
-roster — 110 served by default with the Prime families gated off — 27 skills,
+planes around them. Counts below are exact at release time (154 tools on the
+roster — 117 served by default with the Prime families gated off — 27 skills,
 7 routines, 980 tests, 26 evals).
 
 ## The shape
@@ -29,9 +29,9 @@ the turn when they appear as standalone prose.
 
 ## The registry
 
-`omega_prime/tools/registry.py` maps 147 tool names to handlers across 25 families
+`omega_prime/tools/registry.py` maps 154 tool names to handlers across 28 families
 (coding, growth, delegate, omega command, platform, IDE, connectors, seven desk packs, app packs,
-ultrathink, substrate, and the seven config-gated Prime families: RLM, harness,
+ultrathink, substrate, cron, learning, durable, and the seven config-gated Prime families: RLM, harness,
 goals, heartbeat, autonomous, messaging, kernel). Dispatch always returns JSON; unknown names are
 errors, never exceptions. Three gates wrap every call, in order: the seat
 policy (allowed tools/hosts/paths), the approval log (mutating tools wait

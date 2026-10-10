@@ -10,29 +10,13 @@ import pytest
 from omega_prime.audit.log import AuditLog
 from omega_prime.policy.advisor import diff_policy
 from omega_prime.policy.policy import SeatPolicy
+from omega_prime.tooling.roster import roster_names
 from omega_prime.tools.coding import register_coding_tools
 from omega_prime.tools.registry import ToolRegistry
 
 OMEGA_PRIME = Path(__file__).resolve().parents[1]
 POLICY = OMEGA_PRIME / "contracts" / "policies" / "omega-prime.json"
 ROSTER = OMEGA_PRIME / "contracts" / "tool-rosters" / "omega-prime.yaml"
-
-
-def _roster_names(text: str) -> list[str]:
-    names: list[str] = []
-    in_tools = False
-    for line in text.splitlines():
-        if line.startswith("tools:"):
-            in_tools = True
-            continue
-        if not in_tools:
-            continue
-        if line.startswith("  - "):
-            names.append(line[4:].strip())
-            continue
-        if line.strip() and not line.startswith("#") and not line.startswith(" "):
-            break
-    return names
 
 
 def _load(payload: str) -> dict:
@@ -43,7 +27,7 @@ def test_shipped_policy_governs_tools_paths_and_hosts():
     policy = SeatPolicy.load(POLICY)
 
     assert policy.seat == "bot-00-omega-prime"
-    for name in _roster_names(ROSTER.read_text(encoding="utf-8")):
+    for name in roster_names(ROSTER.read_text(encoding="utf-8")):
         assert policy.allows_tool(name)
     assert not policy.allows_tool("made_up_tool")
 

@@ -222,8 +222,15 @@ def _run_step(step: Step, registry: Any, env: Mapping[str, str]) -> dict[str, An
 def dispatch_tool(
     registry: Any, tool: str, arguments: dict[str, Any]
 ) -> dict[str, Any]:
+    from omega_prime.commands.context import get_nested_dispatch
+
+    nested = get_nested_dispatch()
     try:
-        raw = registry.dispatch(tool, arguments)
+        raw = (
+            nested(tool, arguments)
+            if nested is not None
+            else registry.dispatch(tool, arguments)
+        )
     except Exception as exc:
         return {
             "error": "dispatch_failed",

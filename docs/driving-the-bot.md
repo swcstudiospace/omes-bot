@@ -15,8 +15,8 @@ install and secrets; this page starts after it.
 `OmegaPrimeAgent`, the Python conversation loop ([Agent loop](agent-loop.md)),
 is a library for embedders. No command in this repository starts it, so Prime's
 loop-level behavior (goal continuation, autonomous limits and gates, heartbeat
-firing, RLM children, agent messaging) does not run behind a Grok Bot. What the
-bot gets is the tools.
+firing) does not run behind a Grok Bot. What the bot gets is the tools,
+including `rlm` and `messaging` when those flags are on.
 
 Two files are both called a roster: `omega_prime/grokbot/rosters/default.json`
 feeds the assembler (bot id, branch, version), and
@@ -26,7 +26,7 @@ may serve.
 ## What each family gives the bot
 
 Every Prime family is off by default. A default host serves the roster
-intersection `setup_check` reports (110 today) and no Prime tool.
+intersection `setup_check` reports (117 today) and no Prime tool.
 `delegate_task` is served; without a provider env it returns
 `not_configured: provider`.
 
@@ -37,8 +37,8 @@ intersection `setup_check` reports (110 today) and no Prime tool.
 | Heartbeat `prime.heartbeat.enabled` | `heartbeat_set`, `heartbeat_list`, `heartbeat_clear` | Persists jobs in `cron/jobs.json`. Jobs never fire: firing needs a process that bound a named live session. Gated: set, clear. |
 | Autonomous `prime.autonomous.enabled` | `autonomous_start`, `autonomous_status`, `autonomous_stop` | Records a run's limits in the host process. Nothing counts turns or runs the quality gate, and the record is lost on restart. Gated: start, stop. |
 | Kernel `prime.kernel.enabled` | `prime_cell`, `prime_bash`, `prime_skill_list`, `prime_crates`, `prime_goal`, `prime_autonomous`, `prime_factory_run`, `prime_factory_status`, `prime_factory_stop`, `prime_factory_resume`, `prime_factory_graph` | Works: real execution (below). Gated: `prime_cell`, `prime_bash`, `prime_goal`, `prime_autonomous`, `prime_factory_run`, `prime_factory_stop`, `prime_factory_resume`. |
-| RLM `prime.rlm.enabled` | `rlm_*` (7) | Not served. It needs a live parent agent, so only an embedder registers it. |
-| Messaging `prime.messaging.enabled` | `agent_message_send`, `agent_observe` | Not served. It needs a live session registry. |
+| RLM `prime.rlm.enabled` | `rlm_spawn`, `rlm_collect`, `rlm_list_subagents`, `rlm_delete_subagent`, `rlm_create_session`, `rlm_progress_note`, `rlm_rename` | Served on the desk parent. Without a child-model provider, `rlm_spawn` and `rlm_create_session` return `not_configured: provider`. Gated: spawn, create, delete, rename. |
+| Messaging `prime.messaging.enabled` | `agent_message_send`, `agent_observe` | Served on the seat session `bot-00-omega-prime`. Gated: send. |
 
 Kernel tools:
 
@@ -76,7 +76,9 @@ Save this as `omega-prime.json` in the directory you pass as `--root`:
     "goals": { "enabled": true },
     "heartbeat": { "enabled": true },
     "autonomous": { "enabled": true },
-    "kernel": { "enabled": true }
+    "kernel": { "enabled": true },
+    "rlm": { "enabled": true },
+    "messaging": { "enabled": true }
   }
 }
 ```
@@ -84,8 +86,11 @@ Save this as `omega-prime.json` in the directory you pass as `--root`:
 Or set `OMEGA_PRIME_PRIME_<FAMILY>_ENABLED=1` in the host's environment
 (`true`, `yes`, and `on` also enable; any other value, including an empty one,
 turns the family off and overrides the file). The environment wins over the
-file. The host reads both at startup, so restart it after any change. Leave
-`rlm` and `messaging` off: the host cannot serve them.
+file. The host reads both at startup, so restart it after any change. `rlm`
+and `messaging` register when their flags are on. Without a child-model
+provider, `rlm_spawn` and `rlm_create_session` return
+`not_configured: provider`. Messaging uses the seat session
+`bot-00-omega-prime`.
 
 The kernel family needs the pinned `prime-agent/` checkout for every tool (see
 [Build from source](../README.md#build-from-source-both-toolchains)). Three
@@ -153,6 +158,7 @@ that does, with the same families the host serves:
 .venv/bin/python -m omega_prime.assemble \
   --enable-family harness --enable-family goals --enable-family heartbeat \
   --enable-family autonomous --enable-family kernel \
+  --enable-family rlm --enable-family messaging \
   --output build/OMEGA_PRIME.effective.xml
 ```
 
@@ -160,10 +166,12 @@ that does, with the same families the host serves:
 written. Add `--check` to compare an existing file instead of writing it: it
 exits 1 when the file is stale or missing, and the fix is to run the same
 command without `--check`. The shipped prompt and the default host share the
-roster intersection `setup_check` reports (110 today). Prime families stay
+roster intersection `setup_check` reports (117 today). Prime families stay
 off by default. `delegate_task` is served; without a provider env it returns
-`not_configured: provider`. These five families add 28 to each. Do not pass
-`rlm` or `messaging`: the assembler would list nine tools the host cannot serve.
+`not_configured: provider`. Harness, goals, heartbeat, autonomous, and
+kernel add 28 tools. `rlm` adds seven and `messaging` adds two. The command
+above turns all seven on (154 tools). The host serves each family only when
+its flag is on.
 
 The template tells the bot to read `prompts-assembled/OMEGA_PRIME.xml` on first
 run. Give your bot the effective file instead. This repository builds the file;
@@ -172,14 +180,18 @@ tests, so confirm it with the checks below.
 
 ## Check it
 
-1. Count what the host serves. With the five families on you should see 138;
-   with none, 110 (prime families stay off by default).
+1. Count what the host serves. With all seven Prime families on you should
+   see 154; with the five self-contained families (harness, goals, heartbeat,
+   autonomous, kernel) you should see 145; with none, 117. Prime families
+   stay off by default. Cron, learning, and durable tools are always served.
 
    ```bash
    .venv/bin/python -m omega_prime.setup_check --root .
    ```
 
-   Look for `[ok] registry: registry serves 138 roster tools`.
+   Look for `[ok] registry: registry serves 117 roster tools` on a default
+   host. With every `OMEGA_PRIME_PRIME_<FAMILY>_ENABLED=1`, the served set
+   equals the 154 roster names.
 
 2. Call a tool over real MCP stdio. `prime_crates` is read-only, so it needs no
    approval:
@@ -225,7 +237,7 @@ expect.
 | A Prime tool is missing from the host's tool list | The family's flag is off in the host process, `--root` points where your `omega-prime.json` is not, or the host was not restarted after the change. | Run `setup_check --root <the same root>`, then restart the host. |
 | `approval required` | The tool is gated and the host was not started with `--approve` for it. | Add `--approve TOOL:YOU` and restart. |
 | `policy forbids <tool>` | The name is not on the roster, or the seat policy (`omega_prime/contracts/policies/omega-prime.json`) forbids it. | Only rostered tools are served. |
-| `Unknown tool: <name>` | The tool is on the roster but the host did not register it: its family is off, or it is `rlm_*`, `agent_message_send`, `agent_observe`, or `delegate_task`, which the host never serves. | Turn the family on and restart the host. The others need an embedder. |
+| `Unknown tool: <name>` | The tool is on the roster but the host did not register it: its Prime family is off, including `rlm` and `messaging`, or the host was not restarted after the flag change. | Turn the family on and restart the host. `delegate_task` is served and returns `not_configured: provider` without a provider env. |
 | `unknown_field`, `bad_type`, `bad_value`, or `unsupported_schema_version`, for example `unknown_field: goal_set does not accept: scope` | The call was rejected before any effect; nothing was written. A gated tool answers `approval required` before its arguments are checked. | Fix the arguments. Each tool's parameters are in the [tool catalog](tool-catalog.md). |
 | `prime_crates` shows `loaded: false`, or `ImportError: omega_prime_prime extension is not built` | The native extension is missing. `prime_cell`, `prime_bash`, and the rest of the kernel family still work. | Build it with the `cargo build` command above. |
 | `the factory is disabled; run /factory on to enable it` | The factory is off until `prime_factory_run` enables it. | Approve and call `prime_factory_run` with a valid spec id. |

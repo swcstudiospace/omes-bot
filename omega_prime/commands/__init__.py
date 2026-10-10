@@ -13,7 +13,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
-from omega_prime.grokbot.workflows import (
+from omega_prime.commands.workflows import (
     HINDSIGHT_PREFIX,
     WORKFLOW_NAMES,
     connector_requests,

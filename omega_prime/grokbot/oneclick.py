@@ -34,18 +34,18 @@ from urllib.parse import urlsplit
 from omega_prime.grokbot import doctor as _doctor
 from omega_prime.grokbot import receipts as _receipts
 from omega_prime.grokbot import rerun as _rerun
-from omega_prime.grokbot._io import (
-    PRIVATE_FILE_MODE,
-    atomic_write_text,
-    ensure_private_dir,
-    read_secret_file,
-)
 from omega_prime.grokbot.manifest import generate_manifest
 from omega_prime.grokbot.security import (
     SecurityConfigError,
     TokenStore,
     check_bind_safety,
     generate_token,
+)
+from omega_prime.tooling.fs import (
+    PRIVATE_FILE_MODE,
+    atomic_write_text,
+    ensure_private_dir,
+    read_secret_file,
 )
 
 EXIT_OK = 0
@@ -106,7 +106,7 @@ def _launch_lock_base(export_manifest: Path | None, port: int) -> Path:
 
 @contextlib.contextmanager
 def _hold_launch_lock(base: Path) -> Iterator[None]:
-    """Hold an exclusive ``flock`` on ``<base>.lock`` (``_io`` sidecar use).
+    """Hold an exclusive ``flock`` on ``<base>.lock`` (``fs`` sidecar use).
 
     A foreign-owned or otherwise unusable lock file never blocks a launch:
     warn on stderr and proceed without the lock (fail-open for availability;
@@ -333,7 +333,7 @@ def run_oneclick(
     # ---
     # --- Double-submit guard: check_rerun through manifest export runs under
     # --- an exclusive flock on a per-launch lock file (a `<receipt>.lock`
-    # --- sidecar, the `_io` flock convention), so two concurrent launches for
+    # --- sidecar, the `fs` flock convention), so two concurrent launches for
     # --- the same manifest cannot both pass the guard and export. The lock is
     # --- released before serve dispatch below.
     _guard: Any = contextlib.nullcontext()

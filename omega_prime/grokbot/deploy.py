@@ -29,7 +29,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, NamedTuple
 
-from omega_prime.grokbot._io import atomic_write_text
+from omega_prime.tooling.fs import atomic_write_text
 
 TARGETS = ("docker", "compose", "systemd", "k8s")
 
