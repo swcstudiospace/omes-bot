@@ -22,6 +22,7 @@ from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
 from omega_prime.tools.offer import offered_schemas
+from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
 from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
@@ -430,6 +431,7 @@ def test_roster_lists_exactly_the_names_register_coding_tools_registers(tmp_path
         CODING_TOOL_NAMES
         + GROWTH_TOOL_NAMES
         + DELEG_TOOL_NAMES
+        + OMEGA_COMMAND_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES

@@ -17,6 +17,7 @@ from omega_prime.tools.coding import CODING_TOOL_NAMES
 from omega_prime.tools.delegate import DELEG_TOOL_NAMES
 from omega_prime.tools.growth import GROWTH_TOOL_NAMES
 from omega_prime.tools.offer import offered_schemas
+from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES, register_platform_tools
 from omega_prime.tools.plugins import load_plugins
 from omega_prime.tools.registry import ToolRegistry
@@ -453,7 +454,12 @@ def test_offered_schemas_include_platform_names_and_omit_an_extra_tool(tmp_path:
         "not_on_roster", "Registered but not offered.", _SCHEMA, lambda: {"ok": True}
     )
     roster = _roster_names(ROSTER.read_text(encoding="utf-8"))
-    start = len(CODING_TOOL_NAMES) + len(GROWTH_TOOL_NAMES) + len(DELEG_TOOL_NAMES)
+    start = (
+        len(CODING_TOOL_NAMES)
+        + len(GROWTH_TOOL_NAMES)
+        + len(DELEG_TOOL_NAMES)
+        + len(OMEGA_COMMAND_TOOL_NAMES)
+    )
     assert roster[start : start + len(PLATFORM_TOOL_NAMES)] == list(PLATFORM_TOOL_NAMES)
     offered = offered_schemas(registry, roster)
     names = [item["function"]["name"] for item in offered]

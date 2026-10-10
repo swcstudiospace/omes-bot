@@ -61,6 +61,10 @@ from omega_prime.tools.mobile import (
     register_mobile_tools,
 )
 from omega_prime.tools.offer import offered_schemas
+from omega_prime.tools.omega_command import (
+    OMEGA_COMMAND_TOOL_NAMES,
+    register_omega_command_tools,
+)
 from omega_prime.tools.packs import (
     PACKS_TOOL_NAMES,
     PacksClient,
@@ -593,6 +597,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
     )
     assert registered == list(GROWTH_TOOL_NAMES)
     register_delegate_tools(registry, Agent(model=ScriptedModel([]), tools={}))
+    register_omega_command_tools(registry, {})
     register_platform_tools(registry, home=tmp_path)
     register_ide_tools(registry, tmp_path)
     register_x_tools(registry, XClient(FakeTransport(), token="fake"))
@@ -637,6 +642,7 @@ def test_offered_schemas_include_growth_names_and_omit_an_extra_tool(tmp_path: P
         CODING_TOOL_NAMES
         + GROWTH_TOOL_NAMES
         + DELEG_TOOL_NAMES
+        + OMEGA_COMMAND_TOOL_NAMES
         + PLATFORM_TOOL_NAMES
         + IDE_TOOL_NAMES
         + X_TOOL_NAMES

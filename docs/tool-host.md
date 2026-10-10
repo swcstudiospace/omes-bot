@@ -14,7 +14,7 @@ and units: [Deploying the tool host](deploy.md).
 
 `--root` is the repo checkout (default: cwd). Without
 `--no-roster` the server exposes the shipped roster's default set — the
-intersection `setup_check` reports (109 today). Prime families stay off by
+intersection `setup_check` reports (110 today). Prime families stay off by
 default. `delegate_task` is served; without a provider env it returns
 `not_configured: provider`. The Prime families that need no live parent
 (harness, goals, heartbeat, autonomous, kernel) join when their

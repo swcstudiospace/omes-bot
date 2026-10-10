@@ -14,6 +14,8 @@ from omega_prime.agent.degraded import guarded_hook
 from omega_prime.agent.harness import emit
 from omega_prime.agent.model import Model
 from omega_prime.agent.prime_hooks import prime_hooks_from_bindings
+from omega_prime.agent.session_lease import SessionLease
+from omega_prime.grokbot.commands import parse_omega_command
 from omega_prime.tools.offer import offered_schemas
 from omega_prime.tools.registry import ToolRegistry
 
@@ -148,6 +150,10 @@ class OmegaPrimeAgent(Agent):
         fast-fails on a held lease exactly as before; heartbeat re-entry
         opts into atomic waiting.
         """
+        if isinstance(user_message, str) and self._serves_omega_command():
+            parsed = parse_omega_command(user_message)
+            if parsed is not None:
+                return self._run_omega_command(user_message.strip(), wait=wait)
         return run_conversation(
             self,
             user_message,
@@ -156,6 +162,34 @@ class OmegaPrimeAgent(Agent):
             task_id=task_id,
             wait=wait,
         )
+
+    def _serves_omega_command(self) -> bool:
+        for schema in self.registry.schemas():
+            function = schema.get("function")
+            if isinstance(function, dict) and function.get("name") == "omega_command":
+                return True
+        return False
+
+    def _run_omega_command(self, command: str, *, wait: bool) -> dict:
+        """Run one slash command on this registry. The model is not called."""
+        lease = self.lease
+        if lease is None:
+            lease = SessionLease()
+            self.lease = lease
+        lease.acquire(wait=wait)
+        try:
+            raw = self.registry.dispatch("omega_command", {"command": command})
+            text = raw if isinstance(raw, str) else json.dumps(raw)
+            self.messages.append({"role": "user", "content": command})
+            self.messages.append({"role": "assistant", "content": text})
+            return {
+                "final_response": text,
+                "messages": self.messages,
+                "api_call_count": 0,
+                "turn_exit_reason": "omega_command",
+            }
+        finally:
+            lease.release()
 
     def _run_heartbeat_beat(self, prompt: str) -> str:
         """Re-enter this same live session for one scheduled beat.

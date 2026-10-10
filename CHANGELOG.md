@@ -6,6 +6,12 @@ All notable changes to this project are documented here. Format follows
 
 ## [Unreleased]
 
+### Slash commands
+
+#### Added
+
+- Served tool `omega_command` (147 on the roster, 110 served by default; Prime families stay off). A user message that is only `/omega-...` runs that command and does not call the model. `/omega-help` lists the catalog. `/omega-onboard` is first run. `/omega-python` is ruff and compileall. `/omega-connectors` names missing env vars and does not ask for a secret in chat.
+
 ### Remote tool host
 
 #### Added

@@ -1,0 +1,5 @@
+# onboard
+
+Run `/omega-onboard` through the `omega_command` tool. That workflow checks the doctor, reads the roster, seeds memory once, and lists connector requests.
+
+This file points at `omega_prime.grokbot.commands`. It does not copy the procedure.

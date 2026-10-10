@@ -17,8 +17,8 @@ tool families with roster entries, policy entries, and skills —
 inside the one agent: lead (16), systems (6), web (6), mobile
 (13), infra (7), quality (8), app packs (9). Messaging, IDE,
 platform, growth, coding, delegation, substrate, and ultrathink
-bridge tools complete the roster — 146 tools with the seven gated Prime
-families (RLM, harness, goals, heartbeat, autonomous, messaging, kernel), 109 without.
+bridge tools complete the roster — 147 tools with the seven gated Prime
+families (RLM, harness, goals, heartbeat, autonomous, messaging, kernel), 110 without.
 
 ## Contracts over code
 
@@ -59,8 +59,8 @@ the receipt and the stamp.
 | --- | --- |
 | `omega_prime/agent/` | Loop, modes, skills runtime, delegation |
 | `omega_prime/tools/` | Registry + tool families |
-| `omega_prime/skills/` | 26 skills |
-| `omega_prime/routines/` | 5 routines |
+| `omega_prime/skills/` | 27 skills |
+| `omega_prime/routines/` | 7 routines |
 | `omega_prime/prompts/` | Seat + shared prompt sources |
 | `omega_prime/contracts/` | Roster, policy, pack contracts |
 | `omega_prime/grokbot/` | Template, roster JSON, setup flow |

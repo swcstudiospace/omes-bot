@@ -20,6 +20,7 @@
       "memory",
       "session_search",
       "delegate_task",
+      "omega_command",
       "execute_code",
       "mcp_call",
       "browser_navigate",

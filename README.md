@@ -54,8 +54,8 @@ and
   Enabled registrations and policy/approval checks determine availability.
   Disabled Prime families are absent from the effective tools and assembled
   tool list; the policy contract remains an allowlist superset.
-- **26 skills, 4 routines** — prompt-native flows (sweep, nightly learning,
-  ultrathink turns) plus the desk's review and intake routines.
+- **27 skills, 7 routines** — prompt-native flows (sweep, nightly learning,
+  ultrathink turns, onboard, python check, connectors) plus the desk's review and intake routines.
 - **Substrate surface** — briefs on open, reports its tool trail with graph
   provenance, shares memory, recalls Hindsight episodes, answers docs from
   RAGflow. Unwired installs run fully local.
@@ -107,7 +107,7 @@ on loopback with a generated token (`--transport sse --generate-token`).
 `OMEGA_PRIME_STATE_DIR` is where desk state is stored. Railway, Greptile,
 Vercel, Play, and ASC stay `not_configured` until their tokens are set.
 The served tool count is the roster intersection `setup_check` reports
-(109 today). Prime families stay off by default. `delegate_task` is served;
+(110 today). Prime families stay off by default. `delegate_task` is served;
 without a provider env it returns `not_configured: provider`.
 
 To call the real tools from outside the bot:

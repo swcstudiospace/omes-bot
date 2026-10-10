@@ -26,7 +26,7 @@ may serve.
 ## What each family gives the bot
 
 Every Prime family is off by default. A default host serves the roster
-intersection `setup_check` reports (109 today) and no Prime tool.
+intersection `setup_check` reports (110 today) and no Prime tool.
 `delegate_task` is served; without a provider env it returns
 `not_configured: provider`.
 
@@ -160,7 +160,7 @@ that does, with the same families the host serves:
 written. Add `--check` to compare an existing file instead of writing it: it
 exits 1 when the file is stale or missing, and the fix is to run the same
 command without `--check`. The shipped prompt and the default host share the
-roster intersection `setup_check` reports (109 today). Prime families stay
+roster intersection `setup_check` reports (110 today). Prime families stay
 off by default. `delegate_task` is served; without a provider env it returns
 `not_configured: provider`. These five families add 28 to each. Do not pass
 `rlm` or `messaging`: the assembler would list nine tools the host cannot serve.
@@ -172,14 +172,14 @@ tests, so confirm it with the checks below.
 
 ## Check it
 
-1. Count what the host serves. With the five families on you should see 137;
-   with none, 109 (prime families stay off by default).
+1. Count what the host serves. With the five families on you should see 138;
+   with none, 110 (prime families stay off by default).
 
    ```bash
    .venv/bin/python -m omega_prime.setup_check --root .
    ```
 
-   Look for `[ok] registry: registry serves 137 roster tools`.
+   Look for `[ok] registry: registry serves 138 roster tools`.
 
 2. Call a tool over real MCP stdio. `prime_crates` is read-only, so it needs no
    approval:

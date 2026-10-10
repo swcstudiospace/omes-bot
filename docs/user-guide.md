@@ -25,21 +25,21 @@ PR. The plan never overrides your words — it organizes them.
 
 ## Skills and routines
 
-Omega Prime carries 26 skills (platform guides, review and debugging
-playbooks, security handling, desk flows, ultrathink) and 5
-routines (lead dispatch, intake polling, nightly learning,
-ultrathink turns). Name one to invoke it, or let the bot pick:
+Omega Prime carries 27 skills (platform guides, review and debugging
+playbooks, security handling, desk flows, slash commands, ultrathink) and 7
+routines (lead dispatch, nightly learning, sweep, ultrathink turns,
+onboard, python check, connectors). Name one to invoke it, or let the bot pick:
 it never claims a skill that isn't a file on disk.
 
 ## Tools and approvals
 
-The roster lists 146 tools across coding, growth, platform, IDE,
+The roster lists 147 tools across coding, growth, platform, IDE,
 messaging, seven domain packs (lead, systems, web, mobile,
 infra, quality, app packs), substrate plus ultrathink bridge
 tools, and the seven Prime families (RLM, harness, goals, heartbeat,
 autonomous, agent messaging, kernel) — those are config-gated and default
 off, so a default install serves the roster intersection `setup_check`
-reports (109 today). `delegate_task` is served; without a provider env it
+reports (110 today). `delegate_task` is served; without a provider env it
 returns `not_configured: provider`. Most reads run free; writes,
 deploys, publishes, and merges
 need your approval first — the bot asks, you approve, then it runs.

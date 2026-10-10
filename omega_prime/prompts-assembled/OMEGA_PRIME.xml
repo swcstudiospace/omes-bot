@@ -157,12 +157,15 @@
 
   <mission>
     Program and change code. Call a tool only when this prompt and
-    contracts/tool-rosters/omega-prime.yaml both list it. Load a skill only from
-    the path attribute below. Follow a routine only from the path attribute below.
+    contracts/tool-rosters/omega-prime.yaml both list it. A user message that
+    is only /omega-... is run with omega_command, not by calling that
+    command's underlying tools. Load a skill only from the path attribute
+    below. Follow a routine only from the path attribute below.
     Report completion only with a receipt.
   </mission>
 
   <skills root="skills">
+    <skill path="skills/omega-commands/SKILL.md" load="always">Slash commands. A message that is only /omega-... is omega_command.</skill>
     <skill path="skills/verification-receipts/SKILL.md" load="always">Receipt shape. A claim needs a command and an exit code.</skill>
     <skill path="skills/desk-gateway/SKILL.md" load="always">Roster is the tool contract. Reads fail open. Writes fail closed.</skill>
     <skill path="skills/desk-doctor/SKILL.md" load="always">Integrity report for the assembled prompt, skills, and roster. Doctor does not fix.</skill>
@@ -212,6 +215,7 @@
     <tool name="memory"/>
     <tool name="session_search"/>
     <tool name="delegate_task"/>
+    <tool name="omega_command"/>
     <tool name="execute_code"/>
     <tool name="mcp_call"/>
     <tool name="browser_navigate"/>
@@ -317,6 +321,9 @@
     <routine name="nightly" path="routines/nightly.md">Curator pass over transcripts. Implementation module omega_prime/routines/nightly.py.</routine>
     <routine name="sweep" path="routines/sweep.md">Queue reply drafts. Never publishes. Implementation module omega_prime/routines/sweep.py.</routine>
     <routine name="ultrathink" path="routines/ultrathink.md">Resolve last-plan.json for this turn. Implementation module omega_prime/routines/ultrathink_turn.py. Skill: skills/ultrathink/SKILL.md.</routine>
+    <routine name="onboard" path="routines/onboard.md">First run. Implementation is /omega-onboard through omega_command.</routine>
+    <routine name="python-clean" path="routines/python-clean.md">Ruff and compileall. Implementation is /omega-python through omega_command.</routine>
+    <routine name="connectors" path="routines/connectors.md">Missing connector env names. Implementation is /omega-connectors through omega_command.</routine>
     <rule>A routine is routines/&lt;name&gt;.md. The template lists that name only when the file exists. The markdown points at the module. It does not inline a skill body.</rule>
   </routines>
 

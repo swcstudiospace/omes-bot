@@ -28,6 +28,7 @@ from omega_prime.tools.ide import IDE_TOOL_NAMES
 from omega_prime.tools.infra import INFRA_TOOL_NAMES
 from omega_prime.tools.lead import LEAD_TOOL_NAMES
 from omega_prime.tools.mobile import MOBILE_TOOL_NAMES
+from omega_prime.tools.omega_command import OMEGA_COMMAND_TOOL_NAMES
 from omega_prime.tools.packs import PACKS_TOOL_NAMES
 from omega_prime.tools.platform import PLATFORM_TOOL_NAMES
 from omega_prime.tools.prime_runtime import KERNEL_TOOL_NAMES
@@ -44,6 +45,7 @@ FAMILIES: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Coding", CODING_TOOL_NAMES),
     ("Growth", GROWTH_TOOL_NAMES),
     ("Delegate", DELEG_TOOL_NAMES),
+    ("Omega command", OMEGA_COMMAND_TOOL_NAMES),
     ("Platform", PLATFORM_TOOL_NAMES),
     ("IDE", IDE_TOOL_NAMES),
     ("X", X_TOOL_NAMES),

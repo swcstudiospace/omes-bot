@@ -139,6 +139,14 @@ Find stored session messages whose content contains the query as a literal subst
 
 Delegate one goal, or a batch of goals, to a child agent. The result is the child's final response. background returns a handle and the child runs when that handle is joined.
 
+## omega_command
+
+- Family: Omega command
+- Approval: not required
+- Required params: command
+
+Run one Omega Prime slash command. Pass the user's /omega-... text. Use this instead of the underlying tools when the user typed a slash command or asked for onboard, connectors, a Python check, desk status, doctor, roster, recall, retain, gates, or delegate. /omega-help lists every command.
+
 ## execute_code
 
 - Family: Platform

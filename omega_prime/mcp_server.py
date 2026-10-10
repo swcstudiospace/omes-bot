@@ -76,6 +76,7 @@ from omega_prime.tools.lead import (
     register_lead_tools,
 )
 from omega_prime.tools.mobile import MobileClient, MobileContext, register_mobile_tools
+from omega_prime.tools.omega_command import register_omega_command_tools
 from omega_prime.tools.packs import PacksClient, PacksContext, register_packs_tools
 from omega_prime.tools.platform import register_platform_tools
 from omega_prime.tools.quality import (
@@ -552,6 +553,7 @@ def default_registry(
     if child_model is not None:
         parent = _DeskParent(registry, child_model)
     register_delegate_tools(registry, parent)
+    register_omega_command_tools(registry, env)
     register_platform_tools(registry, home=home)
     register_ide_tools(registry, root, jail=None if work == root else work)
     x_token = env.get("X_API_TOKEN", "")
