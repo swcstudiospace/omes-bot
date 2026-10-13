@@ -26,7 +26,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         id: checkout
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         id: setup_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -124,7 +124,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         id: checkout
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         id: setup_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -171,7 +171,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         id: checkout
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         id: setup_python
         with:
           python-version: ${{ matrix.python-version }}
@@ -210,7 +210,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: install
@@ -234,7 +234,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: true
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: provenance check
@@ -255,7 +255,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: regenerate sandbox policy
