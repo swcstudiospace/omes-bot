@@ -71,7 +71,7 @@ jobs:
       SSE_CONTAINER: omega-prime-mcp-ci-sse
       HTTP_CONTAINER: omega-prime-mcp-ci-http
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: docker/setup-buildx-action@v4
 
@@ -575,7 +575,7 @@ jobs:
       archive_sha256: ${{ steps.transfer.outputs.archive_sha256 }}
       image_id: ${{ steps.transfer.outputs.image_id }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Bind the manual input to this ref
         env:
